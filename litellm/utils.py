@@ -8629,6 +8629,12 @@ class ProviderConfigManager:
             )
 
             return LiteLLMProxyImageEditConfig()
+        elif LlmProviders.AIHPI_PROVIDER == provider:
+            from litellm.llms.aihpi_provider.image_edit import (
+                get_aihpi_provider_image_edit_config,
+            )
+
+            return get_aihpi_provider_image_edit_config(model)
         elif LlmProviders.VERTEX_AI == provider:
             from litellm.llms.vertex_ai.image_edit import (
                 get_vertex_ai_image_edit_config,
