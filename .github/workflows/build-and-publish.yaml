@@ -5,12 +5,14 @@ on:
     branches:
       - main
       - master
+      - aihpi-provider
     tags:
       - "v*"
   pull_request:
     branches:
       - main
       - master
+      - aihpi-provider
   workflow_dispatch:
 
 env:
