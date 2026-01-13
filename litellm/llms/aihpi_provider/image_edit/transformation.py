@@ -50,6 +50,20 @@ class AihpiProviderImageEditConfig(OpenAIImageEditConfig):
             headers.update({"Authorization": f"Bearer {api_key}"})
         return headers
 
+    def get_supported_openai_params(self, model: str) -> list:
+        base = super().get_supported_openai_params(model)
+        return base + [
+            "num_inference_steps",
+            "true_cfg_scale",
+            "seed",
+            "negative_prompt",
+        ]
+
+    def map_openai_params(
+        self, image_edit_optional_params, model: str, drop_params: bool
+    ):
+        return dict(image_edit_optional_params)
+
     def get_complete_url(
         self, model: str, api_base: Optional[str], litellm_params: dict
     ) -> str:
