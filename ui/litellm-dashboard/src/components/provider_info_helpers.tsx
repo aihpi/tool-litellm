@@ -1,6 +1,7 @@
 export enum Providers {
   A2A_Agent = "A2A Agent",
   AIML = "AI/ML API",
+  AIHPI_Provider = "AIHPI Provider",
   Bedrock = "Amazon Bedrock",
   Anthropic = "Anthropic",
   AssemblyAI = "AssemblyAI",
@@ -49,6 +50,7 @@ export enum Providers {
 export const provider_map: Record<string, string> = {
   A2A_Agent: "a2a_agent",
   AIML: "aiml",
+  AIHPI_Provider: "aihpi-provider",
   OpenAI: "openai",
   OpenAI_Text: "text-completion-openai",
   Azure: "azure",
@@ -198,6 +200,8 @@ export const getPlaceholder = (selectedProvider: string): string => {
     return "jina_ai/";
   } else if (selectedProvider == Providers.VolcEngine) {
     return "volcengine/<any-model-on-volcengine>";
+  } else if (selectedProvider == Providers.AIHPI_Provider) {
+    return "aihpi-provider/qwen-image-edit";
   } else if (selectedProvider == Providers.DeepInfra) {
     return "deepinfra/<any-model-on-deepinfra>";
   } else if (selectedProvider == Providers.FalAI) {
