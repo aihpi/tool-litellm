@@ -6,6 +6,8 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import Sidebar2 from "@/app/(dashboard)/components/Sidebar2";
 import useAuthorized from "@/app/(dashboard)/hooks/useAuthorized";
 import { useRouter, useSearchParams } from "next/navigation";
+import LegalFooter from "@/components/common_components/LegalFooter";
+import LegalBanner from "@/components/common_components/LegalBanner";
 
 /** ---- BASE URL HELPERS ---- */
 function normalizeBasePrefix(raw: string | undefined | null): string {
@@ -47,6 +49,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <ThemeProvider accessToken={""}>
       <div className="flex flex-col min-h-screen">
+        <LegalBanner />
         <Navbar
           isPublicPage={false}
           sidebarCollapsed={sidebarCollapsed}
@@ -65,6 +68,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </div>
           <main className="flex-1">{children}</main>
         </div>
+        <LegalFooter />
       </div>
     </ThemeProvider>
   );
