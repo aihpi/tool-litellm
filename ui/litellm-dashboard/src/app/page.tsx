@@ -41,6 +41,7 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { isJwtExpired } from "@/utils/jwtUtils";
 import StickyLegalFooter from "@/components/common_components/StickyLegalFooter";
 import { isAdminRole } from "@/utils/roles";
+import { getUiAssetPath } from "@/utils/uiAssetPath";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { jwtDecode } from "jwt-decode";
 import { useSearchParams } from "next/navigation";
@@ -380,7 +381,7 @@ export default function CreateKeyPage() {
               createClicked={createClicked}
             />
           ) : (
-            <div className="flex flex-col min-h-screen">
+            <div className="flex flex-col min-h-screen pb-10">
               <Navbar
                 userID={userID}
                 userRole={userRole}
