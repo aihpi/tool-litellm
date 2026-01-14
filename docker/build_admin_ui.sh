@@ -8,13 +8,7 @@ echo
 pwd
 
 
-# only run this step for litellm enterprise, we run this if enterprise/enterprise_ui/_enterprise.json exists
-if [ ! -f "enterprise/enterprise_ui/enterprise_colors.json" ]; then
-    echo "Admin UI - using default LiteLLM UI"
-    exit 0
-fi
-
-echo "Building Custom Admin UI..."
+echo "Building Admin UI..."
 
 # Install dependencies
 # Check if we are on macOS
@@ -42,12 +36,14 @@ else
 fi
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.38.0/install.sh | bash
 source ~/.nvm/nvm.sh
-nvm install v18.17.0
-nvm use v18.17.0
+nvm install v20
+nvm use v20
 npm install -g npm
 
-# copy _enterprise.json from this directory to /ui/litellm-dashboard, and rename it to ui_colors.json
-cp enterprise/enterprise_ui/enterprise_colors.json ui/litellm-dashboard/ui_colors.json
+# copy enterprise colors if available; default ui_colors.json already exists
+if [ -f "enterprise/enterprise_ui/enterprise_colors.json" ]; then
+    cp enterprise/enterprise_ui/enterprise_colors.json ui/litellm-dashboard/ui_colors.json
+fi
 
 # cd in to /ui/litellm-dashboard
 cd ui/litellm-dashboard
