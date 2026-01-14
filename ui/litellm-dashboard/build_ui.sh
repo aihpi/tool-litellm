@@ -1,21 +1,16 @@
 #!/bin/bash
 
-# Check if nvm is not installed
-if ! command -v nvm &> /dev/null; then
-  # Install nvm
-  curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.38.0/install.sh | bash
+if command -v nvm &> /dev/null; then
+  # Use nvm to set the required Node.js version
+  nvm use v20
 
-  # Source nvm script in the current session
-  export NVM_DIR="$HOME/.nvm"
-  [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-fi
-
-# Use nvm to set the required Node.js version
-nvm use v20
-
-# Check if nvm use was successful
-if [ $? -ne 0 ]; then
-  echo "Error: Failed to switch to Node.js v20. Deployment aborted."
+  # Check if nvm use was successful
+  if [ $? -ne 0 ]; then
+    echo "Error: Failed to switch to Node.js v20. Deployment aborted."
+    exit 1
+  fi
+elif ! command -v node &> /dev/null; then
+  echo "Error: Node.js is not installed. Deployment aborted."
   exit 1
 fi
 
