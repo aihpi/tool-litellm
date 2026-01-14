@@ -39,6 +39,7 @@ import SpendLogsTable from "@/components/view_logs";
 import ViewUserDashboard from "@/components/view_users";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { isJwtExpired } from "@/utils/jwtUtils";
+import StickyLegalFooter from "@/components/common_components/StickyLegalFooter";
 import { isAdminRole } from "@/utils/roles";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { jwtDecode } from "jwt-decode";
@@ -563,7 +564,6 @@ export default function CreateKeyPage() {
                 onClose={handleSurveyModalClose}
                 onComplete={handleSurveyComplete}
               />
-
               {/* Claude Code Components */}
               <ClaudeCodePrompt
                 isVisible={showClaudeCodePrompt}
@@ -575,6 +575,7 @@ export default function CreateKeyPage() {
                 onClose={handleClaudeCodeModalClose}
                 onComplete={handleClaudeCodeComplete}
               />
+              <StickyLegalFooter />
             </div>
           )}
         </ThemeProvider>

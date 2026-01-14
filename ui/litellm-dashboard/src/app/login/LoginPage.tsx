@@ -11,6 +11,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Alert, Button, Card, Form, Input, Radio, Space, Typography } from "antd";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import LegalFooter from "@/components/common_components/LegalFooter";
+import LegalBanner from "@/components/common_components/LegalBanner";
 
 function LoginPageContent() {
   const [username, setUsername] = useState("");
@@ -69,130 +71,138 @@ function LoginPageContent() {
   // Show disabled message if admin UI is disabled
   if (uiConfig && uiConfig.admin_ui_disabled) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex flex-col bg-gray-50">
+        <LegalBanner />
+        <div className="flex flex-1 items-center justify-center">
+          <Card className="w-full max-w-lg shadow-md">
+            <Space direction="vertical" size="middle" className="w-full">
+              <div className="text-center">
+                <Title level={2}>🚅 LiteLLM</Title>
+              </div>
+
+              <Alert
+                message="Admin UI Disabled"
+                description={
+                  <>
+                    <Paragraph className="text-sm">
+                      The Admin UI has been disabled by the administrator. To re-enable it, please update the following
+                      environment variable:
+                    </Paragraph>
+                    <Paragraph className="text-sm">
+                      <code className="bg-gray-100 px-1 py-0.5 rounded text-xs">DISABLE_ADMIN_UI=False</code>
+                    </Paragraph>
+                  </>
+                }
+                type="warning"
+                showIcon
+              />
+            </Space>
+          </Card>
+        </div>
+        <LegalFooter />
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen flex flex-col bg-gray-50">
+      <LegalBanner />
+      <div className="flex flex-1 items-center justify-center">
         <Card className="w-full max-w-lg shadow-md">
           <Space direction="vertical" size="middle" className="w-full">
             <div className="text-center">
               <Title level={2}>🚅 LiteLLM</Title>
             </div>
 
+            <div className="text-center">
+              <Title level={3}>Login</Title>
+              <Text type="secondary">Access your LiteLLM Admin UI.</Text>
+            </div>
+
             <Alert
-              message="Admin UI Disabled"
+              message="Default Credentials"
               description={
                 <>
                   <Paragraph className="text-sm">
-                    The Admin UI has been disabled by the administrator. To re-enable it, please update the following
-                    environment variable:
+                    By default, Username is <code className="bg-gray-100 px-1 py-0.5 rounded text-xs">admin</code> and
+                    Password is your set LiteLLM Proxy
+                    <code className="bg-gray-100 px-1 py-0.5 rounded text-xs">MASTER_KEY</code>.
                   </Paragraph>
                   <Paragraph className="text-sm">
-                    <code className="bg-gray-100 px-1 py-0.5 rounded text-xs">DISABLE_ADMIN_UI=False</code>
+                    Need to set UI credentials or SSO?{" "}
+                    <a href="https://docs.litellm.ai/docs/proxy/ui" target="_blank" rel="noopener noreferrer">
+                      Check the documentation
+                    </a>
+                    .
                   </Paragraph>
                 </>
               }
-              type="warning"
+              type="info"
+              icon={<InfoCircleOutlined />}
               showIcon
             />
+
+            {error && <Alert message={error} type="error" showIcon />}
+
+            <Form onFinish={handleSubmit} layout="vertical" requiredMark={true}>
+              <Form.Item label="Login Method" name="login_method">
+                <Radio.Group
+                  value={loginMethod}
+                  onChange={(event) => setLoginMethod(event.target.value)}
+                  disabled={isLoginLoading}
+                >
+                  <Radio value="password">Local admin</Radio>
+                  <Radio value="ldap">LDAP</Radio>
+                </Radio.Group>
+              </Form.Item>
+              <Form.Item
+                label="Username"
+                name="username"
+                rules={[{ required: true, message: "Please enter your username" }]}
+              >
+                <Input
+                  placeholder="Enter your username"
+                  autoComplete="username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  disabled={isLoginLoading}
+                  size="large"
+                  className="rounded-md border-gray-300"
+                />
+              </Form.Item>
+
+              <Form.Item
+                label="Password"
+                name="password"
+                rules={[{ required: true, message: "Please enter your password" }]}
+              >
+                <Input.Password
+                  placeholder="Enter your password"
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  disabled={isLoginLoading}
+                  size="large"
+                />
+              </Form.Item>
+
+              <Form.Item>
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  loading={isLoginLoading}
+                  disabled={isLoginLoading}
+                  block
+                  size="large"
+                >
+                  {isLoginLoading ? "Logging in..." : "Login"}
+                </Button>
+              </Form.Item>
+            </Form>
           </Space>
         </Card>
       </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <Card className="w-full max-w-lg shadow-md">
-        <Space direction="vertical" size="middle" className="w-full">
-          <div className="text-center">
-            <Title level={2}>🚅 LiteLLM</Title>
-          </div>
-
-          <div className="text-center">
-            <Title level={3}>Login</Title>
-            <Text type="secondary">Access your LiteLLM Admin UI.</Text>
-          </div>
-
-          <Alert
-            message="Default Credentials"
-            description={
-              <>
-                <Paragraph className="text-sm">
-                  By default, Username is <code className="bg-gray-100 px-1 py-0.5 rounded text-xs">admin</code> and
-                  Password is your set LiteLLM Proxy
-                  <code className="bg-gray-100 px-1 py-0.5 rounded text-xs">MASTER_KEY</code>.
-                </Paragraph>
-                <Paragraph className="text-sm">
-                  Need to set UI credentials or SSO?{" "}
-                  <a href="https://docs.litellm.ai/docs/proxy/ui" target="_blank" rel="noopener noreferrer">
-                    Check the documentation
-                  </a>
-                  .
-                </Paragraph>
-              </>
-            }
-            type="info"
-            icon={<InfoCircleOutlined />}
-            showIcon
-          />
-
-          {error && <Alert message={error} type="error" showIcon />}
-
-          <Form onFinish={handleSubmit} layout="vertical" requiredMark={true}>
-            <Form.Item label="Login Method" name="login_method">
-              <Radio.Group
-                value={loginMethod}
-                onChange={(event) => setLoginMethod(event.target.value)}
-                disabled={isLoginLoading}
-              >
-                <Radio value="password">Local admin</Radio>
-                <Radio value="ldap">LDAP</Radio>
-              </Radio.Group>
-            </Form.Item>
-            <Form.Item
-              label="Username"
-              name="username"
-              rules={[{ required: true, message: "Please enter your username" }]}
-            >
-              <Input
-                placeholder="Enter your username"
-                autoComplete="username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                disabled={isLoginLoading}
-                size="large"
-                className="rounded-md border-gray-300"
-              />
-            </Form.Item>
-
-            <Form.Item
-              label="Password"
-              name="password"
-              rules={[{ required: true, message: "Please enter your password" }]}
-            >
-              <Input.Password
-                placeholder="Enter your password"
-                autoComplete="current-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={isLoginLoading}
-                size="large"
-              />
-            </Form.Item>
-
-            <Form.Item>
-              <Button
-                type="primary"
-                htmlType="submit"
-                loading={isLoginLoading}
-                disabled={isLoginLoading}
-                block
-                size="large"
-              >
-                {isLoginLoading ? "Logging in..." : "Login"}
-              </Button>
-            </Form.Item>
-          </Form>
-        </Space>
-      </Card>
+      <LegalFooter />
     </div>
   );
 }
