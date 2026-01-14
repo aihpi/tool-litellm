@@ -8215,15 +8215,21 @@ export const deriveErrorMessage = (errorData: any): string => {
 export interface LoginRequest {
   username: string;
   password: string;
+  loginMethod?: "password" | "ldap";
 }
 
 export interface LoginResponse {
   redirect_url: string;
 }
 
-export const loginCall = async (username: string, password: string): Promise<LoginResponse> => {
+export const loginCall = async (
+  username: string,
+  password: string,
+  loginMethod: "password" | "ldap" = "password",
+): Promise<LoginResponse> => {
   const proxyBaseUrl = getProxyBaseUrl();
-  const loginUrl = proxyBaseUrl ? `${proxyBaseUrl}/v2/login` : "/v2/login";
+  const loginPath = loginMethod === "ldap" ? "/v2/login/ldap" : "/v2/login";
+  const loginUrl = proxyBaseUrl ? `${proxyBaseUrl}${loginPath}` : loginPath;
 
   const body = JSON.stringify({
     username,

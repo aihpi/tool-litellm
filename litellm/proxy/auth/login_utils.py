@@ -18,11 +18,15 @@ from litellm.proxy._types import (
     LitellmUserRoles,
     ProxyErrorTypes,
     ProxyException,
+    NewUserRequest,
     UpdateUserRequest,
     UserAPIKeyAuth,
     hash_token,
 )
-from litellm.proxy.management_endpoints.internal_user_endpoints import user_update
+from litellm.proxy.management_endpoints.internal_user_endpoints import (
+    new_user,
+    user_update,
+)
 from litellm.proxy.management_endpoints.key_management_endpoints import (
     generate_key_helper_fn,
 )
@@ -121,7 +125,7 @@ class LoginResult:
     key: str
     user_email: Optional[str]
     user_role: str
-    login_method: Literal["sso", "username_password"]
+    login_method: Literal["sso", "username_password", "ldap"]
 
     def __init__(
         self,
@@ -129,7 +133,7 @@ class LoginResult:
         key: str,
         user_email: Optional[str],
         user_role: str,
-        login_method: Literal["sso", "username_password"] = "username_password",
+        login_method: Literal["sso", "username_password", "ldap"] = "username_password",
     ):
         self.user_id = user_id
         self.key = key
@@ -172,6 +176,14 @@ async def authenticate_user(  # noqa: PLR0915
         )
 
     ui_username, ui_password = get_ui_credentials(master_key)
+    from litellm.proxy.auth.ldap_utils import get_ldap_settings
+
+    ldap_settings = await get_ldap_settings(prisma_client)
+    ldap_enabled = bool(ldap_settings.get("ldap_enabled"))
+
+    is_admin_credentials = secrets.compare_digest(
+        username, ui_username
+    ) and secrets.compare_digest(password, ui_password)
 
     # Check if we can find the `username` in the db. On the UI, users can enter username=their email
     _user_row: Optional[LiteLLM_UserTable] = None
@@ -197,9 +209,7 @@ async def authenticate_user(  # noqa: PLR0915
     - Login with UI_USERNAME and UI_PASSWORD
     - Login with Invite Link `user_email` and `password` combination
     """
-    if secrets.compare_digest(username, ui_username) and secrets.compare_digest(
-        password, ui_password
-    ):
+    if is_admin_credentials:
         # Non SSO -> If user is using UI_USERNAME and UI_PASSWORD they are Proxy admin
         user_role = LitellmUserRoles.PROXY_ADMIN
         user_id = LITELLM_PROXY_ADMIN_NAME
@@ -291,6 +301,13 @@ async def authenticate_user(  # noqa: PLR0915
         )
 
     elif _user_row is not None:
+        if ldap_enabled:
+            raise ProxyException(
+                message="LDAP login is required for non-admin users.",
+                type=ProxyErrorTypes.auth_error,
+                param="ldap_required",
+                code=401,
+            )
         """
         When sharing invite links
 
@@ -361,12 +378,147 @@ async def authenticate_user(  # noqa: PLR0915
                 code=401,
             )
     else:
+        if ldap_enabled:
+            raise ProxyException(
+                message="LDAP login is required for non-admin users.",
+                type=ProxyErrorTypes.auth_error,
+                param="ldap_required",
+                code=401,
+            )
         raise ProxyException(
             message="Invalid credentials used to access UI.\nCheck 'UI_USERNAME', 'UI_PASSWORD' in .env file",
             type=ProxyErrorTypes.auth_error,
             param="invalid_credentials",
             code=401,
         )
+
+
+async def authenticate_ldap_user(
+    username: str,
+    password: str,
+    master_key: Optional[str],
+    prisma_client: Optional[PrismaClient],
+) -> LoginResult:
+    if master_key is None:
+        raise ProxyException(
+            message="Master Key not set for Proxy. Please set Master Key to use Admin UI.",
+            type=ProxyErrorTypes.auth_error,
+            param="master_key",
+            code=500,
+        )
+
+    if prisma_client is None:
+        raise ProxyException(
+            message="No Database connected. Set DATABASE_URL in .env.",
+            type=ProxyErrorTypes.auth_error,
+            param="DATABASE_URL",
+            code=500,
+        )
+
+    from litellm.proxy.auth.ldap_utils import (
+        LDAPConfigError,
+        authenticate_ldap_credentials,
+        get_ldap_settings,
+    )
+
+    ldap_settings = await get_ldap_settings(prisma_client)
+    if not ldap_settings.get("ldap_enabled"):
+        raise ProxyException(
+            message="LDAP login is not enabled.",
+            type=ProxyErrorTypes.auth_error,
+            param="ldap_enabled",
+            code=401,
+        )
+
+    try:
+        user_email, is_admin = authenticate_ldap_credentials(
+            settings=ldap_settings,
+            username=username,
+            password=password,
+        )
+    except LDAPConfigError as exc:
+        raise ProxyException(
+            message=str(exc),
+            type=ProxyErrorTypes.auth_error,
+            param="ldap_config",
+            code=500,
+        ) from exc
+    except HTTPException as exc:
+        raise ProxyException(
+            message=getattr(exc, "detail", str(exc)),
+            type=ProxyErrorTypes.auth_error,
+            param="ldap_auth",
+            code=getattr(exc, "status_code", 401),
+        ) from exc
+
+    user_role = (
+        LitellmUserRoles.PROXY_ADMIN
+        if is_admin
+        else LitellmUserRoles.INTERNAL_USER
+    )
+
+    user_row: Optional[LiteLLM_UserTable] = cast(
+        Optional[LiteLLM_UserTable],
+        await prisma_client.db.litellm_usertable.find_first(
+            where={"user_email": {"equals": user_email, "mode": "insensitive"}}
+        ),
+    )
+
+    if user_row is None:
+        new_user_request = NewUserRequest(
+            user_id=user_email,
+            user_email=user_email,
+            user_role=user_role,
+            auto_create_key=False,
+            metadata={"auth_provider": "ldap"},
+        )
+        await new_user(
+            data=new_user_request,
+            user_api_key_dict=UserAPIKeyAuth(user_role=LitellmUserRoles.PROXY_ADMIN),
+        )
+        user_id = user_email
+    else:
+        user_id = getattr(user_row, "user_id", user_email)
+        existing_role = getattr(user_row, "user_role", None)
+        if existing_role != user_role:
+            await user_update(
+                data=UpdateUserRequest(
+                    user_id=user_id,
+                    user_role=user_role,
+                ),
+                user_api_key_dict=UserAPIKeyAuth(
+                    user_role=LitellmUserRoles.PROXY_ADMIN
+                ),
+            )
+
+    await expire_previous_ui_session_tokens(
+        user_id=user_id, prisma_client=prisma_client
+    )
+
+    response = await generate_key_helper_fn(
+        request_type="key",
+        **{  # type: ignore
+            "user_role": user_role,
+            "duration": "24hr",
+            "key_max_budget": litellm.max_ui_session_budget,
+            "models": [],
+            "aliases": {},
+            "config": {},
+            "spend": 0,
+            "user_id": user_id,
+            "team_id": "litellm-dashboard",
+        },
+    )
+
+    key = response["token"]  # type: ignore
+
+    return LoginResult(
+        user_id=user_id,
+        key=key,
+        user_email=user_email,
+        user_role=cast(str, user_role),
+        login_method="ldap",
+    )
 
 
 def create_ui_token_object(
@@ -402,4 +554,3 @@ def create_ui_token_object(
         disabled_non_admin_personal_key_creation=disabled_non_admin_personal_key_creation,
         server_root_path=get_server_root_path(),
     )
-

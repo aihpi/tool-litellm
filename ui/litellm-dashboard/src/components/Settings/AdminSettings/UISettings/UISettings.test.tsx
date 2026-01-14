@@ -28,10 +28,18 @@ const buildSettingsResponse = (overrides?: Partial<Record<string, unknown>>) => 
         disable_model_add_for_internal_users: {
           description: "Disable model add for internal users",
         },
+        ldap_enabled: {
+          description: "Enable LDAP login for the Admin UI",
+        },
+        ldap_use_tls: {
+          description: "Use TLS for LDAP connection (LDAPS)",
+        },
       },
     },
     values: {
       disable_model_add_for_internal_users: false,
+      ldap_enabled: false,
+      ldap_port: 389,
     },
   },
   isLoading: false,
@@ -57,9 +65,11 @@ describe("UISettings", () => {
 
     expect(screen.getByText("UI Settings")).toBeInTheDocument();
     expect(screen.getByRole("switch", { name: "Disable model add for internal users" })).toBeInTheDocument();
+    expect(screen.getByText("LDAP Settings")).toBeInTheDocument();
+    expect(screen.getByLabelText("LDAP Host")).toBeInTheDocument();
   });
 
-  it("should toggle setting and call update", () => {
+  it("should submit settings and call update", () => {
     const mutateMock = vi.fn((_settings, options) => {
       options?.onSuccess?.();
     });
@@ -73,13 +83,20 @@ describe("UISettings", () => {
     render(<UISettings />);
 
     const toggle = screen.getByRole("switch", { name: "Disable model add for internal users" });
+    const ldapHostInput = screen.getByLabelText("LDAP Host");
+    const saveButton = screen.getByRole("button", { name: "Save settings" });
 
     act(() => {
       fireEvent.click(toggle);
+      fireEvent.change(ldapHostInput, { target: { value: "ldap.example.com" } });
+      fireEvent.click(saveButton);
     });
 
     expect(mutateMock).toHaveBeenCalledWith(
-      { disable_model_add_for_internal_users: true },
+      expect.objectContaining({
+        disable_model_add_for_internal_users: true,
+        ldap_host: "ldap.example.com",
+      }),
       expect.objectContaining({
         onSuccess: expect.any(Function),
         onError: expect.any(Function),
