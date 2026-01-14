@@ -1,17 +1,24 @@
 #!/bin/bash
 
-if command -v nvm &> /dev/null; then
-  # Use nvm to set the required Node.js version
-  nvm use v20
-
-  # Check if nvm use was successful
-  if [ $? -ne 0 ]; then
-    echo "Error: Failed to switch to Node.js v20. Deployment aborted."
+if command -v node &> /dev/null; then
+  NODE_MAJOR=$(node -v | tr -d "v" | cut -d "." -f 1)
+  if [ "$NODE_MAJOR" -lt 20 ]; then
+    if command -v nvm &> /dev/null; then
+      nvm install v20
+      nvm use v20
+    else
+      echo "Error: Node.js v20+ is required. Deployment aborted."
+      exit 1
+    fi
+  fi
+else
+  if command -v nvm &> /dev/null; then
+    nvm install v20
+    nvm use v20
+  else
+    echo "Error: Node.js is not installed. Deployment aborted."
     exit 1
   fi
-elif ! command -v node &> /dev/null; then
-  echo "Error: Node.js is not installed. Deployment aborted."
-  exit 1
 fi
 
 # print contents of ui_colors.json
