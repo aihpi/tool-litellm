@@ -10,22 +10,14 @@ fi
 # Set UI_BASE_PATH from the first argument
 UI_BASE_PATH="$1"
 
-# Check if nvm is not installed
-if ! command -v nvm &> /dev/null; then
-    # Install nvm
-    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.38.0/install.sh | bash
-
-    # Source nvm script in the current session
-    export NVM_DIR="$HOME/.nvm"
-    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-fi
-
-# Use nvm to set the required Node.js version
-nvm use v18.17.0
-
-# Check if nvm use was successful
-if [ $? -ne 0 ]; then
-    echo "Error: Failed to switch to Node.js v18.17.0. Deployment aborted."
+if command -v node &> /dev/null; then
+    NODE_MAJOR=$(node -v | tr -d "v" | cut -d "." -f 1)
+    if [ "$NODE_MAJOR" -lt 20 ]; then
+        echo "Error: Node.js v20+ is required. Deployment aborted."
+        exit 1
+    fi
+else
+    echo "Error: Node.js is not installed. Deployment aborted."
     exit 1
 fi
 
