@@ -1,7 +1,6 @@
 #!/bin/bash
 
-# # try except this script
-# set -e
+set -euo pipefail
 
 # print current dir 
 echo
@@ -50,6 +49,9 @@ cd ui/litellm-dashboard
 
 # ensure have access to build_ui.sh
 chmod +x ./build_ui.sh
+
+# install dependencies
+npm ci
 
 # run ./build_ui.sh
 ./build_ui.sh
