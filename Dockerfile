@@ -12,7 +12,7 @@ WORKDIR /app
 USER root
 
 # Install build dependencies
-RUN apk add --no-cache bash gcc py3-pip python3 python3-dev openssl openssl-dev
+RUN apk add --no-cache bash gcc py3-pip python3 python3-dev openssl openssl-dev nodejs npm
 
 RUN python -m pip install build
 
