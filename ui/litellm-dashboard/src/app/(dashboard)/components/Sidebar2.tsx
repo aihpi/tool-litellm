@@ -368,7 +368,7 @@ const Sidebar2: React.FC<SidebarProps> = ({ accessToken, userRole, defaultSelect
     <Layout style={{ minHeight: "100vh" }}>
       <Sider
         theme="light"
-        width={220}
+        width={260}
         collapsed={collapsed}
         collapsedWidth={80}
         collapsible
@@ -378,42 +378,48 @@ const Sidebar2: React.FC<SidebarProps> = ({ accessToken, userRole, defaultSelect
           position: "relative",
         }}
       >
-        <ConfigProvider
-          theme={{
-            components: {
-              Menu: {
-                iconSize: 18,
-                fontSize: 14,
-              },
-            },
-          }}
-        >
-          <Menu
-            mode="inline"
-            selectedKeys={[selectedMenuKey]}
-            defaultOpenKeys={collapsed ? [] : ["llm-tools"]} // kept to preserve original appearance
-            inlineCollapsed={collapsed}
-            className="custom-sidebar-menu"
-            style={{
-              borderRight: 0,
-              backgroundColor: "transparent",
-              fontSize: "14px",
-            }}
-            items={filteredMenuItems.map((item) => ({
-              key: item.key,
-              icon: item.icon,
-              label: item.label,
-              children: item.children?.map((child) => ({
-                key: child.key,
-                icon: child.icon,
-                label: child.label,
-                onClick: () => goTo(child.page),
-              })),
-              onClick: !item.children ? () => goTo(item.page) : undefined,
-            }))}
-          />
-        </ConfigProvider>
-        {isAdminRole(userRole) && !collapsed && <UsageIndicator accessToken={accessToken} width={220} />}
+        <div className="flex h-full flex-col">
+          <div className="flex-1 overflow-y-auto">
+            <ConfigProvider
+              theme={{
+                components: {
+                  Menu: {
+                    iconSize: 18,
+                    fontSize: 14,
+                  },
+                },
+              }}
+            >
+              <Menu
+                mode="inline"
+                selectedKeys={[selectedMenuKey]}
+                defaultOpenKeys={collapsed ? [] : ["llm-tools"]} // kept to preserve original appearance
+                inlineCollapsed={collapsed}
+                className="custom-sidebar-menu"
+                style={{
+                  borderRight: 0,
+                  backgroundColor: "transparent",
+                  fontSize: "14px",
+                }}
+                items={filteredMenuItems.map((item) => ({
+                  key: item.key,
+                  icon: item.icon,
+                  label: item.label,
+                  children: item.children?.map((child) => ({
+                    key: child.key,
+                    icon: child.icon,
+                    label: child.label,
+                    onClick: () => goTo(child.page),
+                  })),
+                  onClick: !item.children ? () => goTo(item.page) : undefined,
+                }))}
+              />
+            </ConfigProvider>
+          </div>
+          <div className="sticky bottom-0 border-t border-gray-200 bg-white/95 px-4 pb-4 pt-3 backdrop-blur">
+            {!collapsed && isAdminRole(userRole) && <UsageIndicator accessToken={accessToken} width={240} />}
+          </div>
+        </div>
       </Sider>
     </Layout>
   );

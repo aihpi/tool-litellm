@@ -10,8 +10,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Alert, Button, Card, Form, Input, Radio, Space, Typography } from "antd";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import LegalFooter from "@/components/common_components/LegalFooter";
-import LegalBanner from "@/components/common_components/LegalBanner";
+import { getUiAssetPath } from "@/utils/uiAssetPath";
 
 function LoginPageContent() {
   const [username, setUsername] = useState("");
@@ -71,15 +70,19 @@ function LoginPageContent() {
   if (uiConfig && uiConfig.admin_ui_disabled) {
     return (
       <div className="min-h-screen flex flex-col bg-gray-50">
-        <LegalBanner />
         <div className="flex flex-1 items-center justify-center">
           <Card className="w-full max-w-lg shadow-md">
             <Space direction="vertical" size="middle" className="w-full">
               <div className="text-center">
                 <Title level={2}>HPI API</Title>
                 <div className="mt-3 flex items-center justify-center gap-4">
-                  <img src="/ui/assets/bmbf.jpg" alt="BMBF" className="h-8 w-auto" />
-                  <img src="/ui/assets/aisc.png" alt="AISC" className="h-8 w-auto" />
+                  <img
+                    src={getUiAssetPath("/assets/BMFTR.png")}
+                    alt="BMBF"
+                    className="w-auto"
+                    style={{ height: "56px" }}
+                  />
+                  <img src={getUiAssetPath("/assets/aisc.png")} alt="AISC" className="h-8 w-auto" />
                 </div>
               </div>
 
@@ -99,25 +102,47 @@ function LoginPageContent() {
                 type="warning"
                 showIcon
               />
+              <div className="text-center text-xs text-gray-500">
+                <a
+                  href="https://aisc.hpi.de/portal/cfp/pages/imprint/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:underline"
+                >
+                  Impressum
+                </a>
+                <span className="mx-2">•</span>
+                <a
+                  href="https://aisc.hpi.de/portal/cfp/pages/privacy/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:underline"
+                >
+                  Privacy
+                </a>
+              </div>
             </Space>
           </Card>
         </div>
-        <LegalFooter />
       </div>
     );
   }
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
-      <LegalBanner />
       <div className="flex flex-1 items-center justify-center">
         <Card className="w-full max-w-lg shadow-md">
           <Space direction="vertical" size="middle" className="w-full">
             <div className="text-center">
               <Title level={2}>HPI API</Title>
               <div className="mt-3 flex items-center justify-center gap-4">
-                <img src="/ui/assets/bmbf.jpg" alt="BMBF" className="h-8 w-auto" />
-                <img src="/ui/assets/aisc.png" alt="AISC" className="h-8 w-auto" />
+                <img
+                  src={getUiAssetPath("/assets/BMFTR.png")}
+                  alt="BMBF"
+                  className="w-auto"
+                  style={{ height: "56px" }}
+                />
+                <img src={getUiAssetPath("/assets/aisc.png")} alt="AISC" className="h-8 w-auto" />
               </div>
             </div>
 
@@ -205,7 +230,6 @@ function LoginPageContent() {
           </Space>
         </Card>
       </div>
-      <LegalFooter />
     </div>
   );
 }

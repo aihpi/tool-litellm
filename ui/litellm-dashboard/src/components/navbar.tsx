@@ -24,6 +24,7 @@ import type { MenuProps } from "antd";
 import { Button, Dropdown, Switch, Tooltip } from "antd";
 import Link from "next/link";
 import React, { useEffect, useState } from "react";
+import { getUiAssetPath } from "@/utils/uiAssetPath";
 
 interface NavbarProps {
   userID: string | null;
@@ -170,7 +171,7 @@ const Navbar: React.FC<NavbarProps> = ({
   return (
     <nav className="bg-white border-b border-gray-200 sticky top-0 z-10">
       <div className="w-full">
-        <div className="flex items-center h-14 px-4">
+        <div className="flex items-center h-24 px-4">
           <div className="flex items-center flex-shrink-0">
             {onToggleSidebar && (
               <button
@@ -183,22 +184,20 @@ const Navbar: React.FC<NavbarProps> = ({
             )}
 
             <div className="flex items-center">
-              <Link href={baseUrl ? baseUrl : "/"} className="flex items-center">
-                <div className="relative">
-                  <img src={imageUrl} alt="LiteLLM Brand" className="h-10 w-auto" />
-                  <span
-                    className="absolute -top-1 -right-2 text-lg animate-bounce"
-                    style={{ animationDuration: "2s" }}
-                    title="Happy Holidays!"
-                  >
-                    🎄
-                  </span>
-                </div>
+              <Link href={baseUrl ? baseUrl : "/"} className="flex items-center gap-4">
+                <img
+                  src={getUiAssetPath("/assets/aisc.png")}
+                  alt="AISC"
+                  className="w-auto object-contain"
+                  style={{ height: "clamp(40px, 5vw, 60px)" }}
+                />
+                <img
+                  src={getUiAssetPath("/assets/BMFTR.png")}
+                  alt="BMBF"
+                  className="w-auto object-contain"
+                  style={{ height: "clamp(60px, 7vw, 80px)" }}
+                />
               </Link>
-              <div className="ml-3 flex items-center gap-3">
-                <img src="/ui/assets/bmbf.jpg" alt="BMBF" className="h-6 w-auto" />
-                <img src="/ui/assets/aisc.png" alt="AISC" className="h-6 w-auto" />
-              </div>
               {version && (
                 <a
                   href="https://docs.litellm.ai/release_notes"

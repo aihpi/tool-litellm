@@ -424,7 +424,7 @@ const Sidebar: React.FC<SidebarProps> = ({ setPage, defaultSelectedKey, collapse
     <Layout>
       <Sider
         theme="light"
-        width={220}
+        width={260}
         collapsed={collapsed}
         collapsedWidth={80}
         collapsible
@@ -434,39 +434,45 @@ const Sidebar: React.FC<SidebarProps> = ({ setPage, defaultSelectedKey, collapse
           position: "relative",
         }}
       >
-        <ConfigProvider
-          theme={{
-            components: {
-              Menu: {
-                iconSize: 15,
-                fontSize: 13,
-                itemMarginInline: 4,
-                itemPaddingInline: 8,
-                itemHeight: 30,
-                itemBorderRadius: 6,
-                subMenuItemBorderRadius: 6,
-                groupTitleFontSize: 10,
-                groupTitleLineHeight: 1.5,
-              },
-            },
-          }}
-        >
-          <Menu
-            mode="inline"
-            selectedKeys={[selectedMenuKey]}
-            defaultOpenKeys={[]}
-            inlineCollapsed={collapsed}
-            className="custom-sidebar-menu"
-            style={{
-              borderRight: 0,
-              backgroundColor: "transparent",
-              fontSize: "13px",
-              paddingTop: "4px",
-            }}
-            items={buildMenuItems()}
-          />
-        </ConfigProvider>
-        {isAdminRole(userRole) && !collapsed && <UsageIndicator accessToken={accessToken} width={220} />}
+        <div className="flex h-full flex-col">
+          <div className="flex-1 overflow-y-auto">
+            <ConfigProvider
+              theme={{
+                components: {
+                  Menu: {
+                    iconSize: 15,
+                    fontSize: 13,
+                    itemMarginInline: 4,
+                    itemPaddingInline: 8,
+                    itemHeight: 30,
+                    itemBorderRadius: 6,
+                    subMenuItemBorderRadius: 6,
+                    groupTitleFontSize: 10,
+                    groupTitleLineHeight: 1.5,
+                  },
+                },
+              }}
+            >
+              <Menu
+                mode="inline"
+                selectedKeys={[selectedMenuKey]}
+                defaultOpenKeys={[]}
+                inlineCollapsed={collapsed}
+                className="custom-sidebar-menu"
+                style={{
+                  borderRight: 0,
+                  backgroundColor: "transparent",
+                  fontSize: "13px",
+                  paddingTop: "4px",
+                }}
+                items={buildMenuItems()}
+              />
+            </ConfigProvider>
+          </div>
+          <div className="sticky bottom-0 border-t border-gray-200 bg-white/95 px-4 pb-4 pt-3 backdrop-blur">
+            {!collapsed && isAdminRole(userRole) && <UsageIndicator accessToken={accessToken} width={240} />}
+          </div>
+        </div>
       </Sider>
     </Layout>
   );

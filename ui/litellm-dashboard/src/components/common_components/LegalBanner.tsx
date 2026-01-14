@@ -1,10 +1,11 @@
 "use client";
 
 import React from "react";
+import { getUiAssetPath } from "@/utils/uiAssetPath";
 
 const BANNER_IMAGES = [
-  { src: "/ui/assets/bmbf.jpg", alt: "BMBF" },
-  { src: "/ui/assets/aisc.png", alt: "AISC" },
+  { src: getUiAssetPath("/assets/BMFTR.png"), alt: "BMBF" },
+  { src: getUiAssetPath("/assets/aisc.png"), alt: "AISC" },
 ];
 
 export default function LegalBanner() {

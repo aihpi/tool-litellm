@@ -1,5 +1,5 @@
 import { Badge } from "@tremor/react";
-import { AlertTriangle, ChevronDown, ChevronUp, Loader2, Minus, TrendingUp, UserCheck, Users } from "lucide-react";
+import { AlertTriangle, ChevronDown, ChevronUp, Loader2, Minus, TrendingUp, UserCheck, Users, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getRemainingUsers } from "./networking";
 
@@ -23,9 +23,9 @@ interface UsageData {
 }
 
 export default function UsageIndicator({ accessToken, width = 220 }: UsageIndicatorProps) {
-  const position = "bottom-left";
   const [isExpanded, setIsExpanded] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
+  const [isDismissed, setIsDismissed] = useState(false);
   const [data, setData] = useState<UsageData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -324,46 +324,53 @@ export default function UsageIndicator({ accessToken, width = 220 }: UsageIndica
     if (isMinimized) {
       const hasIssues = isOverLimit || isNearLimit;
       return (
-        <button
-          onClick={() => setIsMinimized(false)}
-          className={cn(
-            "bg-white border border-gray-200 rounded-lg shadow-sm p-3 hover:shadow-md transition-all w-full",
-          )}
-          title="Show usage details"
-        >
-          <div className="flex items-center gap-2">
-            <Users className="h-4 w-4 flex-shrink-0" />
-            {hasIssues && <span className="flex-shrink-0">{getStatusIcon()}</span>}
-            <div className="flex items-center gap-2 text-sm font-medium truncate">
-              {data && data.total_users !== null && (
-                <span
-                  className={cn(
-                    "flex-shrink-0 px-1.5 py-0.5 rounded text-xs border",
-                    userMetrics.isOverLimit && "bg-red-50 text-red-700 border-red-200",
-                    userMetrics.isNearLimit && "bg-yellow-50 text-yellow-700 border-yellow-200",
-                    !userMetrics.isOverLimit && !userMetrics.isNearLimit && "bg-gray-50 text-gray-700 border-gray-200",
-                  )}
-                >
-                  U: {data.total_users_used}/{data.total_users}
-                </span>
-              )}
-              {data && data.total_teams !== null && (
-                <span
-                  className={cn(
-                    "flex-shrink-0 px-1.5 py-0.5 rounded text-xs border",
-                    teamMetrics.isOverLimit && "bg-red-50 text-red-700 border-red-200",
-                    teamMetrics.isNearLimit && "bg-yellow-50 text-yellow-700 border-yellow-200",
-                    !teamMetrics.isOverLimit && !teamMetrics.isNearLimit && "bg-gray-50 text-gray-700 border-gray-200",
-                  )}
-                >
-                  T: {data.total_teams_used}/{data.total_teams}
-                </span>
-              )}
-              {!data ||
-                (data.total_users === null && data.total_teams === null && <span className="truncate">Usage</span>)}
-            </div>
+        <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-3 hover:shadow-md transition-all w-full group">
+          <div className="flex items-center justify-between gap-2">
+            <button onClick={() => setIsMinimized(false)} className="flex items-center gap-2 min-w-0 flex-1">
+              <Users className="h-4 w-4 flex-shrink-0" />
+              {hasIssues && <span className="flex-shrink-0">{getStatusIcon()}</span>}
+              <div className="flex items-center gap-2 text-sm font-medium truncate">
+                {data && data.total_users !== null && (
+                  <span
+                    className={cn(
+                      "flex-shrink-0 px-1.5 py-0.5 rounded text-xs border",
+                      userMetrics.isOverLimit && "bg-red-50 text-red-700 border-red-200",
+                      userMetrics.isNearLimit && "bg-yellow-50 text-yellow-700 border-yellow-200",
+                      !userMetrics.isOverLimit &&
+                        !userMetrics.isNearLimit &&
+                        "bg-gray-50 text-gray-700 border-gray-200",
+                    )}
+                  >
+                    U: {data.total_users_used}/{data.total_users}
+                  </span>
+                )}
+                {data && data.total_teams !== null && (
+                  <span
+                    className={cn(
+                      "flex-shrink-0 px-1.5 py-0.5 rounded text-xs border",
+                      teamMetrics.isOverLimit && "bg-red-50 text-red-700 border-red-200",
+                      teamMetrics.isNearLimit && "bg-yellow-50 text-yellow-700 border-yellow-200",
+                      !teamMetrics.isOverLimit &&
+                        !teamMetrics.isNearLimit &&
+                        "bg-gray-50 text-gray-700 border-gray-200",
+                    )}
+                  >
+                    T: {data.total_teams_used}/{data.total_teams}
+                  </span>
+                )}
+                {!data ||
+                  (data.total_users === null && data.total_teams === null && <span className="truncate">Usage</span>)}
+              </div>
+            </button>
+            <button
+              onClick={() => setIsDismissed(true)}
+              className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-100 rounded transition-all flex-shrink-0"
+              title="Dismiss"
+            >
+              <X className="h-3 w-3 text-gray-400" />
+            </button>
           </div>
-        </button>
+        </div>
       );
     }
 
@@ -385,13 +392,22 @@ export default function UsageIndicator({ accessToken, width = 220 }: UsageIndica
             <div className="flex-1 min-w-0">
               <span className="text-sm text-gray-500 truncate block">{error || "No data"}</span>
             </div>
-            <button
-              onClick={() => setIsMinimized(true)}
-              className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-100 rounded transition-all flex-shrink-0"
-              title="Minimize"
-            >
-              <Minus className="h-3 w-3 text-gray-400" />
-            </button>
+            <div className="flex items-center gap-1 flex-shrink-0">
+              <button
+                onClick={() => setIsMinimized(true)}
+                className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-100 rounded transition-all"
+                title="Minimize"
+              >
+                <Minus className="h-3 w-3 text-gray-400" />
+              </button>
+              <button
+                onClick={() => setIsDismissed(true)}
+                className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-100 rounded transition-all"
+                title="Dismiss"
+              >
+                <X className="h-3 w-3 text-gray-400" />
+              </button>
+            </div>
           </div>
         </div>
       );
@@ -404,13 +420,22 @@ export default function UsageIndicator({ accessToken, width = 220 }: UsageIndica
             <Users className="h-4 w-4 flex-shrink-0" />
             <span className="font-medium text-sm truncate">Usage</span>
           </div>
-          <button
-            onClick={() => setIsMinimized(true)}
-            className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-100 rounded transition-all flex-shrink-0"
-            title="Minimize"
-          >
-            <Minus className="h-3 w-3 text-gray-400" />
-          </button>
+          <div className="flex items-center gap-1 flex-shrink-0">
+            <button
+              onClick={() => setIsMinimized(true)}
+              className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-100 rounded transition-all"
+              title="Minimize"
+            >
+              <Minus className="h-3 w-3 text-gray-400" />
+            </button>
+            <button
+              onClick={() => setIsDismissed(true)}
+              className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-100 rounded transition-all"
+              title="Dismiss"
+            >
+              <X className="h-3 w-3 text-gray-400" />
+            </button>
+          </div>
         </div>
 
         {/* Compact stats optimized for 220px */}
@@ -542,13 +567,13 @@ export default function UsageIndicator({ accessToken, width = 220 }: UsageIndica
   };
 
   // Don't render anything if no access token or if both total_users and total_teams are null
-  if (!accessToken || (data?.total_users === null && data?.total_teams === null)) {
+  if (!accessToken || isDismissed || (data?.total_users === null && data?.total_teams === null)) {
     return null;
   }
 
   // Fixed positioning with proper spacing from edges
   return (
-    <div className="fixed bottom-4 left-4 z-50" style={{ width: `${Math.min(width, 220)}px` }}>
+    <div className="fixed bottom-4 right-4 z-50" style={{ width: `${Math.min(width, 220)}px` }}>
       <CardStyleView />
     </div>
   );
