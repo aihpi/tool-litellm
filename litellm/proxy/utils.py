@@ -4045,7 +4045,7 @@ def _get_docs_url() -> Optional[str]:
 
     - If DOCS_URL is set, return it.
     - If NO_DOCS is True, return None.
-    - Otherwise, default to "/".
+    - Otherwise, default to "/docs".
     """
     if docs_url := os.getenv("DOCS_URL"):
         return docs_url
@@ -4053,7 +4053,7 @@ def _get_docs_url() -> Optional[str]:
     if str_to_bool(os.getenv("NO_DOCS")) is True:
         return None
 
-    return "/"
+    return "/docs"
 
 
 def handle_exception_on_proxy(e: Exception) -> ProxyException:

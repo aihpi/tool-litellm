@@ -3,8 +3,8 @@
 import React from "react";
 
 const BANNER_IMAGES = [
-  { src: "/assets/bmbf.jpg", alt: "BMBF" },
-  { src: "/assets/aisc.png", alt: "AISC" },
+  { src: "/ui/assets/bmbf.jpg", alt: "BMBF" },
+  { src: "/ui/assets/aisc.png", alt: "AISC" },
 ];
 
 export default function LegalBanner() {

@@ -195,6 +195,10 @@ const Navbar: React.FC<NavbarProps> = ({
                   </span>
                 </div>
               </Link>
+              <div className="ml-3 flex items-center gap-3">
+                <img src="/ui/assets/bmbf.jpg" alt="BMBF" className="h-6 w-auto" />
+                <img src="/ui/assets/aisc.png" alt="AISC" className="h-6 w-auto" />
+              </div>
               {version && (
                 <a
                   href="https://docs.litellm.ai/release_notes"
