@@ -72,6 +72,34 @@ class UISettings(BaseModel):
         default=False,
         description="If true, internal users cannot add models from the UI",
     )
+    ldap_enabled: bool = Field(
+        default=False,
+        description="Enable LDAP login for the Admin UI",
+    )
+    ldap_host: Optional[str] = Field(
+        default=None,
+        description="LDAP server hostname or IP",
+    )
+    ldap_port: int = Field(
+        default=389,
+        description="LDAP server port (389 for LDAP, 636 for LDAPS)",
+    )
+    ldap_use_tls: bool = Field(
+        default=False,
+        description="Use TLS for LDAP connection (LDAPS)",
+    )
+    ldap_base_dn: Optional[str] = Field(
+        default=None,
+        description="Base DN for user searches",
+    )
+    ldap_user_filter: Optional[str] = Field(
+        default="(&(objectClass=user)(mail={username}))",
+        description="LDAP filter for user lookup. Use {username} placeholder.",
+    )
+    ldap_admin_group_dn: Optional[str] = Field(
+        default=None,
+        description="Group DN that grants admin role on login",
+    )
 
     disable_team_admin_delete_team_user: bool = Field(
         default=False,
@@ -89,6 +117,13 @@ class UISettingsResponse(SettingsResponse):
 ALLOWED_UI_SETTINGS_FIELDS = {
     "disable_model_add_for_internal_users",
     "disable_team_admin_delete_team_user",
+    "ldap_enabled",
+    "ldap_host",
+    "ldap_port",
+    "ldap_use_tls",
+    "ldap_base_dn",
+    "ldap_user_filter",
+    "ldap_admin_group_dn",
 }
 
 

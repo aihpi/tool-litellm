@@ -8,13 +8,14 @@ import { getCookie } from "@/utils/cookieUtils";
 import { isJwtExpired } from "@/utils/jwtUtils";
 import { InfoCircleOutlined } from "@ant-design/icons";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Alert, Button, Card, Form, Input, Space, Typography } from "antd";
+import { Alert, Button, Card, Form, Input, Radio, Space, Typography } from "antd";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 function LoginPageContent() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [loginMethod, setLoginMethod] = useState<"password" | "ldap">("password");
   const [isLoading, setIsLoading] = useState(true);
   const { data: uiConfig, isLoading: isConfigLoading } = useUIConfig();
   const loginMutation = useLogin();
@@ -47,7 +48,7 @@ function LoginPageContent() {
 
   const handleSubmit = () => {
     loginMutation.mutate(
-      { username, password },
+      { username, password, loginMethod },
       {
         onSuccess: (data) => {
           router.push(data.redirect_url);
@@ -136,6 +137,16 @@ function LoginPageContent() {
           {error && <Alert message={error} type="error" showIcon />}
 
           <Form onFinish={handleSubmit} layout="vertical" requiredMark={true}>
+            <Form.Item label="Login Method" name="login_method">
+              <Radio.Group
+                value={loginMethod}
+                onChange={(event) => setLoginMethod(event.target.value)}
+                disabled={isLoginLoading}
+              >
+                <Radio value="password">Local admin</Radio>
+                <Radio value="ldap">LDAP</Radio>
+              </Radio.Group>
+            </Form.Item>
             <Form.Item
               label="Username"
               name="username"
