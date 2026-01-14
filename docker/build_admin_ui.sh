@@ -46,7 +46,7 @@ cd ui/litellm-dashboard
 chmod +x ./build_ui.sh
 
 # install dependencies
-npm ci
+npm install --no-audit --no-fund
 
 # run ./build_ui.sh
 ./build_ui.sh
