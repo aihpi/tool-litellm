@@ -7,8 +7,8 @@ const inter = Inter({ subsets: ["latin"] });
 const iconBase = process.env.NODE_ENV === "development" ? "" : "/ui";
 
 export const metadata: Metadata = {
-  title: "HPI API",
-  description: "HPI API Admin UI",
+  title: "AI Model Hub",
+  description: "AI Model Hub Admin UI",
   icons: {
     icon: [
       { url: `${iconBase}/favicon-v2.ico` },

@@ -78,7 +78,8 @@ import { jsonFields } from "./common_components/check_openapi_schema";
 import NotificationsManager from "./molecules/notifications_manager";
 
 const isLocal = process.env.NODE_ENV === "development";
-export const defaultProxyBaseUrl = isLocal ? "http://localhost:4000" : null;
+const devProxyBaseUrl = (process.env.NEXT_PUBLIC_PROXY_BASE_URL || "").trim() || null;
+export const defaultProxyBaseUrl = isLocal ? devProxyBaseUrl : null;
 const defaultServerRootPath = "/";
 export let serverRootPath = defaultServerRootPath;
 export let proxyBaseUrl = defaultProxyBaseUrl;
@@ -98,7 +99,7 @@ const updateProxyBaseUrl = (serverRootPath: string, receivedProxyBaseUrl: string
    * Special function for updating the proxy base url. Should only be called by getUiConfig.
    */
   const browserLocation = getWindowLocation();
-  const resolvedDefaultProxyBaseUrl = isLocal ? "http://localhost:4000" : browserLocation?.origin ?? null;
+  const resolvedDefaultProxyBaseUrl = isLocal ? (devProxyBaseUrl || browserLocation?.origin ?? null) : browserLocation?.origin ?? null;
   let initialProxyBaseUrl = receivedProxyBaseUrl || resolvedDefaultProxyBaseUrl;
   console.log("proxyBaseUrl:", proxyBaseUrl);
   console.log("serverRootPath:", serverRootPath);

@@ -171,7 +171,7 @@ const Navbar: React.FC<NavbarProps> = ({
   return (
     <nav className="bg-white border-b border-gray-200 sticky top-0 z-10">
       <div className="w-full">
-        <div className="flex items-center h-20 px-4">
+        <div className="flex items-center h-20 px-4 relative">
           <div className="flex items-center flex-shrink-0">
             {onToggleSidebar && (
               <button
@@ -209,6 +209,10 @@ const Navbar: React.FC<NavbarProps> = ({
                 </a>
               )}
             </div>
+          </div>
+          <div className="absolute left-1/2 -translate-x-1/2 text-lg font-semibold text-black-700 text-center leading-tight hidden lg:block">
+            <div>AI Model Hub</div>
+            <div className="text-sm font-medium text-black-600">by KI-Servicezentrum Berlin-Brandenburg</div>
           </div>
           {/* Right side nav items */}
           <div className="flex items-center space-x-5 ml-auto">
