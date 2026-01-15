@@ -99,7 +99,9 @@ const updateProxyBaseUrl = (serverRootPath: string, receivedProxyBaseUrl: string
    * Special function for updating the proxy base url. Should only be called by getUiConfig.
    */
   const browserLocation = getWindowLocation();
-  const resolvedDefaultProxyBaseUrl = isLocal ? (devProxyBaseUrl || browserLocation?.origin ?? null) : browserLocation?.origin ?? null;
+  const resolvedDefaultProxyBaseUrl = isLocal
+    ? devProxyBaseUrl || browserLocation?.origin || null
+    : browserLocation?.origin ?? null;
   let initialProxyBaseUrl = receivedProxyBaseUrl || resolvedDefaultProxyBaseUrl;
   console.log("proxyBaseUrl:", proxyBaseUrl);
   console.log("serverRootPath:", serverRootPath);
