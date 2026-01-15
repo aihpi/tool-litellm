@@ -1182,6 +1182,16 @@ if docs_url != "/":
         return RedirectResponse(url="/ui")
 
 
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon_redirect(request: Request):
+    target = "/ui/favicon.ico"
+    if server_root_path and server_root_path != "/":
+        target = f"{server_root_path.rstrip('/')}/ui/favicon.ico"
+    if request.url.query:
+        target = f"{target}?{request.url.query}"
+    return RedirectResponse(url=target)
+
+
 from typing import Dict
 
 user_api_base = None

@@ -4,12 +4,17 @@ import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
 
+const iconBase = process.env.NODE_ENV === "development" ? "" : "/ui";
+
 export const metadata: Metadata = {
   title: "HPI API",
   description: "HPI API Admin UI",
   icons: {
-    icon: "/favicon.ico",
-    apple: "/favicon.png",
+    icon: [
+      { url: `${iconBase}/favicon.ico` },
+      { url: `${iconBase}/favicon-96x96.png`, sizes: "96x96", type: "image/png" },
+    ],
+    apple: `${iconBase}/favicon.png`,
   },
 };
 

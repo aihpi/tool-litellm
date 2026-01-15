@@ -171,7 +171,7 @@ const Navbar: React.FC<NavbarProps> = ({
   return (
     <nav className="bg-white border-b border-gray-200 sticky top-0 z-10">
       <div className="w-full">
-        <div className="flex items-center h-24 px-4">
+        <div className="flex items-center h-20 px-4">
           <div className="flex items-center flex-shrink-0">
             {onToggleSidebar && (
               <button
@@ -189,13 +189,13 @@ const Navbar: React.FC<NavbarProps> = ({
                   src={getUiAssetPath("/assets/aisc.png")}
                   alt="AISC"
                   className="w-auto object-contain"
-                  style={{ height: "clamp(40px, 5vw, 60px)" }}
+                  style={{ height: "clamp(34px, 4.5vw, 60px)" }}
                 />
                 <img
                   src={getUiAssetPath("/assets/BMFTR.png")}
                   alt="BMBF"
                   className="w-auto object-contain"
-                  style={{ height: "clamp(60px, 7vw, 80px)" }}
+                  style={{ height: "clamp(40px, 5vw, 76px)" }}
                 />
               </Link>
               {version && (
