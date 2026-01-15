@@ -6,6 +6,8 @@ on:
       - main
       - master
       - aihpi-provider
+    paths-ignore:
+      - ".github/workflows/**"
     tags:
       - "v*"
   pull_request:
