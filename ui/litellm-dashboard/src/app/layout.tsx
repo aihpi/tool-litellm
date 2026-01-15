@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   description: "HPI API Admin UI",
   icons: {
     icon: [
-      { url: `${iconBase}/favicon.ico` },
+      { url: `${iconBase}/favicon-v2.ico` },
       { url: `${iconBase}/favicon-96x96.png`, sizes: "96x96", type: "image/png" },
     ],
     apple: `${iconBase}/favicon.png`,
