@@ -35,6 +35,10 @@ if [ $? -eq 0 ]; then
   # Copy the contents of the output directory to the specified destination
   cp -r ./out/* "$destination_dir"
 
+  # Ensure static assets from public/ are available in the exported output
+  mkdir -p "$destination_dir/assets"
+  cp -r ./public/assets/* "$destination_dir/assets"
+
   rm -rf ./out
 
   echo "Deployment completed."
