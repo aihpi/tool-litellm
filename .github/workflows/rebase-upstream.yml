@@ -40,8 +40,6 @@ jobs:
           git push origin aihpi-provider --force-with-lease
 
       - name: Trigger build-and-publish workflow
-        run: |
-          echo "Dispatching build-and-publish.yaml on aihpi-provider"
         uses: actions/github-script@v7
         with:
           script: |
