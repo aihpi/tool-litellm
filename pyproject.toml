@@ -5,6 +5,7 @@ description = "Library to easily interface with LLM API providers"
 authors = ["BerriAI"]
 license = "MIT"
 readme = "README.md"
+exclude = ["enterprise/**"]
 packages = [
     { include = "litellm" },
     { include = "litellm/py.typed"},
