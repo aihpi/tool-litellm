@@ -19,6 +19,9 @@ RUN python -m pip install build
 # Copy the current directory contents into the container at /app
 COPY . .
 
+# Ensure enterprise directory exists for packaging, even if excluded from build context
+RUN mkdir -p /app/enterprise
+
 # Build Admin UI
 # Convert Windows line endings to Unix and make executable
 RUN sed -i 's/\r$//' docker/build_admin_ui.sh && chmod +x docker/build_admin_ui.sh && ./docker/build_admin_ui.sh
