@@ -74,15 +74,15 @@ function LoginPageContent() {
           <Card className="w-full max-w-lg shadow-md">
             <Space direction="vertical" size="middle" className="w-full">
               <div className="text-center">
-                <Title level={2}>HPI API</Title>
+                <Title level={2}>AI Model Hub</Title>
                 <div className="mt-3 flex items-center justify-center gap-4">
+                  <img src={getUiAssetPath("/assets/aisc.png")} alt="AISC" className="h-12 w-auto" />
                   <img
                     src={getUiAssetPath("/assets/BMFTR.png")}
                     alt="BMBF"
                     className="w-auto"
-                    style={{ height: "56px" }}
+                    style={{ height: "72px" }}
                   />
-                  <img src={getUiAssetPath("/assets/aisc.png")} alt="AISC" className="h-8 w-auto" />
                 </div>
               </div>
 
@@ -134,34 +134,32 @@ function LoginPageContent() {
         <Card className="w-full max-w-lg shadow-md">
           <Space direction="vertical" size="middle" className="w-full">
             <div className="text-center">
-              <Title level={2}>HPI API</Title>
+              <Title level={2} className="mb-0">
+                AI Model Hub
+              </Title>
+              <Text className="block text-sm text-black-600 mt-0">by KI-Servicezentrum Berlin-Brandenburg</Text>
               <div className="mt-3 flex items-center justify-center gap-4">
+                <img src={getUiAssetPath("/assets/aisc.png")} alt="AISC" className="h-12 w-auto" />
                 <img
                   src={getUiAssetPath("/assets/BMFTR.png")}
                   alt="BMBF"
                   className="w-auto"
-                  style={{ height: "56px" }}
+                  style={{ height: "72px" }}
                 />
-                <img src={getUiAssetPath("/assets/aisc.png")} alt="AISC" className="h-8 w-auto" />
               </div>
-            </div>
-
-            <div className="text-center">
-              <Title level={3}>Login</Title>
-              <Text type="secondary">Access your HPI API Admin UI.</Text>
             </div>
 
             {error && <Alert message={error} type="error" showIcon />}
 
             <Form onFinish={handleSubmit} layout="vertical" requiredMark={true}>
-              <Form.Item label="Login Method" name="login_method">
+              <Form.Item label={<span className="font-semibold">Login Method</span>} name="login_method">
                 <Radio.Group
                   value={loginMethod}
                   onChange={(event) => setLoginMethod(event.target.value)}
                   disabled={isLoginLoading}
                 >
-                  <Radio value="password">Local admin</Radio>
-                  <Radio value="ldap">LDAP</Radio>
+                  <Radio value="password">Local</Radio>
+                  <Radio value="ldap">AISC Portal</Radio>
                 </Radio.Group>
               </Form.Item>
               <Form.Item
