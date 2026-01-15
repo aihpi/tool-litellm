@@ -8,6 +8,7 @@ on:
 permissions:
   contents: write
   issues: write
+  actions: write
 
 jobs:
   rebase:
@@ -37,6 +38,19 @@ jobs:
       - name: Push rebased branch
         run: |
           git push origin aihpi-provider --force-with-lease
+
+      - name: Trigger build-and-publish workflow
+        run: |
+          echo "Dispatching build-and-publish.yaml on aihpi-provider"
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: "build-and-publish.yaml",
+              ref: "aihpi-provider",
+            });
 
       - name: Collect conflict files
         if: failure()
