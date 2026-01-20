@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -euo pipefail
+
 if command -v node &> /dev/null; then
   NODE_MAJOR=$(node -v | tr -d "v" | cut -d "." -f 1)
   if [ "$NODE_MAJOR" -lt 20 ]; then
@@ -44,4 +46,5 @@ if [ $? -eq 0 ]; then
   echo "Deployment completed."
 else
   echo "Build failed. Deployment aborted."
+  exit 1
 fi
