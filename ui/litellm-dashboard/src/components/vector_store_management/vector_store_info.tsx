@@ -324,7 +324,7 @@ const VectorStoreInfoView: React.FC<VectorStoreInfoViewProps> = ({
                                   }}
                                 />
                               )}
-                              <Badge color="blue">{displayName}</Badge>
+                              <Badge color="orange">{displayName}</Badge>
                             </>
                           );
                         })()}

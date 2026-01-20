@@ -231,7 +231,7 @@ export const columns = (
 
       return (
         <div className="flex items-center gap-1 overflow-hidden">
-          <Badge size="xs" color="blue" className="text-xs px-1.5 py-0.5 h-5 leading-tight flex-shrink-0">
+          <Badge size="xs" color="orange" className="text-xs px-1.5 py-0.5 h-5 leading-tight flex-shrink-0">
             {accessGroups[0]}
           </Badge>
 
@@ -240,7 +240,7 @@ export const columns = (
               <Badge
                 key={index + 1}
                 size="xs"
-                color="blue"
+                color="orange"
                 className="text-xs px-1.5 py-0.5 h-5 leading-tight flex-shrink-0"
               >
                 {group}

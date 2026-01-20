@@ -52,7 +52,7 @@ async function testFallbackModelResponse(selectedModel: string, accessToken: str
         <a
           href="#"
           onClick={() => window.open("https://docs.litellm.ai/docs/proxy/reliability", "_blank")}
-          style={{ textDecoration: "underline", color: "blue" }}
+          style={{ textDecoration: "underline", color: "#dd6108" }}
         >
           curl
         </a>

@@ -9,10 +9,10 @@ export default function NewBadge({ children }: { children?: React.ReactNode }) {
   }
 
   return children ? (
-    <Badge color="blue" count="New">
+    <Badge color="orange" count="New">
       {children}
     </Badge>
   ) : (
-    <Badge color="blue" count="New" />
+    <Badge color="orange" count="New" />
   );
 }

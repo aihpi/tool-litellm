@@ -604,7 +604,7 @@ const Settings: React.FC<SettingsPageProps> = ({ accessToken, userRole, userID, 
               <Card>
                 <Text className="my-2">
                   Alerts are only supported for Slack Webhook URLs. Get your webhook urls from{" "}
-                  <a href="https://api.slack.com/messaging/webhooks" target="_blank" style={{ color: "blue" }}>
+                  <a href="https://api.slack.com/messaging/webhooks" target="_blank" style={{ color: "#dd6108" }}>
                     here
                   </a>
                 </Text>
@@ -709,7 +709,7 @@ const Settings: React.FC<SettingsPageProps> = ({ accessToken, userRole, userID, 
           href="https://docs.litellm.ai/docs/proxy/logging"
           className="mb-8 mt-4"
           target="_blank"
-          style={{ color: "blue" }}
+          style={{ color: "#dd6108" }}
         >
           {" "}
           LiteLLM Docs: Logging

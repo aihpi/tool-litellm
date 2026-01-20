@@ -311,7 +311,7 @@ const CreateTeamModal = ({
                         target="_blank"
                         rel="noopener noreferrer"
                         style={{
-                          color: "#1890ff",
+                          color: "#dd6108",
                           textDecoration: "underline",
                         }}
                         onClick={(e) => e.stopPropagation()}

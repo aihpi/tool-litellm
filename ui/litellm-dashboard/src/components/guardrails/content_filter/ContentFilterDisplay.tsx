@@ -51,7 +51,7 @@ const ContentFilterDisplay: React.FC<ContentFilterDisplayProps> = ({
         <Card className="mt-6">
           <div className="flex justify-between items-center mb-4">
             <Text className="text-lg font-semibold">Pattern Detection</Text>
-            <Badge color="blue">{patterns.length} patterns configured</Badge>
+            <Badge color="orange">{patterns.length} patterns configured</Badge>
           </div>
           <PatternTable
             patterns={patterns}
@@ -65,7 +65,7 @@ const ContentFilterDisplay: React.FC<ContentFilterDisplayProps> = ({
         <Card className="mt-6">
           <div className="flex justify-between items-center mb-4">
             <Text className="text-lg font-semibold">Blocked Keywords</Text>
-            <Badge color="blue">{blockedWords.length} keywords configured</Badge>
+            <Badge color="orange">{blockedWords.length} keywords configured</Badge>
           </div>
           <KeywordTable
             keywords={blockedWords}

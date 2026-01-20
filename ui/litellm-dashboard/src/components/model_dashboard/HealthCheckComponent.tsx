@@ -494,7 +494,7 @@ const HealthCheckComponent: React.FC<HealthCheckComponentProps> = ({
       case "unhealthy":
         return <Badge color="red">unhealthy</Badge>;
       case "checking":
-        return <Badge color="blue">checking</Badge>;
+        return <Badge color="orange">checking</Badge>;
       case "none":
         return <Badge color="gray">none</Badge>;
       default:

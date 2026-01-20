@@ -181,12 +181,13 @@ const MultiCostResults: React.FC<MultiCostResultsProps> = ({ multiResult, timePe
       title: "Model",
       dataIndex: "model",
       key: "model",
+<<<<<<< HEAD
       render: (text: string, record: { id: string; provider?: string | null; error?: string | null; loading?: boolean; hasZeroCost?: boolean }) => (
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-2">
             <span className="font-medium text-sm">{text}</span>
             {record.provider && (
-              <Tag color="blue" className="text-xs">
+              <Tag color="orange" className="text-xs">
                 {record.provider}
               </Tag>
             )}
@@ -292,7 +293,7 @@ const MultiCostResults: React.FC<MultiCostResultsProps> = ({ multiResult, timePe
             <Statistic
               title={<span className="text-xs">Total Per Request</span>}
               value={formatCost(multiResult.totals.cost_per_request)}
-              valueStyle={{ color: "#1890ff", fontSize: "18px", fontFamily: "monospace" }}
+              valueStyle={{ color: "#dd6108", fontSize: "18px", fontFamily: "monospace" }}
             />
           </Col>
           <Col xs={24} sm={12}>

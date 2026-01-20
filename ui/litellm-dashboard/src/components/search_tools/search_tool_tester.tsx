@@ -103,7 +103,7 @@ export const SearchToolTester: React.FC<SearchToolTesterProps> = ({ searchToolNa
             <div 
               className="flex items-center flex-1 bg-white rounded-lg px-4 transition-all duration-200"
               style={{ 
-                border: isInputFocused ? "2px solid #3b82f6" : "2px solid #e5e7eb",
+                border: isInputFocused ? "2px solid #dd6108" : "2px solid #e5e7eb",
                 boxShadow: isInputFocused ? "0 0 0 3px rgba(59, 130, 246, 0.1)" : "0 1px 2px 0 rgba(0, 0, 0, 0.05)",
                 height: "48px"
               }}
@@ -139,8 +139,8 @@ export const SearchToolTester: React.FC<SearchToolTesterProps> = ({ searchToolNa
                 borderRadius: "8px",
                 fontWeight: 500,
                 fontSize: "15px",
-                backgroundColor: isLoading || !query.trim() ? undefined : "#1890ff",
-                borderColor: isLoading || !query.trim() ? undefined : "#1890ff",
+                backgroundColor: isLoading || !query.trim() ? undefined : "#dd6108",
+                borderColor: isLoading || !query.trim() ? undefined : "#dd6108",
                 boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.05)"
               }}
             >
@@ -262,7 +262,7 @@ export const SearchToolTester: React.FC<SearchToolTesterProps> = ({ searchToolNa
                                   style={{ 
                                     fontSize: "13px",
                                     fontWeight: 500,
-                                    color: "#3b82f6"
+                                    color: "#dd6108"
                                   }}
                                 >
                                   {isResultExpanded ? "Show less" : "Show more"}

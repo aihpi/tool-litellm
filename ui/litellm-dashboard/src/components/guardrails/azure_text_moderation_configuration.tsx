@@ -62,7 +62,7 @@ const AzureTextModerationConfiguration: React.FC<AzureTextModerationConfiguratio
         <Badge
           count={selectedCategories.length}
           showZero
-          style={{ backgroundColor: selectedCategories.length > 0 ? "#1890ff" : "#d9d9d9" }}
+          style={{ backgroundColor: selectedCategories.length > 0 ? "#dd6108" : "#d9d9d9" }}
           overflowCount={999}
         >
           <Text className="text-gray-500">{selectedCategories.length} categories selected</Text>

@@ -244,7 +244,7 @@ const TagInfoView: React.FC<TagInfoViewProps> = ({ tagId, onClose, accessToken, 
                     <Badge color="red">All Models</Badge>
                   ) : (
                     tagDetails.models.map((modelId) => (
-                      <Badge key={modelId} color="blue">
+                      <Badge key={modelId} color="orange">
                         <Tooltip title={`ID: ${modelId}`}>{tagDetails.model_info?.[modelId] || modelId}</Tooltip>
                       </Badge>
                     ))

@@ -350,7 +350,7 @@ export function SurveyModal({ isOpen, onClose, onComplete }: SurveyModalProps) {
         </div>
 
         {/* Progress Bar */}
-        <Progress percent={(getStepNumber() / totalSteps) * 100} showInfo={false} strokeColor="#2563eb" className="m-0" />
+        <Progress percent={(getStepNumber() / totalSteps) * 100} showInfo={false} strokeColor="#c45507" className="m-0" />
 
         {/* Content */}
         <div className="p-8 flex-1 overflow-y-auto">{renderStepContent()}</div>

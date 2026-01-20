@@ -69,7 +69,7 @@ const CostResults: React.FC<CostResultsProps> = ({ result, loading }) => {
             <Statistic
               title="Total Cost"
               value={formatCost(result.cost_per_request)}
-              valueStyle={{ color: "#1890ff", fontSize: "18px" }}
+              valueStyle={{ color: "#dd6108", fontSize: "18px" }}
               prefix={<DollarOutlined />}
             />
           </Col>

@@ -36,7 +36,7 @@ export const exportToPDF = (result: CostEstimateResponse): void => {
         }
         h1 {
           color: #1a1a1a;
-          border-bottom: 2px solid #1890ff;
+          border-bottom: 2px solid #dd6108;
           padding-bottom: 10px;
           margin-bottom: 30px;
         }

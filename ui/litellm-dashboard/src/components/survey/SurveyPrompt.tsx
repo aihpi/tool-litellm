@@ -18,7 +18,7 @@ export function SurveyPrompt({ onOpen, onDismiss, isVisible }: SurveyPromptProps
       description="Help us improve LiteLLM! Share your experience in 5 quick questions."
       buttonText="Share feedback"
       icon={MessageSquare}
-      accentColor="#3b82f6"
+      accentColor="#dd6108"
     />
   );
 }

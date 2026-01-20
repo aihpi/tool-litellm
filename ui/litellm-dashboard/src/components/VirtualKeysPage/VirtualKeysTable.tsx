@@ -366,7 +366,7 @@ export function VirtualKeysTable({ teams, organizations, onSortChange, currentSo
                               <Text>All Proxy Models</Text>
                             </Badge>
                           ) : (
-                            <Badge key={index} size={"xs"} color="blue">
+                            <Badge key={index} size={"xs"} color="orange">
                               <Text>
                                 {model.length > 30
                                   ? `${getModelDisplayName(model).slice(0, 30)}...`
@@ -390,7 +390,7 @@ export function VirtualKeysTable({ teams, organizations, onSortChange, currentSo
                                   <Text>All Proxy Models</Text>
                                 </Badge>
                               ) : (
-                                <Badge key={index + 3} size={"xs"} color="blue">
+                                <Badge key={index + 3} size={"xs"} color="orange">
                                   <Text>
                                     {model.length > 30
                                       ? `${getModelDisplayName(model).slice(0, 30)}...`
@@ -682,7 +682,7 @@ export function VirtualKeysTable({ teams, organizations, onSortChange, currentSo
                                   top: 0,
                                   height: "100%",
                                   width: "5px",
-                                  background: header.column.getIsResizing() ? "#3b82f6" : "transparent",
+                                  background: header.column.getIsResizing() ? "#dd6108" : "transparent",
                                   cursor: "col-resize",
                                   userSelect: "none",
                                   touchAction: "none",

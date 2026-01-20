@@ -81,14 +81,14 @@ const MCPServerSelector: React.FC<MCPServerSelectorProps> = ({
                   width: 8,
                   height: 8,
                   borderRadius: "50%",
-                  background: opt.isAccessGroup ? "#52c41a" : "#1890ff",
+                  background: opt.isAccessGroup ? "#52c41a" : "#dd6108",
                   flexShrink: 0,
                 }}
               />
               <span style={{ flex: 1 }}>{opt.label}</span>
               <span
                 style={{
-                  color: opt.isAccessGroup ? "#52c41a" : "#1890ff",
+                  color: opt.isAccessGroup ? "#52c41a" : "#dd6108",
                   fontSize: "12px",
                   fontWeight: 500,
                   opacity: 0.8,

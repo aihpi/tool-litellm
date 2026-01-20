@@ -137,8 +137,8 @@ const UIAccessControlForm: React.FC<UIAccessControlFormProps> = ({ accessToken, 
             htmlType="submit"
             loading={loading}
             style={{
-              backgroundColor: "#6366f1",
-              borderColor: "#6366f1",
+              backgroundColor: "#dd6108",
+              borderColor: "#dd6108",
             }}
           >
             Update UI Access Control

@@ -115,7 +115,7 @@ export const mcpHubColumns = (
         const server = row.original;
 
         return (
-          <Badge color="blue" size="sm">
+          <Badge color="orange" size="sm">
             {server.transport}
           </Badge>
         );
