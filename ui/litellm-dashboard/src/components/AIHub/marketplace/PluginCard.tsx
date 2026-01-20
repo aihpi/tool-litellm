@@ -1,7 +1,7 @@
 import React from "react";
 import { Card, Badge, Button, Text } from "@tremor/react";
 import { Tooltip } from "antd";
-import { CopyOutlined, ExternalLinkIcon } from "@heroicons/react/outline";
+import { ClipboardCopyIcon, ExternalLinkIcon } from "@heroicons/react/outline";
 import { MarketplacePluginEntry } from "@/components/claude_code_plugins/types";
 import {
   formatInstallCommand,
@@ -139,7 +139,7 @@ const PluginCard: React.FC<PluginCardProps> = ({ plugin }) => {
             <Button
               size="xs"
               variant="secondary"
-              icon={CopyOutlined}
+              icon={ClipboardCopyIcon}
               onClick={(e) => {
                 e.stopPropagation();
                 copyToClipboard(installCommand);
