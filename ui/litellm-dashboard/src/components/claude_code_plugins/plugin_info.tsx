@@ -169,7 +169,7 @@ const PluginInfoView: React.FC<PluginInfoViewProps> = ({
       {/* Plugin Details */}
       <Card>
         <Title>Plugin Details</Title>
-        <Grid numColsSm={2} numColsLg={3} className="gap-6 mt-4">
+        <Grid numItems={1} numItemsSm={2} numItemsLg={3} className="gap-6 mt-4">
           {/* Plugin ID */}
           <div>
             <Text className="text-gray-600 text-xs">Plugin ID</Text>
@@ -277,7 +277,7 @@ const PluginInfoView: React.FC<PluginInfoViewProps> = ({
       {plugin.author && (
         <Card>
           <Title>Author Information</Title>
-          <Grid numColsSm={2} className="gap-4 mt-4">
+          <Grid numItems={1} numItemsSm={2} className="gap-4 mt-4">
             {plugin.author.name && (
               <div>
                 <Text className="text-gray-600 text-xs">Name</Text>
@@ -322,7 +322,7 @@ const PluginInfoView: React.FC<PluginInfoViewProps> = ({
       {/* Timestamps */}
       <Card>
         <Title>Metadata</Title>
-        <Grid numColsSm={2} className="gap-4 mt-4">
+        <Grid numItems={1} numItemsSm={2} className="gap-4 mt-4">
           <div>
             <Text className="text-gray-600 text-xs">Created At</Text>
             <Text className="font-semibold mt-1">
