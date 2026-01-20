@@ -70,7 +70,7 @@ const DataTable: React.FC<DataTableProps> = ({
             </Badge>
           ) : (
             value.map((item: any, index: number) => (
-              <Badge key={index} size="xs" className="mb-1" color="blue">
+              <Badge key={index} size="xs" className="mb-1" color="orange">
                 <Text>{String(item).length > 30 ? `${String(item).slice(0, 30)}...` : item}</Text>
               </Badge>
             ))

@@ -197,7 +197,7 @@ const PromptInfoView: React.FC<PromptInfoProps> = ({ promptId, onClose, accessTo
                 <Text>Version</Text>
                 <div className="mt-2">
                   <Title>{currentVersion}</Title>
-                  <Badge color="blue" className="mt-1">
+                  <Badge color="orange" className="mt-1">
                     v{currentVersion}
                   </Badge>
                 </div>
@@ -207,7 +207,7 @@ const PromptInfoView: React.FC<PromptInfoProps> = ({ promptId, onClose, accessTo
                 <Text>Prompt Type</Text>
                 <div className="mt-2">
                   <Title>{promptData.prompt_info?.prompt_type || "-"}</Title>
-                  <Badge color="blue" className="mt-1">
+                  <Badge color="orange" className="mt-1">
                     {promptData.prompt_info?.prompt_type || "Unknown"}
                   </Badge>
                 </div>

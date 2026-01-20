@@ -351,7 +351,7 @@ export default function KeyInfoView({
             )}
 
             {lastRegeneratedAt && (
-              <Badge color="blue" size="xs">
+              <Badge color="orange" size="xs">
                 Regenerated
               </Badge>
             )}

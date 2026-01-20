@@ -528,7 +528,7 @@ const ModelHubTable: React.FC<ModelHubTableProps> = ({ accessToken, publicPage, 
                   <Text className="font-medium">Providers:</Text>
                   <div className="flex flex-wrap gap-1 mt-1">
                     {selectedModel.providers.map((provider) => (
-                      <Badge key={provider} color="blue">
+                      <Badge key={provider} color="orange">
                         {provider}
                       </Badge>
                     ))}
@@ -673,7 +673,7 @@ print(response.choices[0].message.content)`}
                 </div>
                 <div>
                   <Text className="font-medium">Version:</Text>
-                  <Badge color="blue">v{selectedAgent.version}</Badge>
+                  <Badge color="orange">v{selectedAgent.version}</Badge>
                 </div>
                 <div>
                   <Text className="font-medium">Protocol Version:</Text>
@@ -720,7 +720,7 @@ print(response.choices[0].message.content)`}
                   <Text className="font-medium">Input Modes:</Text>
                   <div className="flex flex-wrap gap-1 mt-1">
                     {selectedAgent.defaultInputModes?.map((mode) => (
-                      <Badge key={mode} color="blue">
+                      <Badge key={mode} color="orange">
                         {mode}
                       </Badge>
                     )) || <Text>Not specified</Text>}
@@ -828,7 +828,7 @@ print(response.choices[0].message.content)`}
                 )}
                 <div>
                   <Text className="font-medium">Transport:</Text>
-                  <Badge color="blue">{selectedMcpServer.transport}</Badge>
+                  <Badge color="orange">{selectedMcpServer.transport}</Badge>
                 </div>
                 <div>
                   <Text className="font-medium">Auth Type:</Text>
@@ -902,7 +902,7 @@ print(response.choices[0].message.content)`}
                 <Text className="text-lg font-semibold mb-4">Teams</Text>
                 <div className="flex flex-wrap gap-2">
                   {selectedMcpServer.teams.map((team, idx) => (
-                    <Badge key={idx} color="blue">
+                    <Badge key={idx} color="orange">
                       {team}
                     </Badge>
                   ))}

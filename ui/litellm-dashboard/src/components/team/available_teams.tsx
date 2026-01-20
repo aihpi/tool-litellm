@@ -96,7 +96,7 @@ const AvailableTeamsPanel: React.FC<AvailableTeamsProps> = ({ accessToken, userI
                     </Badge>
                   ) : (
                     team.models.map((model, index) => (
-                      <Badge key={index} size="xs" className="mb-1" color="blue">
+                      <Badge key={index} size="xs" className="mb-1" color="orange">
                         <Text>{model.length > 30 ? `${model.slice(0, 30)}...` : model}</Text>
                       </Badge>
                     ))

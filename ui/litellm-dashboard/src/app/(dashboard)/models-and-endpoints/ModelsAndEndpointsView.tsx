@@ -279,7 +279,7 @@ const ModelsAndEndpointsView: React.FC<ModelDashboardProps> = ({ premiumUser, te
           {/* Missing Provider Banner */}
           <div className="mb-4 px-4 py-3 bg-blue-50 rounded-lg border border-blue-100 flex items-center gap-4">
             <div className="flex-shrink-0 w-10 h-10 bg-white rounded-full flex items-center justify-center border border-blue-200">
-              <PlusCircleOutlined style={{ fontSize: "18px", color: "#6366f1" }} />
+              <PlusCircleOutlined style={{ fontSize: "18px", color: "#dd6108" }} />
             </div>
             <div className="flex-1 min-w-0">
               <h4 className="text-gray-900 font-semibold text-sm m-0">Missing a provider?</h4>
@@ -292,7 +292,7 @@ const ModelsAndEndpointsView: React.FC<ModelDashboardProps> = ({ premiumUser, te
               href="https://models.litellm.ai/?request=true"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex-shrink-0 inline-flex items-center gap-2 px-4 py-2 bg-[#6366f1] hover:bg-[#5558e3] text-white text-sm font-medium rounded-lg transition-colors"
+              className="flex-shrink-0 inline-flex items-center gap-2 px-4 py-2 bg-[#dd6108] hover:bg-[#c45507] text-white text-sm font-medium rounded-lg transition-colors"
             >
               Request Provider
               <svg

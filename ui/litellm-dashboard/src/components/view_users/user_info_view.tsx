@@ -294,7 +294,7 @@ export default function UserInfoView({
                   {userData.teams?.length && userData.teams?.length > 0 ? (
                     <div className="flex flex-wrap gap-2">
                       {userData.teams?.slice(0, isTeamsExpanded ? userData.teams.length : 20).map((team, index) => (
-                        <Badge key={index} color="blue" title={team.team_alias}>
+                        <Badge key={index} color="orange" title={team.team_alias}>
                           {team.team_alias}
                         </Badge>
                       ))}

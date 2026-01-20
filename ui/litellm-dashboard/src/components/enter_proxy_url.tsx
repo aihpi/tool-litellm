@@ -25,7 +25,7 @@ const EnterProxyUrl: React.FC = () => {
 
   return (
     <div>
-      <Card decoration="top" decorationColor="blue" style={{ width: "1000px" }}>
+      <Card decoration="top" decorationColor="orange" style={{ width: "1000px" }}>
         <Text>Admin Configuration</Text>
         <label htmlFor="proxyUrl">Enter Proxy URL:</label>
         <TextInput
@@ -52,7 +52,7 @@ const EnterProxyUrl: React.FC = () => {
                     href={clickableUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    style={{ color: "blue", textDecoration: "underline" }}
+                    style={{ color: "#dd6108", textDecoration: "underline" }}
                   >
                     {clickableUrl}
                   </a>

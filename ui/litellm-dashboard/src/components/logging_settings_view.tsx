@@ -61,7 +61,7 @@ export function LoggingSettingsView({
         <div className="flex items-center gap-2">
           <CogIcon className="h-4 w-4 text-blue-600" />
           <Text className="font-semibold text-gray-900">Logging Integrations</Text>
-          <Badge color="blue" size="xs">
+          <Badge color="orange" size="xs">
             {loggingConfigs.length}
           </Badge>
         </div>

@@ -213,7 +213,7 @@ const PassThroughInfoView: React.FC<PassThroughInfoProps> = ({
               <Card className="mt-6">
                 <div className="flex justify-between items-center">
                   <Text className="font-medium">Headers</Text>
-                  <Badge color="blue">{Object.keys(endpointData.headers).length} headers configured</Badge>
+                  <Badge color="orange">{Object.keys(endpointData.headers).length} headers configured</Badge>
                 </div>
                 <div className="mt-4">
                   <PasswordField value={endpointData.headers} />

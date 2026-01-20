@@ -1523,7 +1523,7 @@ const ChatUI: React.FC<ChatUIProps> = ({
                     title={
                       <span>
                         Select vector store(s) to use for this LLM API call. You can set up your vector store{" "}
-                        <a href="?page=vector-stores" style={{ color: "#1890ff" }}>
+                        <a href="?page=vector-stores" style={{ color: "#dd6108" }}>
                           here
                         </a>
                         .
@@ -1549,7 +1549,7 @@ const ChatUI: React.FC<ChatUIProps> = ({
                     title={
                       <span>
                         Select guardrail(s) to use for this LLM API call. You can set up your guardrails{" "}
-                        <a href="?page=guardrails" style={{ color: "#1890ff" }}>
+                        <a href="?page=guardrails" style={{ color: "#dd6108" }}>
                           here
                         </a>
                         .
@@ -1631,7 +1631,7 @@ const ChatUI: React.FC<ChatUIProps> = ({
                           }}
                         >
                           {message.role === "user" ? (
-                            <UserOutlined style={{ fontSize: "12px", color: "#2563eb" }} />
+                            <UserOutlined style={{ fontSize: "12px", color: "#c45507" }} />
                           ) : (
                             <RobotOutlined style={{ fontSize: "12px", color: "#4b5563" }} />
                           )}

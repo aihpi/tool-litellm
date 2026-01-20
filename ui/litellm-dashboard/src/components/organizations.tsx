@@ -363,7 +363,7 @@ const OrganizationsTable: React.FC<OrganizationsTableProps> = ({
                                                             <Text>All Proxy Models</Text>
                                                           </Badge>
                                                         ) : (
-                                                          <Badge key={index} size={"xs"} color="blue">
+                                                          <Badge key={index} size={"xs"} color="orange">
                                                             <Text>
                                                               {model.length > 30
                                                                 ? `${getModelDisplayName(model).slice(0, 30)}...`
@@ -391,7 +391,7 @@ const OrganizationsTable: React.FC<OrganizationsTableProps> = ({
                                                                 <Text>All Proxy Models</Text>
                                                               </Badge>
                                                             ) : (
-                                                              <Badge key={index + 3} size={"xs"} color="blue">
+                                                              <Badge key={index + 3} size={"xs"} color="orange">
                                                                 <Text>
                                                                   {model.length > 30
                                                                     ? `${getModelDisplayName(model).slice(0, 30)}...`
