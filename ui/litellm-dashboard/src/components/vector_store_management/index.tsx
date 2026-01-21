@@ -246,8 +246,6 @@ const VectorStoreManagement: React.FC<VectorStoreProps> = ({ accessToken, userID
           onSuccess={handleCreateSuccess}
           accessToken={accessToken}
           credentials={credentials}
-          userID={userID}
-          userRole={userRole}
         />
 
         <Modal
