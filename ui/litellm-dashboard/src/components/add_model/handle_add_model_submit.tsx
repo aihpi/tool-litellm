@@ -82,6 +82,8 @@ export const prepareModelAddRequest = async (formValues: Record<string, any>, ac
 
           // remove "mode" from litellmParams
           delete litellmParamsObj["mode"];
+        } else if (key === "embedding_dimensions") {
+          modelInfoObj["dimensions"] = Number(value);
         } else if (key === "custom_model_name") {
           litellmParamsObj["model"] = value;
         } else if (key == "litellm_extra_params") {

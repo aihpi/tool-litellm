@@ -3,7 +3,7 @@
 import React from "react";
 
 const FOOTER_LINKS = [
-  { label: "Impressum", href: "https://aisc.hpi.de/portal/cfp/pages/imprint/" },
+  { label: "Imprint", href: "https://aisc.hpi.de/portal/cfp/pages/imprint/" },
   { label: "Privacy", href: "https://aisc.hpi.de/portal/cfp/pages/privacy/" },
 ];
 

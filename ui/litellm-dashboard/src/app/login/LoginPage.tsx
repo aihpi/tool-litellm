@@ -109,7 +109,7 @@ function LoginPageContent() {
                   rel="noopener noreferrer"
                   className="hover:underline"
                 >
-                  Impressum
+                  Imprint
                 </a>
                 <span className="mx-2">•</span>
                 <a
@@ -212,7 +212,7 @@ function LoginPageContent() {
                   rel="noopener noreferrer"
                   className="hover:underline"
                 >
-                  Impressum
+                  Imprint
                 </a>
                 <span className="mx-2">•</span>
                 <a
