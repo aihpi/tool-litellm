@@ -8,6 +8,8 @@ import {
   credentialListCall,
   CredentialItem,
   qdrantCreateCollectionCall,
+  vectorStoreInfoCall,
+  detectEmbeddingDimensionCall,
 } from "../networking";
 import { VectorStore } from "./types";
 import VectorStoreTable from "./VectorStoreTable";
@@ -37,6 +39,8 @@ const VectorStoreManagement: React.FC<VectorStoreProps> = ({ accessToken, userID
   const [collectionVectorStoreId, setCollectionVectorStoreId] = useState<string | null>(null);
   const [collectionConfigJson, setCollectionConfigJson] = useState("{}");
   const [isCreatingCollection, setIsCreatingCollection] = useState(false);
+  const [isDetectingVectorSize, setIsDetectingVectorSize] = useState(false);
+  const [collectionEmbeddingModel, setCollectionEmbeddingModel] = useState<string | null>(null);
   const [collectionForm] = Form.useForm();
 
   const fetchVectorStores = async () => {
@@ -113,13 +117,38 @@ const VectorStoreManagement: React.FC<VectorStoreProps> = ({ accessToken, userID
     fetchVectorStores();
   };
 
-  const handleCreateCollectionOpen = (vectorStoreId: string) => {
+  const handleCreateCollectionOpen = async (vectorStoreId: string) => {
     setCollectionVectorStoreId(vectorStoreId);
     setCollectionConfigJson("{}");
+    setCollectionEmbeddingModel(null);
     collectionForm.setFieldsValue({
       collection_name: vectorStoreId,
       distance: "cosine",
     });
+    if (accessToken) {
+      try {
+        const response = await vectorStoreInfoCall(accessToken, vectorStoreId);
+        const embeddingModel =
+          response?.vector_store?.litellm_params?.litellm_embedding_model ||
+          response?.vector_store?.litellm_params?.embedding_model ||
+          null;
+        setCollectionEmbeddingModel(embeddingModel);
+        if (embeddingModel) {
+          setIsDetectingVectorSize(true);
+          try {
+            const dimension = await detectEmbeddingDimensionCall(accessToken, embeddingModel);
+            collectionForm.setFieldsValue({ vector_size: dimension });
+          } catch (error) {
+            console.error("Error detecting embedding dimension:", error);
+            NotificationsManager.fromBackend(`Failed to detect embedding dimension: ${error}`);
+          } finally {
+            setIsDetectingVectorSize(false);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching vector store info:", error);
+      }
+    }
     setIsCreateCollectionModalVisible(true);
   };
 
@@ -217,6 +246,8 @@ const VectorStoreManagement: React.FC<VectorStoreProps> = ({ accessToken, userID
           onSuccess={handleCreateSuccess}
           accessToken={accessToken}
           credentials={credentials}
+          userID={userID}
+          userRole={userRole}
         />
 
         <Modal
@@ -239,7 +270,12 @@ const VectorStoreManagement: React.FC<VectorStoreProps> = ({ accessToken, userID
               name="vector_size"
               rules={[{ required: true, message: "Please enter the vector size" }]}
             >
-              <InputNumber min={1} className="w-full" placeholder="4096" />
+              <InputNumber
+                min={1}
+                className="w-full"
+                placeholder="4096"
+                disabled={isDetectingVectorSize}
+              />
             </Form.Item>
             <Form.Item
               label="Distance Metric"

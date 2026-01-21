@@ -6642,6 +6642,46 @@ export const vectorStoreInfoCall = async (accessToken: string, vectorStoreId: st
   }
 };
 
+export const detectEmbeddingDimensionCall = async (
+  accessToken: string,
+  model: string,
+  input: string = "- test",
+): Promise<number> => {
+  try {
+    const normalizedBaseUrl = getProxyBaseUrl().replace(/\/+$/, "");
+    const requestUrl = `${normalizedBaseUrl}/embeddings`;
+
+    const response = await fetch(requestUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        model,
+        input,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText || `Request failed with status ${response.status}`);
+    }
+
+    const responseData = await response.json();
+    const embedding = responseData?.data?.[0]?.embedding;
+
+    if (!Array.isArray(embedding)) {
+      throw new Error("No embedding returned from server");
+    }
+
+    return embedding.length;
+  } catch (error) {
+    console.error("Error detecting embedding dimension:", error);
+    throw error;
+  }
+};
+
 export const vectorStoreUpdateCall = async (accessToken: string, formValues: Record<string, any>): Promise<any> => {
   try {
     let url = proxyBaseUrl ? `${proxyBaseUrl}/vector_store/update` : `/vector_store/update`;
