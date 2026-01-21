@@ -6660,6 +6660,7 @@ export const detectEmbeddingDimensionCall = async (
       body: JSON.stringify({
         model,
         input,
+        encoding_format: "float",
       }),
     });
 
