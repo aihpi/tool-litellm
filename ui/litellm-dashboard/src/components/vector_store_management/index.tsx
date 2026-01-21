@@ -178,11 +178,61 @@ const VectorStoreManagement: React.FC<VectorStoreProps> = ({ accessToken, userID
       setIsCreateCollectionModalVisible(false);
       setCollectionVectorStoreId(null);
       collectionForm.resetFields();
+      fetchVectorStores();
     } catch (error) {
       console.error("Error creating Qdrant collection:", error);
       NotificationsManager.fromBackend("Error creating Qdrant collection: " + error);
     } finally {
       setIsCreatingCollection(false);
+    }
+  };
+
+  const handleViewCollection = async (vectorStoreId: string) => {
+    if (!accessToken) return;
+    try {
+      const response = await vectorStoreInfoCall(accessToken, vectorStoreId);
+      const rawMetadata = response?.vector_store?.vector_store_metadata;
+      const rawParams = response?.vector_store?.litellm_params;
+      let metadata: Record<string, any> | null = null;
+      let litellmParams: Record<string, any> | null = null;
+
+      if (rawMetadata) {
+        if (typeof rawMetadata === "string") {
+          try {
+            metadata = JSON.parse(rawMetadata);
+          } catch (error) {
+            console.error("Failed to parse vector store metadata:", error);
+          }
+        } else {
+          metadata = rawMetadata;
+        }
+      }
+
+      if (rawParams) {
+        if (typeof rawParams === "string") {
+          try {
+            litellmParams = JSON.parse(rawParams);
+          } catch (error) {
+            console.error("Failed to parse vector store params:", error);
+          }
+        } else {
+          litellmParams = rawParams;
+        }
+      }
+
+      const collectionName = metadata?.qdrant_collection_name || vectorStoreId;
+      const apiBase = litellmParams?.api_base;
+      if (!apiBase) {
+        NotificationsManager.fromBackend("Qdrant API base is missing for this vector store.");
+        return;
+      }
+
+      const normalizedBase = apiBase.replace(/\/v1\/?$/, "").replace(/\/$/, "");
+      const url = `${normalizedBase}/collections/${collectionName}`;
+      window.open(url, "_blank", "noopener,noreferrer");
+    } catch (error) {
+      console.error("Error opening Qdrant collection:", error);
+      NotificationsManager.fromBackend("Error opening Qdrant collection: " + error);
     }
   };
 
@@ -234,6 +284,7 @@ const VectorStoreManagement: React.FC<VectorStoreProps> = ({ accessToken, userID
               onEdit={handleEdit}
               onDelete={handleDelete}
               onCreateCollection={handleCreateCollectionOpen}
+              onViewCollection={handleViewCollection}
               showCreateCollection
             />
           </Col>
