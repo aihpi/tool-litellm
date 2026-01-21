@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { Icon, Button as TremorButton, Col, Text, Grid } from "@tremor/react";
 import { Form, Input, InputNumber, Modal, Select as AntSelect } from "antd";
 import { RefreshIcon } from "@heroicons/react/outline";
-import { useRouter, useSearchParams } from "next/navigation";
 import {
   vectorStoreListCall,
   vectorStoreDeleteCall,
@@ -17,7 +16,6 @@ import VectorStoreTable from "./VectorStoreTable";
 import VectorStoreForm from "./VectorStoreForm";
 import DeleteResourceModal from "../common_components/DeleteResourceModal";
 import VectorStoreInfoView from "./vector_store_info";
-import VectorStoreCollectionView from "./VectorStoreCollectionView";
 import { isAdminRole } from "@/utils/roles";
 import NotificationsManager from "../molecules/notifications_manager";
 
@@ -28,8 +26,6 @@ interface VectorStoreProps {
 }
 
 const VectorStoreManagement: React.FC<VectorStoreProps> = ({ accessToken, userID, userRole }) => {
-  const router = useRouter();
-  const searchParams = useSearchParams();
   const [vectorStores, setVectorStores] = useState<VectorStore[]>([]);
   const [isCreateModalVisible, setIsCreateModalVisible] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -45,23 +41,7 @@ const VectorStoreManagement: React.FC<VectorStoreProps> = ({ accessToken, userID
   const [isCreatingCollection, setIsCreatingCollection] = useState(false);
   const [isDetectingVectorSize, setIsDetectingVectorSize] = useState(false);
   const [collectionEmbeddingModel, setCollectionEmbeddingModel] = useState<string | null>(null);
-  const [collectionViewVectorStoreId, setCollectionViewVectorStoreId] = useState<string | null>(null);
   const [collectionForm] = Form.useForm();
-
-  const updateQueryParams = (updates: Record<string, string | null>) => {
-    const params = new URLSearchParams(searchParams.toString());
-    Object.entries(updates).forEach(([key, value]) => {
-      if (value === null) {
-        params.delete(key);
-      } else {
-        params.set(key, value);
-      }
-    });
-    if (!params.get("page")) {
-      params.set("page", "vector-stores");
-    }
-    router.replace(`?${params.toString()}`, { scroll: false });
-  };
 
   const fetchVectorStores = async () => {
     if (!accessToken) return;
@@ -102,21 +82,16 @@ const VectorStoreManagement: React.FC<VectorStoreProps> = ({ accessToken, userID
   const handleView = (vectorStoreId: string) => {
     setSelectedVectorStoreId(vectorStoreId);
     setEditVectorStore(false);
-    setCollectionViewVectorStoreId(null);
-    updateQueryParams({ view: null, vector_store_id: null });
   };
 
   const handleEdit = (vectorStoreId: string) => {
     setSelectedVectorStoreId(vectorStoreId);
     setEditVectorStore(true);
-    setCollectionViewVectorStoreId(null);
-    updateQueryParams({ view: null, vector_store_id: null });
   };
 
   const handleCloseInfo = () => {
     setSelectedVectorStoreId(null);
     setEditVectorStore(false);
-    updateQueryParams({ view: null, vector_store_id: null });
     fetchVectorStores();
   };
 
@@ -203,7 +178,6 @@ const VectorStoreManagement: React.FC<VectorStoreProps> = ({ accessToken, userID
       setIsCreateCollectionModalVisible(false);
       setCollectionVectorStoreId(null);
       collectionForm.resetFields();
-      fetchVectorStores();
     } catch (error) {
       console.error("Error creating Qdrant collection:", error);
       NotificationsManager.fromBackend("Error creating Qdrant collection: " + error);
@@ -212,40 +186,12 @@ const VectorStoreManagement: React.FC<VectorStoreProps> = ({ accessToken, userID
     }
   };
 
-  const handleViewCollection = (vectorStoreId: string) => {
-    setSelectedVectorStoreId(null);
-    setEditVectorStore(false);
-    setCollectionViewVectorStoreId(vectorStoreId);
-    updateQueryParams({ view: "collection", vector_store_id: vectorStoreId });
-  };
-
-  const handleCloseCollectionView = () => {
-    setCollectionViewVectorStoreId(null);
-    updateQueryParams({ view: null, vector_store_id: null });
-  };
-
   useEffect(() => {
     fetchVectorStores();
     fetchCredentials();
   }, [accessToken]);
 
-  useEffect(() => {
-    const viewParam = searchParams.get("view");
-    const vectorStoreIdParam = searchParams.get("vector_store_id");
-    if (viewParam === "collection" && vectorStoreIdParam) {
-      setCollectionViewVectorStoreId(vectorStoreIdParam);
-      setSelectedVectorStoreId(null);
-      setEditVectorStore(false);
-    }
-  }, [searchParams]);
-
-  return collectionViewVectorStoreId ? (
-    <VectorStoreCollectionView
-      vectorStoreId={collectionViewVectorStoreId}
-      accessToken={accessToken}
-      onClose={handleCloseCollectionView}
-    />
-  ) : selectedVectorStoreId ? (
+  return selectedVectorStoreId ? (
     <div className="w-full h-full">
       <VectorStoreInfoView
         vectorStoreId={selectedVectorStoreId}
@@ -288,7 +234,6 @@ const VectorStoreManagement: React.FC<VectorStoreProps> = ({ accessToken, userID
               onEdit={handleEdit}
               onDelete={handleDelete}
               onCreateCollection={handleCreateCollectionOpen}
-              onViewCollection={handleViewCollection}
               showCreateCollection
             />
           </Col>
@@ -301,6 +246,8 @@ const VectorStoreManagement: React.FC<VectorStoreProps> = ({ accessToken, userID
           onSuccess={handleCreateSuccess}
           accessToken={accessToken}
           credentials={credentials}
+          userID={userID}
+          userRole={userRole}
         />
 
         <Modal

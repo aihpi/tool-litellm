@@ -6259,7 +6259,7 @@ export const tagCreateCall = async (accessToken: string, formValues: TagNewReque
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        [globalLitellmHeaderName]: `Bearer ${accessToken}`,
+        Authorization: `Bearer ${accessToken}`,
       },
       body: JSON.stringify(formValues),
     });
@@ -6285,7 +6285,7 @@ export const tagUpdateCall = async (accessToken: string, formValues: TagUpdateRe
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        [globalLitellmHeaderName]: `Bearer ${accessToken}`,
+        Authorization: `Bearer ${accessToken}`,
       },
       body: JSON.stringify(formValues),
     });
@@ -6311,7 +6311,7 @@ export const tagInfoCall = async (accessToken: string, tagNames: string[]): Prom
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        [globalLitellmHeaderName]: `Bearer ${accessToken}`,
+        Authorization: `Bearer ${accessToken}`,
       },
       body: JSON.stringify({ names: tagNames }),
     });
@@ -6337,7 +6337,7 @@ export const tagListCall = async (accessToken: string): Promise<TagListResponse>
     const response = await fetch(url, {
       method: "GET",
       headers: {
-        [globalLitellmHeaderName]: `Bearer ${accessToken}`,
+        Authorization: `Bearer ${accessToken}`,
       },
     });
 
@@ -6363,7 +6363,7 @@ export const tagDeleteCall = async (accessToken: string, tagName: string): Promi
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        [globalLitellmHeaderName]: `Bearer ${accessToken}`,
+        Authorization: `Bearer ${accessToken}`,
       },
       body: JSON.stringify({ name: tagName }),
     });
@@ -6455,7 +6455,7 @@ export const getTeamPermissionsCall = async (accessToken: string, teamId: string
       method: "GET",
       headers: {
         "Content-Type": "application/json",
-        [globalLitellmHeaderName]: `Bearer ${accessToken}`,
+        Authorization: `Bearer ${accessToken}`,
       },
     });
 
@@ -6483,7 +6483,7 @@ export const teamPermissionsUpdateCall = async (accessToken: string, teamId: str
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        [globalLitellmHeaderName]: `Bearer ${accessToken}`,
+        Authorization: `Bearer ${accessToken}`,
       },
       body: JSON.stringify({
         team_id: teamId,
@@ -6547,7 +6547,7 @@ export const vectorStoreCreateCall = async (accessToken: string, formValues: Rec
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        [globalLitellmHeaderName]: `Bearer ${accessToken}`,
+        Authorization: `Bearer ${accessToken}`,
       },
       body: JSON.stringify(formValues),
     });
@@ -6576,7 +6576,7 @@ export const vectorStoreListCall = async (
       method: "GET",
       headers: {
         "Content-Type": "application/json",
-        [globalLitellmHeaderName]: `Bearer ${accessToken}`,
+        Authorization: `Bearer ${accessToken}`,
       },
     });
 
@@ -6600,7 +6600,7 @@ export const vectorStoreDeleteCall = async (accessToken: string, vectorStoreId: 
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        [globalLitellmHeaderName]: `Bearer ${accessToken}`,
+        Authorization: `Bearer ${accessToken}`,
       },
       body: JSON.stringify({ vector_store_id: vectorStoreId }),
     });
@@ -6625,7 +6625,7 @@ export const vectorStoreInfoCall = async (accessToken: string, vectorStoreId: st
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        [globalLitellmHeaderName]: `Bearer ${accessToken}`,
+        Authorization: `Bearer ${accessToken}`,
       },
       body: JSON.stringify({ vector_store_id: vectorStoreId }),
     });
@@ -6660,7 +6660,6 @@ export const detectEmbeddingDimensionCall = async (
       body: JSON.stringify({
         model,
         input,
-        encoding_format: "float",
       }),
     });
 
@@ -6691,7 +6690,7 @@ export const vectorStoreUpdateCall = async (accessToken: string, formValues: Rec
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        [globalLitellmHeaderName]: `Bearer ${accessToken}`,
+        Authorization: `Bearer ${accessToken}`,
       },
       body: JSON.stringify(formValues),
     });
@@ -6704,93 +6703,6 @@ export const vectorStoreUpdateCall = async (accessToken: string, formValues: Rec
     return await response.json();
   } catch (error) {
     console.error("Error updating vector store:", error);
-    throw error;
-  }
-};
-
-export const qdrantCreateCollectionCall = async (
-  accessToken: string,
-  formValues: Record<string, any>,
-): Promise<any> => {
-  try {
-    const url = proxyBaseUrl
-      ? `${proxyBaseUrl}/vector_store/qdrant/create_collection`
-      : `/vector_store/qdrant/create_collection`;
-
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
-      },
-      body: JSON.stringify(formValues),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.detail || "Failed to create Qdrant collection");
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error("Error creating Qdrant collection:", error);
-    throw error;
-  }
-};
-
-export const qdrantCollectionInfoCall = async (accessToken: string, vectorStoreId: string): Promise<any> => {
-  try {
-    const url = proxyBaseUrl
-      ? `${proxyBaseUrl}/vector_store/qdrant/collection/info`
-      : `/vector_store/qdrant/collection/info`;
-
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
-      },
-      body: JSON.stringify({ vector_store_id: vectorStoreId }),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.detail || "Failed to fetch Qdrant collection info");
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error("Error fetching Qdrant collection info:", error);
-    throw error;
-  }
-};
-
-export const qdrantCollectionPointsCall = async (
-  accessToken: string,
-  payload: { vector_store_id: string; limit?: number; offset?: Record<string, any> },
-): Promise<any> => {
-  try {
-    const url = proxyBaseUrl
-      ? `${proxyBaseUrl}/vector_store/qdrant/collection/points`
-      : `/vector_store/qdrant/collection/points`;
-
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
-      },
-      body: JSON.stringify(payload),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.detail || "Failed to fetch Qdrant collection points");
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error("Error fetching Qdrant collection points:", error);
     throw error;
   }
 };
@@ -7899,7 +7811,7 @@ export const vectorStoreSearchCall = async (
     const response = await fetch(url, {
       method: "POST",
       headers: {
-        [globalLitellmHeaderName]: `Bearer ${accessToken}`,
+        Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -7932,7 +7844,7 @@ export const searchToolQueryCall = async (
     const response = await fetch(url, {
       method: "POST",
       headers: {
-        [globalLitellmHeaderName]: `Bearer ${accessToken}`,
+        Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
