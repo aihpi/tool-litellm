@@ -146,6 +146,70 @@ class QdrantCreateCollectionRequest(BaseModel):
     collection_config: Optional[Dict[str, Any]] = None
 
 
+class QdrantCollectionInfoRequest(BaseModel):
+    vector_store_id: str
+
+
+class QdrantCollectionPointsRequest(BaseModel):
+    vector_store_id: str
+    limit: int = Field(default=20, gt=0, le=200)
+    offset: Optional[Any] = None
+
+
+def _resolve_qdrant_connection_params(
+    vector_store: LiteLLM_ManagedVectorStoresTable,
+) -> Dict[str, Any]:
+    litellm_params = vector_store.litellm_params or {}
+    if isinstance(litellm_params, str):
+        litellm_params = json.loads(litellm_params)
+
+    def _resolve_secret_value(value: Any, key: str) -> Any:
+        if isinstance(value, str):
+            decrypted_value = decrypt_value_helper(
+                value=value, key=key, return_original_value=True
+            )
+            if isinstance(decrypted_value, str) and decrypted_value.startswith(
+                "os.environ/"
+            ):
+                return get_secret(decrypted_value)
+            return decrypted_value
+        return value
+
+    resolved_params: Dict[str, Any] = {
+        key: _resolve_secret_value(value, key)
+        for key, value in litellm_params.items()
+    }
+
+    api_base = resolved_params.get("api_base") or get_secret(
+        "os.environ/QDRANT_API_BASE"
+    )
+    if not api_base:
+        api_base = get_secret("os.environ/QDRANT_URL")
+    if not api_base:
+        raise HTTPException(status_code=400, detail="Qdrant api_base is required.")
+
+    api_key = resolved_params.get("api_key") or get_secret("os.environ/QDRANT_API_KEY")
+
+    vector_store_metadata = vector_store.vector_store_metadata or {}
+    if isinstance(vector_store_metadata, str):
+        try:
+            vector_store_metadata = json.loads(vector_store_metadata)
+        except Exception:
+            vector_store_metadata = {}
+
+    collection_name = (
+        vector_store_metadata.get("qdrant_collection_name")
+        if isinstance(vector_store_metadata, dict)
+        else None
+    ) or vector_store.vector_store_id
+
+    return {
+        "api_base": api_base,
+        "api_key": api_key,
+        "collection_name": collection_name,
+    }
+
+
 ########################################################
 # Management Endpoints
 ########################################################
@@ -361,6 +425,128 @@ async def create_qdrant_collection(
         raise
     except Exception as e:
         verbose_proxy_logger.exception(f"Error creating Qdrant collection: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post(
+    "/vector_store/qdrant/collection/info",
+    tags=["vector store management"],
+    dependencies=[Depends(user_api_key_auth)],
+)
+async def get_qdrant_collection_info(
+    request: QdrantCollectionInfoRequest,
+    user_api_key_dict: UserAPIKeyAuth = Depends(user_api_key_auth),
+):
+    from litellm.proxy.proxy_server import prisma_client
+
+    if prisma_client is None:
+        raise HTTPException(status_code=500, detail="Database not connected")
+
+    vector_store_id = request.vector_store_id
+    vector_store = await prisma_client.db.litellm_managedvectorstorestable.find_unique(
+        where={"vector_store_id": vector_store_id}
+    )
+    if vector_store is None:
+        raise HTTPException(status_code=404, detail="Vector store not found")
+
+    if not (
+        user_api_key_dict.user_role == LitellmUserRoles.PROXY_ADMIN
+        or user_api_key_dict.user_role == LitellmUserRoles.PROXY_ADMIN.value
+    ):
+        has_permission = check_vector_store_permission(
+            index_name=vector_store_id,
+            permission="read",
+            key_metadata=user_api_key_dict.metadata,
+            team_metadata=user_api_key_dict.team_metadata,
+        )
+        if not has_permission:
+            raise HTTPException(
+                status_code=403,
+                detail="User does not have permission to view this vector store collection.",
+            )
+
+    connection = _resolve_qdrant_connection_params(vector_store=vector_store)
+    url = f"{connection['api_base'].rstrip('/')}/collections/{connection['collection_name']}"
+
+    headers = {"Content-Type": "application/json"}
+    if connection.get("api_key"):
+        headers["api-key"] = connection["api_key"]
+
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url, headers=headers)
+        if response.status_code >= 400:
+            raise HTTPException(status_code=response.status_code, detail=response.text)
+        return response.json()
+    except HTTPException:
+        raise
+    except Exception as e:
+        verbose_proxy_logger.exception(f"Error fetching Qdrant collection info: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post(
+    "/vector_store/qdrant/collection/points",
+    tags=["vector store management"],
+    dependencies=[Depends(user_api_key_auth)],
+)
+async def get_qdrant_collection_points(
+    request: QdrantCollectionPointsRequest,
+    user_api_key_dict: UserAPIKeyAuth = Depends(user_api_key_auth),
+):
+    from litellm.proxy.proxy_server import prisma_client
+
+    if prisma_client is None:
+        raise HTTPException(status_code=500, detail="Database not connected")
+
+    vector_store_id = request.vector_store_id
+    vector_store = await prisma_client.db.litellm_managedvectorstorestable.find_unique(
+        where={"vector_store_id": vector_store_id}
+    )
+    if vector_store is None:
+        raise HTTPException(status_code=404, detail="Vector store not found")
+
+    if not (
+        user_api_key_dict.user_role == LitellmUserRoles.PROXY_ADMIN
+        or user_api_key_dict.user_role == LitellmUserRoles.PROXY_ADMIN.value
+    ):
+        has_permission = check_vector_store_permission(
+            index_name=vector_store_id,
+            permission="read",
+            key_metadata=user_api_key_dict.metadata,
+            team_metadata=user_api_key_dict.team_metadata,
+        )
+        if not has_permission:
+            raise HTTPException(
+                status_code=403,
+                detail="User does not have permission to view this vector store collection.",
+            )
+
+    connection = _resolve_qdrant_connection_params(vector_store=vector_store)
+    url = f"{connection['api_base'].rstrip('/')}/collections/{connection['collection_name']}/points/scroll"
+
+    headers = {"Content-Type": "application/json"}
+    if connection.get("api_key"):
+        headers["api-key"] = connection["api_key"]
+
+    payload: Dict[str, Any] = {
+        "limit": request.limit,
+        "with_payload": True,
+        "with_vector": False,
+    }
+    if request.offset:
+        payload["offset"] = request.offset
+
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(url, headers=headers, json=payload)
+        if response.status_code >= 400:
+            raise HTTPException(status_code=response.status_code, detail=response.text)
+        return response.json()
+    except HTTPException:
+        raise
+    except Exception as e:
+        verbose_proxy_logger.exception(f"Error fetching Qdrant collection points: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
