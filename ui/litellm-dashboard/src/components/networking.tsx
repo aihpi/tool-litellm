@@ -6738,6 +6738,63 @@ export const qdrantCreateCollectionCall = async (
   }
 };
 
+export const qdrantCollectionInfoCall = async (accessToken: string, vectorStoreId: string): Promise<any> => {
+  try {
+    const url = proxyBaseUrl
+      ? `${proxyBaseUrl}/vector_store/qdrant/collection/info`
+      : `/vector_store/qdrant/collection/info`;
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({ vector_store_id: vectorStoreId }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || "Failed to fetch Qdrant collection info");
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Error fetching Qdrant collection info:", error);
+    throw error;
+  }
+};
+
+export const qdrantCollectionPointsCall = async (
+  accessToken: string,
+  payload: { vector_store_id: string; limit?: number; offset?: Record<string, any> },
+): Promise<any> => {
+  try {
+    const url = proxyBaseUrl
+      ? `${proxyBaseUrl}/vector_store/qdrant/collection/points`
+      : `/vector_store/qdrant/collection/points`;
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || "Failed to fetch Qdrant collection points");
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Error fetching Qdrant collection points:", error);
+    throw error;
+  }
+};
+
 export const getEmailEventSettings = async (accessToken: string): Promise<EmailEventSettingsResponse> => {
   try {
     const url = proxyBaseUrl ? `${proxyBaseUrl}/email/event_settings` : `/email/event_settings`;
