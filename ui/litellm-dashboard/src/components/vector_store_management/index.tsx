@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Icon, Button as TremorButton, Col, Text, Grid } from "@tremor/react";
 import { Form, Input, InputNumber, Modal, Select as AntSelect } from "antd";
 import { RefreshIcon } from "@heroicons/react/outline";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   vectorStoreListCall,
   vectorStoreDeleteCall,
@@ -16,6 +17,7 @@ import VectorStoreTable from "./VectorStoreTable";
 import VectorStoreForm from "./VectorStoreForm";
 import DeleteResourceModal from "../common_components/DeleteResourceModal";
 import VectorStoreInfoView from "./vector_store_info";
+import VectorStoreCollectionView from "./VectorStoreCollectionView";
 import { isAdminRole } from "@/utils/roles";
 import NotificationsManager from "../molecules/notifications_manager";
 
@@ -26,6 +28,8 @@ interface VectorStoreProps {
 }
 
 const VectorStoreManagement: React.FC<VectorStoreProps> = ({ accessToken, userID, userRole }) => {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [vectorStores, setVectorStores] = useState<VectorStore[]>([]);
   const [isCreateModalVisible, setIsCreateModalVisible] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -41,7 +45,23 @@ const VectorStoreManagement: React.FC<VectorStoreProps> = ({ accessToken, userID
   const [isCreatingCollection, setIsCreatingCollection] = useState(false);
   const [isDetectingVectorSize, setIsDetectingVectorSize] = useState(false);
   const [collectionEmbeddingModel, setCollectionEmbeddingModel] = useState<string | null>(null);
+  const [collectionViewVectorStoreId, setCollectionViewVectorStoreId] = useState<string | null>(null);
   const [collectionForm] = Form.useForm();
+
+  const updateQueryParams = (updates: Record<string, string | null>) => {
+    const params = new URLSearchParams(searchParams.toString());
+    Object.entries(updates).forEach(([key, value]) => {
+      if (value === null) {
+        params.delete(key);
+      } else {
+        params.set(key, value);
+      }
+    });
+    if (!params.get("page")) {
+      params.set("page", "vector-stores");
+    }
+    router.replace(`?${params.toString()}`, { scroll: false });
+  };
 
   const fetchVectorStores = async () => {
     if (!accessToken) return;
@@ -82,16 +102,21 @@ const VectorStoreManagement: React.FC<VectorStoreProps> = ({ accessToken, userID
   const handleView = (vectorStoreId: string) => {
     setSelectedVectorStoreId(vectorStoreId);
     setEditVectorStore(false);
+    setCollectionViewVectorStoreId(null);
+    updateQueryParams({ view: null, vector_store_id: null });
   };
 
   const handleEdit = (vectorStoreId: string) => {
     setSelectedVectorStoreId(vectorStoreId);
     setEditVectorStore(true);
+    setCollectionViewVectorStoreId(null);
+    updateQueryParams({ view: null, vector_store_id: null });
   };
 
   const handleCloseInfo = () => {
     setSelectedVectorStoreId(null);
     setEditVectorStore(false);
+    updateQueryParams({ view: null, vector_store_id: null });
     fetchVectorStores();
   };
 
@@ -187,53 +212,16 @@ const VectorStoreManagement: React.FC<VectorStoreProps> = ({ accessToken, userID
     }
   };
 
-  const handleViewCollection = async (vectorStoreId: string) => {
-    if (!accessToken) return;
-    try {
-      const response = await vectorStoreInfoCall(accessToken, vectorStoreId);
-      const rawMetadata = response?.vector_store?.vector_store_metadata;
-      const rawParams = response?.vector_store?.litellm_params;
-      let metadata: Record<string, any> | null = null;
-      let litellmParams: Record<string, any> | null = null;
+  const handleViewCollection = (vectorStoreId: string) => {
+    setSelectedVectorStoreId(null);
+    setEditVectorStore(false);
+    setCollectionViewVectorStoreId(vectorStoreId);
+    updateQueryParams({ view: "collection", vector_store_id: vectorStoreId });
+  };
 
-      if (rawMetadata) {
-        if (typeof rawMetadata === "string") {
-          try {
-            metadata = JSON.parse(rawMetadata);
-          } catch (error) {
-            console.error("Failed to parse vector store metadata:", error);
-          }
-        } else {
-          metadata = rawMetadata;
-        }
-      }
-
-      if (rawParams) {
-        if (typeof rawParams === "string") {
-          try {
-            litellmParams = JSON.parse(rawParams);
-          } catch (error) {
-            console.error("Failed to parse vector store params:", error);
-          }
-        } else {
-          litellmParams = rawParams;
-        }
-      }
-
-      const collectionName = metadata?.qdrant_collection_name || vectorStoreId;
-      const apiBase = litellmParams?.api_base;
-      if (!apiBase) {
-        NotificationsManager.fromBackend("Qdrant API base is missing for this vector store.");
-        return;
-      }
-
-      const normalizedBase = apiBase.replace(/\/v1\/?$/, "").replace(/\/$/, "");
-      const url = `${normalizedBase}/collections/${collectionName}`;
-      window.open(url, "_blank", "noopener,noreferrer");
-    } catch (error) {
-      console.error("Error opening Qdrant collection:", error);
-      NotificationsManager.fromBackend("Error opening Qdrant collection: " + error);
-    }
+  const handleCloseCollectionView = () => {
+    setCollectionViewVectorStoreId(null);
+    updateQueryParams({ view: null, vector_store_id: null });
   };
 
   useEffect(() => {
@@ -241,7 +229,23 @@ const VectorStoreManagement: React.FC<VectorStoreProps> = ({ accessToken, userID
     fetchCredentials();
   }, [accessToken]);
 
-  return selectedVectorStoreId ? (
+  useEffect(() => {
+    const viewParam = searchParams.get("view");
+    const vectorStoreIdParam = searchParams.get("vector_store_id");
+    if (viewParam === "collection" && vectorStoreIdParam) {
+      setCollectionViewVectorStoreId(vectorStoreIdParam);
+      setSelectedVectorStoreId(null);
+      setEditVectorStore(false);
+    }
+  }, [searchParams]);
+
+  return collectionViewVectorStoreId ? (
+    <VectorStoreCollectionView
+      vectorStoreId={collectionViewVectorStoreId}
+      accessToken={accessToken}
+      onClose={handleCloseCollectionView}
+    />
+  ) : selectedVectorStoreId ? (
     <div className="w-full h-full">
       <VectorStoreInfoView
         vectorStoreId={selectedVectorStoreId}
