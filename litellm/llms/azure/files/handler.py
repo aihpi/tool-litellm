@@ -25,10 +25,12 @@ class AzureOpenAIFilesAPI(BaseAzureLLM):
         super().__init__()
 
     @staticmethod
-    def _prepare_create_file_data(create_file_data: CreateFileRequest) -> dict[str, Any]:
+    def _prepare_create_file_data(
+        create_file_data: CreateFileRequest,
+    ) -> dict[str, Any]:
         """
         Prepare create_file_data for OpenAI SDK.
-        
+
         Removes expires_after if None to match SDK's Omit pattern.
         SDK expects file_create_params.ExpiresAfter | Omit, but FileExpiresAfter works at runtime.
         """

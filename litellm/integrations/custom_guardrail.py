@@ -516,7 +516,9 @@ class CustomGuardrail(CustomLogger):
         from litellm.types.utils import GuardrailMode
 
         # Use event_type if provided, otherwise fall back to self.event_hook
-        guardrail_mode: Union[GuardrailEventHooks, GuardrailMode, List[GuardrailEventHooks]]
+        guardrail_mode: Union[
+            GuardrailEventHooks, GuardrailMode, List[GuardrailEventHooks]
+        ]
         if event_type is not None:
             guardrail_mode = event_type
         elif isinstance(self.event_hook, Mode):

@@ -40,14 +40,14 @@ COPY . .
 ENV LITELLM_NON_ROOT=true
 
 # Build Admin UI using the upstream command order while keeping a single RUN layer
-RUN mkdir -p /var/lib/litellm/ui && \
-    npm install -g npm@latest && npm cache clean --force && \
+RUN --mount=type=cache,target=/root/.npm \
+    mkdir -p /var/lib/litellm/ui && \
     cd /app/ui/litellm-dashboard && \
     if [ -f "/app/enterprise/enterprise_ui/enterprise_colors.json" ]; then \
       cp /app/enterprise/enterprise_ui/enterprise_colors.json ./ui_colors.json; \
     fi && \
     rm -f package-lock.json && \
-    npm install --legacy-peer-deps && \
+    npm install --legacy-peer-deps --no-audit --no-fund && \
     npm run build && \
     cp -r /app/ui/litellm-dashboard/out/* /var/lib/litellm/ui/ && \
     mkdir -p /var/lib/litellm/assets && \
@@ -63,7 +63,8 @@ RUN mkdir -p /var/lib/litellm/ui && \
     cd /app/ui/litellm-dashboard && rm -rf ./out
 
 # Build litellm wheel and place it in wheels dir (replace any PyPI wheels)
-RUN rm -rf dist/* && python -m build && \
+RUN mkdir -p /app/enterprise && \
+  rm -rf dist/* && python -m build && \
   rm -f /wheels/litellm-*.whl && \
   cp dist/*.whl /wheels/
 

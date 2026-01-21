@@ -208,14 +208,20 @@ class LiteLLMAnthropicMessagesAdapter:
                             # Preserve cache_control if present (for prompt caching)
                             # Only for Anthropic models that support prompt caching
                             cache_control = content.get("cache_control")
-                            if cache_control and model and self.is_anthropic_claude_model(model):
+                            if (
+                                cache_control
+                                and model
+                                and self.is_anthropic_claude_model(model)
+                            ):
                                 text_obj["cache_control"] = cache_control  # type: ignore
                             new_user_content_list.append(text_obj)
                         elif content.get("type") == "image":
                             # Convert Anthropic image format to OpenAI format
                             source = content.get("source", {})
                             openai_image_url = (
-                                self._translate_anthropic_image_to_openai(cast(dict, source))
+                                self._translate_anthropic_image_to_openai(
+                                    cast(dict, source)
+                                )
                             )
 
                             if openai_image_url:
@@ -377,12 +383,12 @@ class LiteLLMAnthropicMessagesAdapter:
                                         function_chunk.get("provider_specific_fields")
                                         or {}
                                     )
-                                    provider_specific_fields["thought_signature"] = (
-                                        signature
-                                    )
-                                    function_chunk["provider_specific_fields"] = (
-                                        provider_specific_fields
-                                    )
+                                    provider_specific_fields[
+                                        "thought_signature"
+                                    ] = signature
+                                    function_chunk[
+                                        "provider_specific_fields"
+                                    ] = provider_specific_fields
 
                                 tool_calls.append(
                                     ChatCompletionAssistantToolCall(
@@ -476,10 +482,7 @@ class LiteLLMAnthropicMessagesAdapter:
         - vertex_ai/*claude* models
         """
         model_lower = model.lower()
-        return (
-            "anthropic" in model_lower
-            or "claude" in model_lower
-        )
+        return "anthropic" in model_lower or "claude" in model_lower
 
     @staticmethod
     def translate_thinking_for_model(
@@ -609,10 +612,10 @@ class LiteLLMAnthropicMessagesAdapter:
         if "tool_choice" in anthropic_message_request:
             tool_choice = anthropic_message_request["tool_choice"]
             if tool_choice:
-                new_kwargs["tool_choice"] = (
-                    self.translate_anthropic_tool_choice_to_openai(
-                        tool_choice=cast(AnthropicMessagesToolChoice, tool_choice)
-                    )
+                new_kwargs[
+                    "tool_choice"
+                ] = self.translate_anthropic_tool_choice_to_openai(
+                    tool_choice=cast(AnthropicMessagesToolChoice, tool_choice)
                 )
         ## CONVERT TOOLS
         if "tools" in anthropic_message_request:
@@ -630,8 +633,10 @@ class LiteLLMAnthropicMessagesAdapter:
                 if self.is_anthropic_claude_model(model):
                     new_kwargs["thinking"] = thinking  # type: ignore
                 else:
-                    reasoning_effort = self.translate_anthropic_thinking_to_reasoning_effort(
-                        cast(Dict[str, Any], thinking)
+                    reasoning_effort = (
+                        self.translate_anthropic_thinking_to_reasoning_effort(
+                            cast(Dict[str, Any], thinking)
+                        )
                     )
                     if reasoning_effort:
                         new_kwargs["reasoning_effort"] = reasoning_effort
@@ -670,7 +675,9 @@ class LiteLLMAnthropicMessagesAdapter:
 
         return None
 
-    def _translate_openai_content_to_anthropic(self, choices: List[Choices]) -> List[
+    def _translate_openai_content_to_anthropic(
+        self, choices: List[Choices]
+    ) -> List[
         Union[
             AnthropicResponseContentBlockText,
             AnthropicResponseContentBlockToolUse,
@@ -786,9 +793,17 @@ class LiteLLMAnthropicMessagesAdapter:
             output_tokens=usage.completion_tokens or 0,
         )
         # Add cache tokens if available (for prompt caching support)
-        if hasattr(usage, "_cache_creation_input_tokens") and usage._cache_creation_input_tokens > 0:
-            anthropic_usage["cache_creation_input_tokens"] = usage._cache_creation_input_tokens
-        if hasattr(usage, "_cache_read_input_tokens") and usage._cache_read_input_tokens > 0:
+        if (
+            hasattr(usage, "_cache_creation_input_tokens")
+            and usage._cache_creation_input_tokens > 0
+        ):
+            anthropic_usage[
+                "cache_creation_input_tokens"
+            ] = usage._cache_creation_input_tokens
+        if (
+            hasattr(usage, "_cache_read_input_tokens")
+            and usage._cache_read_input_tokens > 0
+        ):
             anthropic_usage["cache_read_input_tokens"] = usage._cache_read_input_tokens
 
         translated_obj = AnthropicMessagesResponse(
@@ -862,7 +877,6 @@ class LiteLLMAnthropicMessagesAdapter:
             ContentThinkingSignatureBlockDelta,
         ],
     ]:
-
         text: str = ""
         reasoning_content: str = ""
         reasoning_signature: str = ""
@@ -939,10 +953,20 @@ class LiteLLMAnthropicMessagesAdapter:
                     output_tokens=litellm_usage_chunk.completion_tokens or 0,
                 )
                 # Add cache tokens if available (for prompt caching support)
-                if hasattr(litellm_usage_chunk, "_cache_creation_input_tokens") and litellm_usage_chunk._cache_creation_input_tokens > 0:
-                    usage_delta["cache_creation_input_tokens"] = litellm_usage_chunk._cache_creation_input_tokens
-                if hasattr(litellm_usage_chunk, "_cache_read_input_tokens") and litellm_usage_chunk._cache_read_input_tokens > 0:
-                    usage_delta["cache_read_input_tokens"] = litellm_usage_chunk._cache_read_input_tokens
+                if (
+                    hasattr(litellm_usage_chunk, "_cache_creation_input_tokens")
+                    and litellm_usage_chunk._cache_creation_input_tokens > 0
+                ):
+                    usage_delta[
+                        "cache_creation_input_tokens"
+                    ] = litellm_usage_chunk._cache_creation_input_tokens
+                if (
+                    hasattr(litellm_usage_chunk, "_cache_read_input_tokens")
+                    and litellm_usage_chunk._cache_read_input_tokens > 0
+                ):
+                    usage_delta[
+                        "cache_read_input_tokens"
+                    ] = litellm_usage_chunk._cache_read_input_tokens
             else:
                 usage_delta = UsageDelta(input_tokens=0, output_tokens=0)
             return MessageBlockDelta(

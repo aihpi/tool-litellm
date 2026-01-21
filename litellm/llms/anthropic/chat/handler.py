@@ -540,7 +540,9 @@ class ModelResponseIterator:
             usage_object=cast(dict, anthropic_usage_chunk), reasoning_content=None
         )
 
-    def _content_block_delta_helper(self, chunk: dict) -> Tuple[
+    def _content_block_delta_helper(
+        self, chunk: dict
+    ) -> Tuple[
         str,
         Optional[ChatCompletionToolCallChunk],
         List[Union[ChatCompletionThinkingBlock, ChatCompletionRedactedThinkingBlock]],
@@ -687,10 +689,15 @@ class ModelResponseIterator:
                 content_block_start = self.get_content_block_start(chunk=chunk)
                 self.content_blocks = []  # reset content blocks when new block starts
                 # Track current content block type for filtering deltas
-                self.current_content_block_type = content_block_start["content_block"]["type"]
+                self.current_content_block_type = content_block_start["content_block"][
+                    "type"
+                ]
                 if content_block_start["content_block"]["type"] == "text":
                     text = content_block_start["content_block"]["text"]
-                elif content_block_start["content_block"]["type"] == "tool_use" or content_block_start["content_block"]["type"] == "server_tool_use":
+                elif (
+                    content_block_start["content_block"]["type"] == "tool_use"
+                    or content_block_start["content_block"]["type"] == "server_tool_use"
+                ):
                     self.tool_index += 1
                     # Use empty string for arguments in content_block_start - actual arguments
                     # come in subsequent content_block_delta chunks and get accumulated.
@@ -720,10 +727,12 @@ class ModelResponseIterator:
                         provider_specific_fields=provider_specific_fields,
                     )
 
-                elif content_block_start["content_block"]["type"].endswith("_tool_result"):
+                elif content_block_start["content_block"]["type"].endswith(
+                    "_tool_result"
+                ):
                     # Handle all tool result types (web_search, bash_code_execution, text_editor, etc.)
                     content_type = content_block_start["content_block"]["type"]
-                    
+
                     # Special handling for web_search_tool_result for backwards compatibility
                     if content_type == "web_search_tool_result":
                         # Capture web_search_tool_result for multi-turn reconstruction
@@ -732,9 +741,9 @@ class ModelResponseIterator:
                         self.web_search_results.append(
                             content_block_start["content_block"]
                         )
-                        provider_specific_fields["web_search_results"] = (
-                            self.web_search_results
-                        )
+                        provider_specific_fields[
+                            "web_search_results"
+                        ] = self.web_search_results
                     elif content_type == "web_fetch_tool_result":
                         # Capture web_fetch_tool_result for multi-turn reconstruction
                         # The full content comes in content_block_start, not in deltas
@@ -742,9 +751,9 @@ class ModelResponseIterator:
                         self.web_search_results.append(
                             content_block_start["content_block"]
                         )
-                        provider_specific_fields["web_search_results"] = (
-                            self.web_search_results
-                        )
+                        provider_specific_fields[
+                            "web_search_results"
+                        ] = self.web_search_results
                     elif content_type != "tool_search_tool_result":
                         # Handle other tool results (code execution, etc.)
                         # Skip tool_search_tool_result as it's internal metadata
@@ -895,7 +904,9 @@ class ModelResponseIterator:
 
         return text, tool_use
 
-    def _handle_message_delta(self, chunk: dict) -> Tuple[str, Optional[Usage], Optional[Dict[str, Any]]]:
+    def _handle_message_delta(
+        self, chunk: dict
+    ) -> Tuple[str, Optional[Usage], Optional[Dict[str, Any]]]:
         """
         Handle message_delta event for finish_reason, usage, and container.
 
@@ -1015,7 +1026,9 @@ class ModelResponseIterator:
             except StopIteration:
                 raise StopIteration
             except ValueError as e:
-                raise RuntimeError(f"Error parsing chunk: {e},\nReceived chunk: {chunk}")
+                raise RuntimeError(
+                    f"Error parsing chunk: {e},\nReceived chunk: {chunk}"
+                )
 
     # Async iterator
     def __aiter__(self):
@@ -1064,7 +1077,9 @@ class ModelResponseIterator:
             except StopAsyncIteration:
                 raise StopAsyncIteration
             except ValueError as e:
-                raise RuntimeError(f"Error parsing chunk: {e},\nReceived chunk: {chunk}")
+                raise RuntimeError(
+                    f"Error parsing chunk: {e},\nReceived chunk: {chunk}"
+                )
 
     def convert_str_chunk_to_generic_chunk(self, chunk: str) -> ModelResponseStream:
         """

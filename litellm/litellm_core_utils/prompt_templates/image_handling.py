@@ -32,7 +32,7 @@ def _process_image_response(response: Response, url: str) -> str:
             )
 
     image_bytes = response.content
-    
+
     # Check actual size after download if Content-Length was not available
     if content_length is None:
         size_mb = len(image_bytes) / (1024 * 1024)
@@ -40,7 +40,7 @@ def _process_image_response(response: Response, url: str) -> str:
             raise litellm.ImageFetchError(
                 f"Error: Image size ({size_mb:.2f}MB) exceeds maximum allowed size ({MAX_IMAGE_URL_DOWNLOAD_SIZE_MB}MB). url={url}"
             )
-    
+
     base64_image = base64.b64encode(image_bytes).decode("utf-8")
 
     image_type = response.headers.get("Content-Type")

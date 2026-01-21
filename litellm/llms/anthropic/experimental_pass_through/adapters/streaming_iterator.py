@@ -237,10 +237,20 @@ class AnthropicStreamWrapper(AdapterCompletionStreamWrapper):
                         "output_tokens": chunk.usage.completion_tokens or 0,
                     }
                     # Add cache tokens if available (for prompt caching support)
-                    if hasattr(chunk.usage, "_cache_creation_input_tokens") and chunk.usage._cache_creation_input_tokens > 0:
-                        usage_dict["cache_creation_input_tokens"] = chunk.usage._cache_creation_input_tokens
-                    if hasattr(chunk.usage, "_cache_read_input_tokens") and chunk.usage._cache_read_input_tokens > 0:
-                        usage_dict["cache_read_input_tokens"] = chunk.usage._cache_read_input_tokens
+                    if (
+                        hasattr(chunk.usage, "_cache_creation_input_tokens")
+                        and chunk.usage._cache_creation_input_tokens > 0
+                    ):
+                        usage_dict[
+                            "cache_creation_input_tokens"
+                        ] = chunk.usage._cache_creation_input_tokens
+                    if (
+                        hasattr(chunk.usage, "_cache_read_input_tokens")
+                        and chunk.usage._cache_read_input_tokens > 0
+                    ):
+                        usage_dict[
+                            "cache_read_input_tokens"
+                        ] = chunk.usage._cache_read_input_tokens
                     merged_chunk["usage"] = usage_dict
 
                     # Queue the merged chunk and reset

@@ -1111,7 +1111,9 @@ def completion(  # type: ignore # noqa: PLR0915
         # Check if MCP tools are present (following responses pattern)
         # Cast tools to Optional[Iterable[ToolParam]] for type checking
         tools_for_mcp = cast(Optional[Iterable[ToolParam]], tools)
-        if LiteLLM_Proxy_MCP_Handler._should_use_litellm_mcp_gateway(tools=tools_for_mcp):
+        if LiteLLM_Proxy_MCP_Handler._should_use_litellm_mcp_gateway(
+            tools=tools_for_mcp
+        ):
             # Return coroutine - acompletion will await it
             # completion() can return a coroutine when MCP tools are present, which acompletion() awaits
             return acompletion_with_mcp(  # type: ignore[return-value]
@@ -2337,11 +2339,7 @@ def completion(  # type: ignore # noqa: PLR0915
                 input=messages, api_key=api_key, original_response=response
             )
         elif custom_llm_provider == "minimax":
-            api_key = (
-                api_key
-                or get_secret_str("MINIMAX_API_KEY")
-                or litellm.api_key
-            )
+            api_key = api_key or get_secret_str("MINIMAX_API_KEY") or litellm.api_key
 
             api_base = (
                 api_base
@@ -2389,7 +2387,9 @@ def completion(  # type: ignore # noqa: PLR0915
             or custom_llm_provider == "wandb"
             or custom_llm_provider == "clarifai"
             or custom_llm_provider in litellm.openai_compatible_providers
-            or JSONProviderRegistry.exists(custom_llm_provider)  # JSON-configured providers
+            or JSONProviderRegistry.exists(
+                custom_llm_provider
+            )  # JSON-configured providers
             or "ft:gpt-3.5-turbo" in model  # finetune gpt-3.5-turbo
         ):  # allow user to make an openai call with a custom base
             # note: if a user sets a custom base - we should ensure this works
@@ -4700,7 +4700,7 @@ def embedding(  # noqa: PLR0915
 
             if headers is not None and headers != {}:
                 optional_params["extra_headers"] = headers
-            
+
             if encoding_format is not None:
                 optional_params["encoding_format"] = encoding_format
             else:
@@ -6735,9 +6735,7 @@ def speech(  # noqa: PLR0915
         if text_to_speech_provider_config is None:
             text_to_speech_provider_config = MinimaxTextToSpeechConfig()
 
-        minimax_config = cast(
-            MinimaxTextToSpeechConfig, text_to_speech_provider_config
-        )
+        minimax_config = cast(MinimaxTextToSpeechConfig, text_to_speech_provider_config)
 
         if api_base is not None:
             litellm_params_dict["api_base"] = api_base
@@ -6877,7 +6875,7 @@ async def ahealth_check(
         custom_llm_provider_from_params = model_params.get("custom_llm_provider", None)
         api_base_from_params = model_params.get("api_base", None)
         api_key_from_params = model_params.get("api_key", None)
-        
+
         model, custom_llm_provider, _, _ = get_llm_provider(
             model=model,
             custom_llm_provider=custom_llm_provider_from_params,
@@ -7251,6 +7249,7 @@ def __getattr__(name: str) -> Any:
         _encoding = tiktoken.get_encoding("cl100k_base")
         # Cache it in the module's __dict__ for subsequent accesses
         import sys
+
         sys.modules[__name__].__dict__["encoding"] = _encoding
         global _encoding_cache
         _encoding_cache = _encoding

@@ -846,7 +846,9 @@ async def add_litellm_data_to_request(  # noqa: PLR0915
 
     # Add headers to metadata for guardrails to access (fixes #17477)
     # Guardrails use metadata["headers"] to access request headers (e.g., User-Agent)
-    if _metadata_variable_name in data and isinstance(data[_metadata_variable_name], dict):
+    if _metadata_variable_name in data and isinstance(
+        data[_metadata_variable_name], dict
+    ):
         data[_metadata_variable_name]["headers"] = _headers
 
     # check for forwardable headers
@@ -1002,7 +1004,9 @@ async def add_litellm_data_to_request(  # noqa: PLR0915
 
     # User spend, budget - used by prometheus.py
     # Follow same pattern as team and API key budgets
-    data[_metadata_variable_name]["user_api_key_user_spend"] = user_api_key_dict.user_spend
+    data[_metadata_variable_name][
+        "user_api_key_user_spend"
+    ] = user_api_key_dict.user_spend
     data[_metadata_variable_name][
         "user_api_key_user_max_budget"
     ] = user_api_key_dict.user_max_budget

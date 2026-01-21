@@ -695,7 +695,7 @@ class LitellmParams(
             kwargs["default_on"] = default_on
         else:
             kwargs["default_on"] = False
-        
+
         super().__init__(**kwargs)
 
     def __contains__(self, key):

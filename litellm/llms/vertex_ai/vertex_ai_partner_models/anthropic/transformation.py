@@ -68,10 +68,10 @@ class VertexAIAnthropicConfig(AnthropicConfig):
         )
 
         data.pop("model", None)  # vertex anthropic doesn't accept 'model' parameter
-        
+
         # VertexAI doesn't support output_format parameter, remove it if present
         data.pop("output_format", None)
-        
+
         tools = optional_params.get("tools")
         tool_search_used = self.is_tool_search_used(tools)
         auto_betas = self.get_anthropic_beta_list(
@@ -85,11 +85,13 @@ class VertexAIAnthropicConfig(AnthropicConfig):
 
         beta_set = set(auto_betas)
         if tool_search_used:
-            beta_set.add("tool-search-tool-2025-10-19")  # Vertex requires this header for tool search
+            beta_set.add(
+                "tool-search-tool-2025-10-19"
+            )  # Vertex requires this header for tool search
 
         if beta_set:
             data["anthropic_beta"] = list(beta_set)
-        
+
         return data
 
     def map_openai_params(
@@ -109,7 +111,7 @@ class VertexAIAnthropicConfig(AnthropicConfig):
         original_model = model
         if "response_format" in non_default_params:
             model = "claude-3-sonnet-20240229"  # Use a model that will use tool-based approach
-        
+
         # Call parent method with potentially modified model name
         optional_params = super().map_openai_params(
             non_default_params=non_default_params,
@@ -117,10 +119,10 @@ class VertexAIAnthropicConfig(AnthropicConfig):
             model=model,
             drop_params=drop_params,
         )
-        
+
         # Restore original model name for any other processing
         model = original_model
-        
+
         return optional_params
 
     def transform_response(

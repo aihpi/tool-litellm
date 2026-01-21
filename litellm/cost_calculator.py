@@ -951,7 +951,10 @@ def completion_cost(  # noqa: PLR0915
             router_model_id=router_model_id,
         )
 
-        potential_model_names = [selected_model, _get_response_model(completion_response)]
+        potential_model_names = [
+            selected_model,
+            _get_response_model(completion_response),
+        ]
         if model is not None:
             potential_model_names.append(model)
 
@@ -1706,10 +1709,16 @@ def default_image_cost_calculator(
         )
 
     # Priority 1: Use per-image pricing if available (for gpt-image-1 and similar models)
-    if "input_cost_per_image" in cost_info and cost_info["input_cost_per_image"] is not None:
+    if (
+        "input_cost_per_image" in cost_info
+        and cost_info["input_cost_per_image"] is not None
+    ):
         return cost_info["input_cost_per_image"] * n
     # Priority 2: Fall back to per-pixel pricing for backward compatibility
-    elif "input_cost_per_pixel" in cost_info and cost_info["input_cost_per_pixel"] is not None:
+    elif (
+        "input_cost_per_pixel" in cost_info
+        and cost_info["input_cost_per_pixel"] is not None
+    ):
         return cost_info["input_cost_per_pixel"] * height * width * n
     else:
         raise Exception(

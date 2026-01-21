@@ -209,18 +209,18 @@ def _build_scim_metadata(
 async def _get_scim_upsert_user_setting() -> bool:
     """
     Get the scim_upsert_user setting from litellm_settings.
-    
+
     Returns:
         True if scim_upsert_user is not set or is True (default behavior),
         False if scim_upsert_user is explicitly set to False (SCIM 2.0 strict mode)
     """
     try:
         from litellm.proxy.proxy_server import proxy_config
-        
+
         config = await proxy_config.get_config()
         litellm_settings = config.get("litellm_settings", {}) or {}
         scim_upsert_user = litellm_settings.get("scim_upsert_user", True)
-        
+
         # Default to True if not set (backward compatibility)
         return bool(scim_upsert_user)
     except Exception as e:
@@ -249,7 +249,7 @@ async def _extract_group_member_ids(group: SCIMGroup) -> GroupMemberExtractionRe
     existing_member_ids = []
     created_users = []
     all_member_ids = []
-    
+
     # Check the feature flag
     scim_upsert_user = await _get_scim_upsert_user_setting()
 
@@ -261,9 +261,7 @@ async def _extract_group_member_ids(group: SCIMGroup) -> GroupMemberExtractionRe
             if not user_id or not user_id.strip():
                 raise HTTPException(
                     status_code=400,
-                    detail={
-                        "error": "Invalid member: user ID cannot be empty."
-                    },
+                    detail={"error": "Invalid member: user ID cannot be empty."},
                 )
 
             # Check if user exists
@@ -292,7 +290,7 @@ async def _extract_group_member_ids(group: SCIMGroup) -> GroupMemberExtractionRe
                         status_code=400,
                         detail={
                             "error": f"User with ID '{user_id}' does not exist. "
-                                     "Please create the user first via POST /Users before adding to group."
+                            "Please create the user first via POST /Users before adding to group."
                         },
                     )
 
@@ -466,13 +464,13 @@ async def get_users(
                 where_conditions["user_email"] = email
 
         # Get users from database
-        users: List[LiteLLM_UserTable] = (
-            await prisma_client.db.litellm_usertable.find_many(
-                where=where_conditions,
-                skip=(startIndex - 1),
-                take=count,
-                order={"created_at": "desc"},
-            )
+        users: List[
+            LiteLLM_UserTable
+        ] = await prisma_client.db.litellm_usertable.find_many(
+            where=where_conditions,
+            skip=(startIndex - 1),
+            take=count,
+            order={"created_at": "desc"},
         )
 
         # Get total count for pagination
@@ -854,7 +852,7 @@ async def patch_team_membership(
 ) -> bool:
     """
     Add or remove user from teams
-    
+
     Handles duplicate membership gracefully (idempotent operation).
     If a user is already in a team, that's fine - we don't treat it as an error.
     """
@@ -1268,9 +1266,7 @@ async def _process_group_patch_operations(
                 if not member_id or not member_id.strip():
                     raise HTTPException(
                         status_code=400,
-                        detail={
-                            "error": "Invalid member: user ID cannot be empty."
-                        },
+                        detail={"error": "Invalid member: user ID cannot be empty."},
                     )
 
                 user = await prisma_client.db.litellm_usertable.find_unique(
@@ -1293,7 +1289,7 @@ async def _process_group_patch_operations(
                             status_code=400,
                             detail={
                                 "error": f"User with ID '{member_id}' does not exist. "
-                                         "Please create the user first via POST /Users before adding to group."
+                                "Please create the user first via POST /Users before adding to group."
                             },
                         )
 

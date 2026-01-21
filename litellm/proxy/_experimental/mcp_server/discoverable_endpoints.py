@@ -393,7 +393,11 @@ async def callback(code: str, state: str):
     https://datatracker.ietf.org/doc/html/rfc9728#section-3.1)
     3. Fall back to root-based well-known URI: /.well-known/oauth-protected-resource
 """
-@router.get(f"/.well-known/oauth-protected-resource{'' if get_server_root_path() == '/' else get_server_root_path()}/{{mcp_server_name}}/mcp")
+
+
+@router.get(
+    f"/.well-known/oauth-protected-resource{'' if get_server_root_path() == '/' else get_server_root_path()}/{{mcp_server_name}}/mcp"
+)
 @router.get("/.well-known/oauth-protected-resource")
 async def oauth_protected_resource_mcp(
     request: Request, mcp_server_name: Optional[str] = None
@@ -401,6 +405,7 @@ async def oauth_protected_resource_mcp(
     from litellm.proxy._experimental.mcp_server.mcp_server_manager import (
         global_mcp_server_manager,
     )
+
     # Get the correct base URL considering X-Forwarded-* headers
     request_base_url = get_request_base_url(request)
     mcp_server: Optional[MCPServer] = None
@@ -422,6 +427,7 @@ async def oauth_protected_resource_mcp(
         "scopes_supported": mcp_server.scopes if mcp_server else [],
     }
 
+
 """
     https://datatracker.ietf.org/doc/html/rfc8414#section-3.1
     RFC 8414: Path-aware OAuth discovery
@@ -430,7 +436,11 @@ async def oauth_protected_resource_mcp(
     the well-known URI suffix between the host component and the path(include root path)
     component.
 """
-@router.get(f"/.well-known/oauth-authorization-server{'' if get_server_root_path() == '/' else get_server_root_path()}/{{mcp_server_name}}")
+
+
+@router.get(
+    f"/.well-known/oauth-authorization-server{'' if get_server_root_path() == '/' else get_server_root_path()}/{{mcp_server_name}}"
+)
 @router.get("/.well-known/oauth-authorization-server")
 async def oauth_authorization_server_mcp(
     request: Request, mcp_server_name: Optional[str] = None
@@ -438,6 +448,7 @@ async def oauth_authorization_server_mcp(
     from litellm.proxy._experimental.mcp_server.mcp_server_manager import (
         global_mcp_server_manager,
     )
+
     # Get the correct base URL considering X-Forwarded-* headers
     request_base_url = get_request_base_url(request)
 
@@ -466,7 +477,9 @@ async def oauth_authorization_server_mcp(
         "code_challenge_methods_supported": ["S256"],
         "token_endpoint_auth_methods_supported": ["client_secret_post"],
         # Claude expects a registration endpoint, even if we just fake it
-        "registration_endpoint": f"{request_base_url}/{mcp_server_name}/register" if mcp_server_name else f"{request_base_url}/register",
+        "registration_endpoint": f"{request_base_url}/{mcp_server_name}/register"
+        if mcp_server_name
+        else f"{request_base_url}/register",
     }
 
 

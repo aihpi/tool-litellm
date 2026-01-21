@@ -259,10 +259,10 @@ class LiteLLMResponsesTransformationHandler(CompletionTransformationBridge):
                 responses_api_request["max_output_tokens"] = value
             elif key == "tools" and value is not None:
                 # Convert chat completion tools to responses API tools format
-                responses_api_request["tools"] = (
-                    self._convert_tools_to_responses_format(
-                        cast(List[Dict[str, Any]], value)
-                    )
+                responses_api_request[
+                    "tools"
+                ] = self._convert_tools_to_responses_format(
+                    cast(List[Dict[str, Any]], value)
                 )
             elif key == "response_format":
                 # Convert response_format to text.format
@@ -481,24 +481,29 @@ class LiteLLMResponsesTransformationHandler(CompletionTransformationBridge):
                 raw_response.usage
             ),
         )
-        
+
         # Preserve hidden params from the ResponsesAPIResponse, especially the headers
         # which contain important provider information like x-request-id
         raw_response_hidden_params = getattr(raw_response, "_hidden_params", {})
         if raw_response_hidden_params:
-            if not hasattr(model_response, "_hidden_params") or model_response._hidden_params is None:
+            if (
+                not hasattr(model_response, "_hidden_params")
+                or model_response._hidden_params is None
+            ):
                 model_response._hidden_params = {}
             # Merge the raw_response hidden params with model_response hidden params
             # Preserve existing keys in model_response but add/override with raw_response params
             for key, value in raw_response_hidden_params.items():
                 if key == "additional_headers" and key in model_response._hidden_params:
                     # Merge additional_headers to preserve both sets
-                    existing_additional_headers = model_response._hidden_params.get("additional_headers", {})
+                    existing_additional_headers = model_response._hidden_params.get(
+                        "additional_headers", {}
+                    )
                     merged_headers = {**value, **existing_additional_headers}
                     model_response._hidden_params[key] = merged_headers
                 else:
                     model_response._hidden_params[key] = value
-        
+
         return model_response
 
     def get_model_response_iterator(
@@ -716,15 +721,31 @@ class LiteLLMResponsesTransformationHandler(CompletionTransformationBridge):
         if reasoning_effort == "none":
             return Reasoning(effort="none", summary="detailed") if auto_summary_enabled else Reasoning(effort="none")  # type: ignore
         elif reasoning_effort == "high":
-            return Reasoning(effort="high", summary="detailed") if auto_summary_enabled else Reasoning(effort="high")
+            return (
+                Reasoning(effort="high", summary="detailed")
+                if auto_summary_enabled
+                else Reasoning(effort="high")
+            )
         elif reasoning_effort == "xhigh":
             return Reasoning(effort="xhigh", summary="detailed") if auto_summary_enabled else Reasoning(effort="xhigh")  # type: ignore[typeddict-item]
         elif reasoning_effort == "medium":
-            return Reasoning(effort="medium", summary="detailed") if auto_summary_enabled else Reasoning(effort="medium")
+            return (
+                Reasoning(effort="medium", summary="detailed")
+                if auto_summary_enabled
+                else Reasoning(effort="medium")
+            )
         elif reasoning_effort == "low":
-            return Reasoning(effort="low", summary="detailed") if auto_summary_enabled else Reasoning(effort="low")
+            return (
+                Reasoning(effort="low", summary="detailed")
+                if auto_summary_enabled
+                else Reasoning(effort="low")
+            )
         elif reasoning_effort == "minimal":
-            return Reasoning(effort="minimal", summary="detailed") if auto_summary_enabled else Reasoning(effort="minimal")
+            return (
+                Reasoning(effort="minimal", summary="detailed")
+                if auto_summary_enabled
+                else Reasoning(effort="minimal")
+            )
         return None
 
     def _transform_response_format_to_text_format(
@@ -775,14 +796,14 @@ class LiteLLMResponsesTransformationHandler(CompletionTransformationBridge):
                 return {"format": {"type": "text"}}
 
         return None
-    
+
     @staticmethod
     def _convert_annotations_to_chat_format(
         annotations: Optional[List[Any]],
     ) -> Optional[List["ChatCompletionAnnotation"]]:
         """
         Convert annotations from Responses API to Chat Completions format.
-        
+
         Annotations are already in compatible format between both APIs,
         so we just need to convert Pydantic models to dicts.
         """
@@ -801,13 +822,17 @@ class LiteLLMResponsesTransformationHandler(CompletionTransformationBridge):
                     annotation_dict = annotation
                 else:
                     # Skip unsupported annotation types
-                    verbose_logger.debug(f"Skipping unsupported annotation type: {type(annotation)}")
+                    verbose_logger.debug(
+                        f"Skipping unsupported annotation type: {type(annotation)}"
+                    )
                     continue
 
                 result.append(annotation_dict)  # type: ignore
             except Exception as e:
                 # Skip malformed annotations
-                verbose_logger.debug(f"Skipping malformed annotation: {annotation}, error: {e}")
+                verbose_logger.debug(
+                    f"Skipping malformed annotation: {annotation}, error: {e}"
+                )
                 continue
 
         return result if result else None
@@ -923,9 +948,9 @@ class OpenAiResponsesToChatCompletionStreamIterator(BaseModelResponseIterator):
                 )
 
                 if provider_specific_fields:
-                    function_chunk["provider_specific_fields"] = (
-                        provider_specific_fields
-                    )
+                    function_chunk[
+                        "provider_specific_fields"
+                    ] = provider_specific_fields
 
                 tool_call_chunk = ChatCompletionToolCallChunk(
                     id=output_item.get("call_id"),
@@ -996,9 +1021,9 @@ class OpenAiResponsesToChatCompletionStreamIterator(BaseModelResponseIterator):
 
                 # Add provider_specific_fields to function if present
                 if provider_specific_fields:
-                    function_chunk["provider_specific_fields"] = (
-                        provider_specific_fields
-                    )
+                    function_chunk[
+                        "provider_specific_fields"
+                    ] = provider_specific_fields
 
                 tool_call_chunk = ChatCompletionToolCallChunk(
                     id=output_item.get("call_id"),

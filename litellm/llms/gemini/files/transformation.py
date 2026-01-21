@@ -180,7 +180,9 @@ class GoogleAIStudioFilesHandler(GeminiModelInfo, BaseFilesConfig):
         optional_params: dict,
         litellm_params: dict,
     ) -> tuple[str, dict]:
-        raise NotImplementedError("GoogleAIStudioFilesHandler does not support file retrieval")
+        raise NotImplementedError(
+            "GoogleAIStudioFilesHandler does not support file retrieval"
+        )
 
     def transform_retrieve_file_response(
         self,
@@ -188,7 +190,9 @@ class GoogleAIStudioFilesHandler(GeminiModelInfo, BaseFilesConfig):
         logging_obj: LiteLLMLoggingObj,
         litellm_params: dict,
     ) -> OpenAIFileObject:
-        raise NotImplementedError("GoogleAIStudioFilesHandler does not support file retrieval")
+        raise NotImplementedError(
+            "GoogleAIStudioFilesHandler does not support file retrieval"
+        )
 
     def transform_delete_file_request(
         self,
@@ -196,7 +200,9 @@ class GoogleAIStudioFilesHandler(GeminiModelInfo, BaseFilesConfig):
         optional_params: dict,
         litellm_params: dict,
     ) -> tuple[str, dict]:
-        raise NotImplementedError("GoogleAIStudioFilesHandler does not support file deletion")
+        raise NotImplementedError(
+            "GoogleAIStudioFilesHandler does not support file deletion"
+        )
 
     def transform_delete_file_response(
         self,
@@ -204,7 +210,9 @@ class GoogleAIStudioFilesHandler(GeminiModelInfo, BaseFilesConfig):
         logging_obj: LiteLLMLoggingObj,
         litellm_params: dict,
     ) -> FileDeleted:
-        raise NotImplementedError("GoogleAIStudioFilesHandler does not support file deletion")
+        raise NotImplementedError(
+            "GoogleAIStudioFilesHandler does not support file deletion"
+        )
 
     def transform_list_files_request(
         self,
@@ -212,7 +220,9 @@ class GoogleAIStudioFilesHandler(GeminiModelInfo, BaseFilesConfig):
         optional_params: dict,
         litellm_params: dict,
     ) -> tuple[str, dict]:
-        raise NotImplementedError("GoogleAIStudioFilesHandler does not support file listing")
+        raise NotImplementedError(
+            "GoogleAIStudioFilesHandler does not support file listing"
+        )
 
     def transform_list_files_response(
         self,
@@ -220,7 +230,9 @@ class GoogleAIStudioFilesHandler(GeminiModelInfo, BaseFilesConfig):
         logging_obj: LiteLLMLoggingObj,
         litellm_params: dict,
     ) -> List[OpenAIFileObject]:
-        raise NotImplementedError("GoogleAIStudioFilesHandler does not support file listing")
+        raise NotImplementedError(
+            "GoogleAIStudioFilesHandler does not support file listing"
+        )
 
     def transform_file_content_request(
         self,
@@ -228,7 +240,9 @@ class GoogleAIStudioFilesHandler(GeminiModelInfo, BaseFilesConfig):
         optional_params: dict,
         litellm_params: dict,
     ) -> tuple[str, dict]:
-        raise NotImplementedError("GoogleAIStudioFilesHandler does not support file content retrieval")
+        raise NotImplementedError(
+            "GoogleAIStudioFilesHandler does not support file content retrieval"
+        )
 
     def transform_file_content_response(
         self,
@@ -236,4 +250,6 @@ class GoogleAIStudioFilesHandler(GeminiModelInfo, BaseFilesConfig):
         logging_obj: LiteLLMLoggingObj,
         litellm_params: dict,
     ) -> HttpxBinaryResponseContent:
-        raise NotImplementedError("GoogleAIStudioFilesHandler does not support file content retrieval")
+        raise NotImplementedError(
+            "GoogleAIStudioFilesHandler does not support file content retrieval"
+        )

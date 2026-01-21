@@ -71,9 +71,8 @@ def _extract_cache_read_input_tokens(usage_obj) -> int:
     # Check prompt_tokens_details.cached_tokens (used by Gemini and other providers)
     if hasattr(usage_obj, "prompt_tokens_details"):
         prompt_tokens_details = getattr(usage_obj, "prompt_tokens_details", None)
-        if (
-            prompt_tokens_details is not None
-            and hasattr(prompt_tokens_details, "cached_tokens")
+        if prompt_tokens_details is not None and hasattr(
+            prompt_tokens_details, "cached_tokens"
         ):
             cached_tokens = getattr(prompt_tokens_details, "cached_tokens", None)
             if (

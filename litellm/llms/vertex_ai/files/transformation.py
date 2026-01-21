@@ -389,7 +389,9 @@ class VertexAIFilesConfig(VertexBase, BaseFilesConfig):
         optional_params: dict,
         litellm_params: dict,
     ) -> tuple[str, dict]:
-        raise NotImplementedError("VertexAIFilesConfig does not support file content retrieval")
+        raise NotImplementedError(
+            "VertexAIFilesConfig does not support file content retrieval"
+        )
 
     def transform_file_content_response(
         self,
@@ -397,7 +399,9 @@ class VertexAIFilesConfig(VertexBase, BaseFilesConfig):
         logging_obj: LiteLLMLoggingObj,
         litellm_params: dict,
     ) -> HttpxBinaryResponseContent:
-        raise NotImplementedError("VertexAIFilesConfig does not support file content retrieval")
+        raise NotImplementedError(
+            "VertexAIFilesConfig does not support file content retrieval"
+        )
 
 
 class VertexAIJsonlFilesTransformation(VertexGeminiConfig):

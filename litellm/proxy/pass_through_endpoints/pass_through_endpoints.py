@@ -234,7 +234,10 @@ async def chat_completion_pass_through_endpoint(  # noqa: PLR0915
         elif (
             llm_router is not None
             and data["model"] not in router_model_names
-            and (llm_router.default_deployment is not None or len(llm_router.pattern_router.patterns) > 0)
+            and (
+                llm_router.default_deployment is not None
+                or len(llm_router.pattern_router.patterns) > 0
+            )
         ):  # check for wildcard routes or default deployment before checking deployment_names
             llm_response = asyncio.create_task(llm_router.aadapter_completion(**data))
         elif (
@@ -443,10 +446,10 @@ class HttpPassThroughEndpointHelpers(BasePassthroughUtils):
 
         for field_name, field_value in form_data.items():
             if isinstance(field_value, (StarletteUploadFile, UploadFile)):
-                files[field_name] = (
-                    await HttpPassThroughEndpointHelpers._build_request_files_from_upload_file(
-                        upload_file=field_value
-                    )
+                files[
+                    field_name
+                ] = await HttpPassThroughEndpointHelpers._build_request_files_from_upload_file(
+                    upload_file=field_value
                 )
             else:
                 form_data_dict[field_name] = field_value
@@ -539,9 +542,9 @@ class HttpPassThroughEndpointHelpers(BasePassthroughUtils):
             "passthrough_logging_payload": passthrough_logging_payload,
         }
 
-        logging_obj.model_call_details["passthrough_logging_payload"] = (
-            passthrough_logging_payload
-        )
+        logging_obj.model_call_details[
+            "passthrough_logging_payload"
+        ] = passthrough_logging_payload
 
         return kwargs
 
@@ -678,7 +681,7 @@ async def pass_through_request(  # noqa: PLR0915
             user_api_key_dict=user_api_key_dict,
             passthrough_guardrails_config=guardrails_config,
         )
-        
+
         # Add guardrails to metadata if any should run
         if guardrails_to_run and len(guardrails_to_run) > 0:
             if _parsed_body is None:
@@ -701,10 +704,10 @@ async def pass_through_request(  # noqa: PLR0915
             litellm_call_id=litellm_call_id,
             function_id="1245",
         )
-        
+
         # Store passthrough guardrails config on logging_obj for field targeting
         logging_obj.passthrough_guardrails_config = guardrails_config
-        
+
         # Store logging_obj in data so guardrails can access it
         if _parsed_body is None:
             _parsed_body = {}
@@ -739,7 +742,9 @@ async def pass_through_request(  # noqa: PLR0915
         # Store custom_llm_provider in kwargs and logging object if provided
         if custom_llm_provider:
             logging_obj.model_call_details["custom_llm_provider"] = custom_llm_provider
-            logging_obj.model_call_details["litellm_params"] = kwargs.get("litellm_params", {})
+            logging_obj.model_call_details["litellm_params"] = kwargs.get(
+                "litellm_params", {}
+            )
 
         # done for supporting 'parallel_request_limiter.py' with pass-through endpoints
         logging_obj.update_environment_variables(
@@ -929,12 +934,16 @@ async def pass_through_request(  # noqa: PLR0915
         if kwargs:
             for key, value in kwargs.items():
                 request_payload[key] = value
-        
-        if "model" not in request_payload and _parsed_body and isinstance(_parsed_body, dict):
+
+        if (
+            "model" not in request_payload
+            and _parsed_body
+            and isinstance(_parsed_body, dict)
+        ):
             request_payload["model"] = _parsed_body.get("model", "")
         if "custom_llm_provider" not in request_payload and custom_llm_provider:
             request_payload["custom_llm_provider"] = custom_llm_provider
-        
+
         await proxy_logging_obj.post_call_failure_hook(
             user_api_key_dict=user_api_key_dict,
             original_exception=e,
@@ -1443,9 +1452,9 @@ async def websocket_passthrough_request(  # noqa: PLR0915
                                             )
                                             if extracted_model:
                                                 kwargs["model"] = extracted_model
-                                                kwargs["custom_llm_provider"] = (
-                                                    "vertex_ai-language-models"
-                                                )
+                                                kwargs[
+                                                    "custom_llm_provider"
+                                                ] = "vertex_ai-language-models"
                                                 # Update logging object with correct model
                                                 logging_obj.model = extracted_model
                                                 logging_obj.model_call_details[
@@ -1511,9 +1520,9 @@ async def websocket_passthrough_request(  # noqa: PLR0915
                             # Update logging object with correct model
                             logging_obj.model = extracted_model
                             logging_obj.model_call_details["model"] = extracted_model
-                            logging_obj.model_call_details["custom_llm_provider"] = (
-                                "vertex_ai_language_models"
-                            )
+                            logging_obj.model_call_details[
+                                "custom_llm_provider"
+                            ] = "vertex_ai_language_models"
                             verbose_proxy_logger.debug(
                                 f"WebSocket passthrough ({endpoint}): Successfully extracted model '{extracted_model}' and set provider to 'vertex_ai' from server setup response"
                             )
@@ -2020,8 +2029,8 @@ class InitPassThroughEndpointHelpers:
             parts = key.split(":", 2)  # Split into [endpoint_id, type, path]
             if len(parts) == 3:
                 route_type = parts[1]
-                registered_path = InitPassThroughEndpointHelpers._build_full_path_with_root(
-                    parts[2]
+                registered_path = (
+                    InitPassThroughEndpointHelpers._build_full_path_with_root(parts[2])
                 )
                 if route_type == "exact" and route == registered_path:
                     return True
@@ -2040,8 +2049,8 @@ class InitPassThroughEndpointHelpers:
             parts = key.split(":", 2)  # Split into [endpoint_id, type, path]
             if len(parts) == 3:
                 route_type = parts[1]
-                registered_path = InitPassThroughEndpointHelpers._build_full_path_with_root(
-                    parts[2]
+                registered_path = (
+                    InitPassThroughEndpointHelpers._build_full_path_with_root(parts[2])
                 )
 
                 if route_type == "exact" and route == registered_path:
@@ -2149,7 +2158,7 @@ async def initialize_pass_through_endpoints(
 
         # Get guardrails config if present
         _guardrails = endpoint.get("guardrails", None)
-        
+
         # Add exact path route
         verbose_proxy_logger.debug(
             "Initializing pass through endpoint: %s (ID: %s)", _path, endpoint_id

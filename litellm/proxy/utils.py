@@ -133,6 +133,7 @@ unified_guardrail = UnifiedLLMGuardrails()
 
 _anthropic_async_clients = {}
 
+
 def print_verbose(print_statement):
     """
     Prints the given `print_statement` to the console if `litellm.set_verbose` is True.
@@ -983,7 +984,9 @@ class ProxyLogging:
 
         try:
             # Check if load balancing should be used
-            if guardrail_name and self._should_use_guardrail_load_balancing(guardrail_name):
+            if guardrail_name and self._should_use_guardrail_load_balancing(
+                guardrail_name
+            ):
                 response = await self._execute_guardrail_with_load_balancing(
                     guardrail_name=guardrail_name,
                     hook_type="pre_call",
@@ -1018,7 +1021,11 @@ class ProxyLogging:
             latency_seconds = guardrail_end_time - guardrail_start_time
 
             # Get guardrail name for metrics (fallback if not set)
-            metrics_guardrail_name = guardrail_name or getattr(callback, "guardrail_name", callback.__class__.__name__) or "unknown"
+            metrics_guardrail_name = (
+                guardrail_name
+                or getattr(callback, "guardrail_name", callback.__class__.__name__)
+                or "unknown"
+            )
 
             # Find PrometheusLogger in callbacks and record metrics
             for prom_callback in litellm.callbacks:
@@ -4288,11 +4295,13 @@ async def count_tokens_with_anthropic_api(
 
         if anthropic_api_key and messages:
             # Call Anthropic API directly for more accurate token counting
-            
+
             # Use cached client if available to avoid socket exhaustion
             if anthropic_api_key not in _anthropic_async_clients:
-                _anthropic_async_clients[anthropic_api_key] = anthropic.AsyncAnthropic(api_key=anthropic_api_key)
-            
+                _anthropic_async_clients[anthropic_api_key] = anthropic.AsyncAnthropic(
+                    api_key=anthropic_api_key
+                )
+
             client = _anthropic_async_clients[anthropic_api_key]
 
             # Call with explicit parameters to satisfy type checking

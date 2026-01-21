@@ -448,9 +448,9 @@ class VertexGeminiConfig(VertexAIBaseConfig, BaseConfig):
         value = _remove_strict_from_schema(value)
 
         for tool in value:
-            openai_function_object: Optional[ChatCompletionToolParamFunctionChunk] = (
-                None
-            )
+            openai_function_object: Optional[
+                ChatCompletionToolParamFunctionChunk
+            ] = None
             if "function" in tool:  # tools list
                 _openai_function_object = ChatCompletionToolParamFunctionChunk(  # type: ignore
                     **tool["function"]
@@ -572,15 +572,15 @@ class VertexGeminiConfig(VertexAIBaseConfig, BaseConfig):
             _tools_list.append(search_tool)
         if googleSearchRetrieval is not None:
             retrieval_tool = Tools()
-            retrieval_tool[VertexToolName.GOOGLE_SEARCH_RETRIEVAL.value] = (
-                googleSearchRetrieval
-            )
+            retrieval_tool[
+                VertexToolName.GOOGLE_SEARCH_RETRIEVAL.value
+            ] = googleSearchRetrieval
             _tools_list.append(retrieval_tool)
         if enterpriseWebSearch is not None:
             enterprise_tool = Tools()
-            enterprise_tool[VertexToolName.ENTERPRISE_WEB_SEARCH.value] = (
-                enterpriseWebSearch
-            )
+            enterprise_tool[
+                VertexToolName.ENTERPRISE_WEB_SEARCH.value
+            ] = enterpriseWebSearch
             _tools_list.append(enterprise_tool)
         if code_execution is not None:
             code_tool = Tools()
@@ -996,16 +996,16 @@ class VertexGeminiConfig(VertexAIBaseConfig, BaseConfig):
                     param_description="thinking_budget",
                 )
                 if VertexGeminiConfig._is_gemini_3_or_newer(model):
-                    optional_params["thinkingConfig"] = (
-                        VertexGeminiConfig._map_reasoning_effort_to_thinking_level(
-                            value, model
-                        )
+                    optional_params[
+                        "thinkingConfig"
+                    ] = VertexGeminiConfig._map_reasoning_effort_to_thinking_level(
+                        value, model
                     )
                 else:
-                    optional_params["thinkingConfig"] = (
-                        VertexGeminiConfig._map_reasoning_effort_to_thinking_budget(
-                            value, model
-                        )
+                    optional_params[
+                        "thinkingConfig"
+                    ] = VertexGeminiConfig._map_reasoning_effort_to_thinking_budget(
+                        value, model
                     )
             elif param == "thinking":
                 # Validate no conflict with thinking_level
@@ -1014,11 +1014,11 @@ class VertexGeminiConfig(VertexAIBaseConfig, BaseConfig):
                     param_name="thinking",
                     param_description="thinking_budget",
                 )
-                optional_params["thinkingConfig"] = (
-                    VertexGeminiConfig._map_thinking_param(
-                        cast(AnthropicThinkingParam, value),
-                        model=model,
-                    )
+                optional_params[
+                    "thinkingConfig"
+                ] = VertexGeminiConfig._map_thinking_param(
+                    cast(AnthropicThinkingParam, value),
+                    model=model,
                 )
             elif param == "modalities" and isinstance(value, list):
                 response_modalities = self.map_response_modalities(value)
@@ -1381,10 +1381,10 @@ class VertexGeminiConfig(VertexAIBaseConfig, BaseConfig):
                         _tool_response_chunk["provider_specific_fields"] = {  # type: ignore
                             "thought_signature": thought_signature
                         }
-                        _tool_response_chunk["id"] = (
-                            _encode_tool_call_id_with_signature(
-                                _tool_response_chunk["id"] or "", thought_signature
-                            )
+                        _tool_response_chunk[
+                            "id"
+                        ] = _encode_tool_call_id_with_signature(
+                            _tool_response_chunk["id"] or "", thought_signature
                         )
                     _tools.append(_tool_response_chunk)
                 cumulative_tool_call_idx += 1
@@ -1584,7 +1584,9 @@ class VertexGeminiConfig(VertexAIBaseConfig, BaseConfig):
                 completion_image_tokens = response_tokens_details.image_tokens or 0
                 completion_audio_tokens = response_tokens_details.audio_tokens or 0
                 calculated_text_tokens = (
-                    candidates_token_count - completion_image_tokens - completion_audio_tokens
+                    candidates_token_count
+                    - completion_image_tokens
+                    - completion_audio_tokens
                 )
                 response_tokens_details.text_tokens = calculated_text_tokens
         #########################################################
@@ -2123,28 +2125,28 @@ class VertexGeminiConfig(VertexAIBaseConfig, BaseConfig):
             ## ADD METADATA TO RESPONSE ##
 
             setattr(model_response, "vertex_ai_grounding_metadata", grounding_metadata)
-            model_response._hidden_params["vertex_ai_grounding_metadata"] = (
-                grounding_metadata
-            )
+            model_response._hidden_params[
+                "vertex_ai_grounding_metadata"
+            ] = grounding_metadata
 
             setattr(
                 model_response, "vertex_ai_url_context_metadata", url_context_metadata
             )
 
-            model_response._hidden_params["vertex_ai_url_context_metadata"] = (
-                url_context_metadata
-            )
+            model_response._hidden_params[
+                "vertex_ai_url_context_metadata"
+            ] = url_context_metadata
 
             setattr(model_response, "vertex_ai_safety_results", safety_ratings)
-            model_response._hidden_params["vertex_ai_safety_results"] = (
-                safety_ratings  # older approach - maintaining to prevent regressions
-            )
+            model_response._hidden_params[
+                "vertex_ai_safety_results"
+            ] = safety_ratings  # older approach - maintaining to prevent regressions
 
             ## ADD CITATION METADATA ##
             setattr(model_response, "vertex_ai_citation_metadata", citation_metadata)
-            model_response._hidden_params["vertex_ai_citation_metadata"] = (
-                citation_metadata  # older approach - maintaining to prevent regressions
-            )
+            model_response._hidden_params[
+                "vertex_ai_citation_metadata"
+            ] = citation_metadata  # older approach - maintaining to prevent regressions
 
         except Exception as e:
             raise VertexAIError(

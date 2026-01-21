@@ -89,7 +89,9 @@ def _warn_on_server_name_fields(
         if result.is_valid:
             return
 
-        warning_text = "; ".join(result.warnings) if result.warnings else "Validation failed"
+        warning_text = (
+            "; ".join(result.warnings) if result.warnings else "Validation failed"
+        )
         verbose_logger.warning(
             "MCP server '%s' has invalid %s '%s': %s",
             server_id,
@@ -100,7 +102,6 @@ def _warn_on_server_name_fields(
 
     _warn("alias", alias)
     _warn("server_name", server_name)
-
 
 
 def _deserialize_json_dict(data: Any) -> Optional[Dict[str, str]]:

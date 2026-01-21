@@ -88,12 +88,14 @@ const mockVectorStores: VectorStore[] = [
 const mockOnView = vi.fn();
 const mockOnEdit = vi.fn();
 const mockOnDelete = vi.fn();
+const mockOnCreateCollection = vi.fn();
 
 const defaultProps = {
   data: mockVectorStores,
   onView: mockOnView,
   onEdit: mockOnEdit,
   onDelete: mockOnDelete,
+  onCreateCollection: mockOnCreateCollection,
 };
 
 // Helper function to render component
@@ -277,6 +279,37 @@ describe("VectorStoreTable", () => {
       const deleteButtons = screen.getAllByTestId("action-button-delete");
       await user.click(deleteButtons[0]);
       expect(mockOnDelete).toHaveBeenCalledWith("short-id");
+    });
+
+    it("should render create collection button for qdrant rows when enabled", () => {
+      const qdrantStore: VectorStore = {
+        vector_store_id: "qdrant-store",
+        custom_llm_provider: "qdrant",
+        created_at: "2024-01-20T10:00:00Z",
+        updated_at: "2024-01-20T10:00:00Z",
+      };
+      renderComponent({
+        data: [qdrantStore],
+        showCreateCollection: true,
+      });
+      expect(screen.getByTestId("action-button-createcollection")).toBeInTheDocument();
+    });
+
+    it("should call onCreateCollection when create collection button is clicked", async () => {
+      const user = userEvent.setup();
+      const qdrantStore: VectorStore = {
+        vector_store_id: "qdrant-store",
+        custom_llm_provider: "qdrant",
+        created_at: "2024-01-20T10:00:00Z",
+        updated_at: "2024-01-20T10:00:00Z",
+      };
+      renderComponent({
+        data: [qdrantStore],
+        showCreateCollection: true,
+      });
+      const createButton = screen.getByTestId("action-button-createcollection");
+      await user.click(createButton);
+      expect(mockOnCreateCollection).toHaveBeenCalledWith("qdrant-store");
     });
 
     it("should pass correct props to TableIconActionButton", () => {

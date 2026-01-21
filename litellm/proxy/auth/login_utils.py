@@ -81,8 +81,7 @@ async def expire_previous_ui_session_tokens(
 
         if tokens_to_block:
             await prisma_client.db.litellm_verificationtoken.update_many(
-                where={"token": {"in": tokens_to_block}},
-                data={"blocked": True}
+                where={"token": {"in": tokens_to_block}}, data={"blocked": True}
             )
 
     except Exception:
@@ -452,9 +451,7 @@ async def authenticate_ldap_user(
         ) from exc
 
     user_role = (
-        LitellmUserRoles.PROXY_ADMIN
-        if is_admin
-        else LitellmUserRoles.INTERNAL_USER
+        LitellmUserRoles.PROXY_ADMIN if is_admin else LitellmUserRoles.INTERNAL_USER
     )
 
     user_row: Optional[LiteLLM_UserTable] = cast(

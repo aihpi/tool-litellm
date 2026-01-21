@@ -899,7 +899,7 @@ def get_openapi_schema():
     from litellm.proxy.common_utils.custom_openapi_spec import CustomOpenAPISpec
 
     openapi_schema = CustomOpenAPISpec.add_llm_api_request_schema_body(openapi_schema)
-    
+
     # Fix Swagger UI execute path error when server_root_path is set
     if server_root_path:
         openapi_schema["servers"] = [{"url": "/" + server_root_path.strip("/")}]
@@ -925,7 +925,7 @@ def custom_openapi():
     from litellm.proxy.common_utils.custom_openapi_spec import CustomOpenAPISpec
 
     openapi_schema = CustomOpenAPISpec.add_llm_api_request_schema_body(openapi_schema)
-    
+
     # Fix Swagger UI execute path error when server_root_path is set
     if server_root_path:
         openapi_schema["servers"] = [{"url": "/" + server_root_path.strip("/")}]

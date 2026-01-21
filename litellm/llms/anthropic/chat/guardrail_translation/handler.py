@@ -84,9 +84,9 @@ class AnthropicMessagesHandler(BaseTranslation):
 
         texts_to_check: List[str] = []
         images_to_check: List[str] = []
-        tools_to_check: List[ChatCompletionToolParam] = (
-            chat_completion_compatible_request.get("tools", [])
-        )
+        tools_to_check: List[
+            ChatCompletionToolParam
+        ] = chat_completion_compatible_request.get("tools", [])
         task_mappings: List[Tuple[int, Optional[int]]] = []
         # Track (message_index, content_index) for each text
         # content_index is None for string content, int for list content
@@ -278,7 +278,10 @@ class AnthropicMessagesHandler(BaseTranslation):
                 if hasattr(content_block, "model_dump"):
                     block_dict = content_block.model_dump()
                 else:
-                    block_dict = {"type": block_type, "text": getattr(content_block, "text", None)}
+                    block_dict = {
+                        "type": block_type,
+                        "text": getattr(content_block, "text", None),
+                    }
             else:
                 continue
 
@@ -346,7 +349,6 @@ class AnthropicMessagesHandler(BaseTranslation):
         """
         has_ended = self._check_streaming_has_ended(responses_so_far)
         if has_ended:
-
             # build the model response from the responses_so_far
             model_response = cast(
                 ModelResponse,
@@ -552,7 +554,7 @@ class AnthropicMessagesHandler(BaseTranslation):
             response_content = response.get("content", [])
         else:
             response_content = getattr(response, "content", None) or []
-        
+
         if not response_content:
             return False
         for content_block in response_content:
@@ -636,7 +638,10 @@ class AnthropicMessagesHandler(BaseTranslation):
             if isinstance(content_block, dict):
                 if content_block.get("type") == "text":
                     cast(Dict[str, Any], content_block)["text"] = guardrail_response
-            elif hasattr(content_block, "type") and getattr(content_block, "type", None) == "text":
+            elif (
+                hasattr(content_block, "type")
+                and getattr(content_block, "type", None) == "text"
+            ):
                 # Update Pydantic object's text attribute
                 if hasattr(content_block, "text"):
                     content_block.text = guardrail_response

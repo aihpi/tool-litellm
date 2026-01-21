@@ -664,7 +664,7 @@ class AzureChatCompletion(BaseAzureLLM, BaseLLM):
                 **data, timeout=timeout
             )
             headers = dict(raw_response.headers)
-            
+
             # Convert json.JSONDecodeError to AzureOpenAIError for two critical reasons:
             #
             # 1. ROUTER BEHAVIOR: The router relies on exception.status_code to determine cooldown logic:
@@ -682,9 +682,9 @@ class AzureChatCompletion(BaseAzureLLM, BaseLLM):
             except json.JSONDecodeError as json_error:
                 raise AzureOpenAIError(
                     status_code=raw_response.status_code or 500,
-                    message=f"Failed to parse raw Azure embedding response: {str(json_error)}"
+                    message=f"Failed to parse raw Azure embedding response: {str(json_error)}",
                 ) from json_error
-            
+
             stringified_response = response.model_dump()
 
             ## LOGGING
@@ -1055,7 +1055,6 @@ class AzureChatCompletion(BaseAzureLLM, BaseLLM):
         client=None,
         timeout=None,
     ) -> ImageResponse:
-
         response: Optional[dict] = None
         try:
             # response = await azure_client.images.generate(**data, timeout=timeout)
@@ -1166,7 +1165,7 @@ class AzureChatCompletion(BaseAzureLLM, BaseLLM):
             # Azure image generation API doesn't support extra_body parameter
             extra_body = optional_params.pop("extra_body", {})
             flattened_params = {**optional_params, **extra_body}
-            
+
             data = {"model": model, "prompt": prompt, **flattened_params}
             max_retries = data.pop("max_retries", 2)
             if not isinstance(max_retries, int):

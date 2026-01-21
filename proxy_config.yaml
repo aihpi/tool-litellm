@@ -1,0 +1,19 @@
+model_list:
+  - model_name: dummy-embedding
+    litellm_params:
+      model: openai/dummy-embedding
+      api_base: http://localhost:9999/v1
+      api_key: dummy
+    model_info:
+      mode: embedding
+
+general_settings:
+  database_url: postgresql://litellm:litellm@host.docker.internal:5432/litellm
+
+litellm_settings:
+  master_key: sk-1234
+  ui_username: admin
+  ui_password: admin
+
+environment_variables:
+  QDRANT_API_BASE: http://qdrant:6333

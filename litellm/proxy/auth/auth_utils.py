@@ -562,6 +562,7 @@ def get_customer_user_header_from_mapping(user_id_mapping) -> Optional[str]:
             return header_name
     return None
 
+
 def _get_customer_id_from_standard_headers(
     request_headers: Optional[dict],
 ) -> Optional[str]:
@@ -597,7 +598,9 @@ def get_end_user_id_from_request_body(
     from litellm.proxy.proxy_server import general_settings
 
     # Check 1: Standard customer ID headers (always checked, no configuration required)
-    customer_id = _get_customer_id_from_standard_headers(request_headers=request_headers)
+    customer_id = _get_customer_id_from_standard_headers(
+        request_headers=request_headers
+    )
     if customer_id is not None:
         return customer_id
 

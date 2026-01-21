@@ -41,11 +41,11 @@ def get_litellm_web_search_tool() -> Dict[str, Any]:
             "properties": {
                 "query": {
                     "type": "string",
-                    "description": "The search query to execute"
+                    "description": "The search query to execute",
                 }
             },
-            "required": ["query"]
-        }
+            "required": ["query"],
+        },
     }
 
 

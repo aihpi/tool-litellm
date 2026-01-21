@@ -6667,6 +6667,36 @@ export const vectorStoreUpdateCall = async (accessToken: string, formValues: Rec
   }
 };
 
+export const qdrantCreateCollectionCall = async (
+  accessToken: string,
+  formValues: Record<string, any>,
+): Promise<any> => {
+  try {
+    const url = proxyBaseUrl
+      ? `${proxyBaseUrl}/vector_store/qdrant/create_collection`
+      : `/vector_store/qdrant/create_collection`;
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify(formValues),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || "Failed to create Qdrant collection");
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Error creating Qdrant collection:", error);
+    throw error;
+  }
+};
+
 export const getEmailEventSettings = async (accessToken: string): Promise<EmailEventSettingsResponse> => {
   try {
     const url = proxyBaseUrl ? `${proxyBaseUrl}/email/event_settings` : `/email/event_settings`;

@@ -184,7 +184,7 @@ class AgentCoreSSEStreamIterator:
     def __next__(self) -> ModelResponse:
         """
         Sync iteration - parse SSE events and yield ModelResponse chunks.
-        
+
         Uses next() on the stored iterator to properly resume between calls.
         """
         try:

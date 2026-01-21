@@ -292,22 +292,21 @@ class LiteLLMCompletionResponsesConfig:
             )
         _messages = litellm_completion_request.get("messages") or []
         session_messages = chat_completion_session.get("messages") or []
-        
+
         # If session messages are empty (e.g., no database in test environment),
         # we still need to process the new input messages
         # Store original _messages before combining for safety check
         original_new_messages = _messages.copy() if _messages else []
-        
+
         combined_messages = session_messages + _messages
-        
+
         # Fix: Ensure tool_results have corresponding tool_calls in previous assistant message
         # Pass tools parameter to help reconstruct tool_calls if not in cache
         tools = litellm_completion_request.get("tools") or []
         combined_messages = LiteLLMCompletionResponsesConfig._ensure_tool_results_have_corresponding_tool_calls(
-            messages=combined_messages,
-            tools=tools
+            messages=combined_messages, tools=tools
         )
-        
+
         # Safety check: Ensure we don't end up with empty messages
         # This can happen when using previous_response_id without a database (e.g., in tests)
         # and session messages are empty but new input messages exist
@@ -326,6 +325,7 @@ class LiteLLMCompletionResponsesConfig:
                 # Both are empty - this likely means function_call_output had empty/invalid call_id
                 # Provide a helpful error message
                 import litellm
+
                 raise litellm.BadRequestError(
                     message=(
                         f"Unable to create messages for completion request. "
@@ -336,9 +336,11 @@ class LiteLLMCompletionResponsesConfig:
                         f"Original request: previous_response_id={previous_response_id}"
                     ),
                     model=litellm_completion_request.get("model", ""),
-                    llm_provider=litellm_completion_request.get("custom_llm_provider", ""),
+                    llm_provider=litellm_completion_request.get(
+                        "custom_llm_provider", ""
+                    ),
                 )
-        
+
         litellm_completion_request["messages"] = combined_messages
         litellm_completion_request["litellm_trace_id"] = chat_completion_session.get(
             "litellm_session_id"
@@ -516,7 +518,11 @@ class LiteLLMCompletionResponsesConfig:
             if isinstance(assistant_message, dict)
             else getattr(assistant_message, "tool_calls", None)
         )
-        if tool_calls_raw and isinstance(tool_calls_raw, list) and len(tool_calls_raw) > 0:
+        if (
+            tool_calls_raw
+            and isinstance(tool_calls_raw, list)
+            and len(tool_calls_raw) > 0
+        ):
             first_tool_call = tool_calls_raw[0]
             if isinstance(first_tool_call, dict):
                 tool_call_id_raw = first_tool_call.get("id", "")
@@ -583,7 +589,9 @@ class LiteLLMCompletionResponsesConfig:
     ) -> ChatCompletionToolCallChunk:
         """Create a ChatCompletionToolCallChunk from tool_use_definition."""
         function_raw = tool_use_definition.get("function")
-        function: Dict[str, Any] = function_raw if isinstance(function_raw, dict) else {}
+        function: Dict[str, Any] = (
+            function_raw if isinstance(function_raw, dict) else {}
+        )
         tool_use_id_raw = tool_use_definition.get("id")
         tool_use_id: str = (
             str(tool_use_id_raw) if tool_use_id_raw is not None else str(tool_call_id)
@@ -622,52 +630,71 @@ class LiteLLMCompletionResponsesConfig:
 
     @staticmethod
     def _ensure_tool_results_have_corresponding_tool_calls(
-        messages: List[Union[AllMessageValues, GenericChatCompletionMessage, ChatCompletionResponseMessage]],
+        messages: List[
+            Union[
+                AllMessageValues,
+                GenericChatCompletionMessage,
+                ChatCompletionResponseMessage,
+            ]
+        ],
         tools: Optional[List[Any]] = None,
-    ) -> List[Union[AllMessageValues, GenericChatCompletionMessage, ChatCompletionResponseMessage]]:
+    ) -> List[
+        Union[
+            AllMessageValues,
+            GenericChatCompletionMessage,
+            ChatCompletionResponseMessage,
+        ]
+    ]:
         """
         Ensure that tool_result messages have corresponding tool_calls in the previous assistant message.
-        
+
         This is critical for Anthropic API which requires that each tool_result block has a
         corresponding tool_use block in the previous assistant message.
-        
+
         Args:
             messages: List of messages that may include tool_result messages
             tools: Optional list of tools that can be used to reconstruct tool_calls if not in cache
-            
+
         Returns:
             List of messages with tool_calls added to assistant messages when needed
         """
         if not messages:
             return messages
-        
+
         # Create a deep copy to avoid modifying the original
         import copy
+
         fixed_messages = copy.deepcopy(messages)
         messages_to_remove = []
-        
+
         # Count non-tool messages to avoid removing all messages
         # This prevents empty messages list when using previous_response_id without a database
         non_tool_messages_count = sum(
             1 for msg in fixed_messages if msg.get("role") != "tool"
         )
-        
+
         for i, message in enumerate(fixed_messages):
             # Only process tool messages - check role first to narrow the type
             if message.get("role") != "tool":
                 continue
-                
+
             # At this point, we know it's a tool message, so it should have tool_call_id
             # Use get() with default to safely access tool_call_id
-            tool_call_id_raw = message.get("tool_call_id") if isinstance(message, dict) else getattr(message, "tool_call_id", None)
+            tool_call_id_raw = (
+                message.get("tool_call_id")
+                if isinstance(message, dict)
+                else getattr(message, "tool_call_id", None)
+            )
             tool_call_id: str = (
                 str(tool_call_id_raw) if tool_call_id_raw is not None else ""
             )
-            
-            prev_assistant_idx = LiteLLMCompletionResponsesConfig._find_previous_assistant_idx(
-                fixed_messages, i
+
+            prev_assistant_idx = (
+                LiteLLMCompletionResponsesConfig._find_previous_assistant_idx(
+                    fixed_messages, i
+                )
             )
-            
+
             # Try to recover empty tool_call_id from previous assistant message
             if not tool_call_id and prev_assistant_idx is not None:
                 prev_assistant = fixed_messages[prev_assistant_idx]
@@ -682,7 +709,7 @@ class LiteLLMCompletionResponsesConfig:
                         message_dict["tool_call_id"] = tool_call_id
                     elif hasattr(message, "tool_call_id"):
                         setattr(message, "tool_call_id", tool_call_id)
-            
+
             # Only remove messages with empty tool_call_id if we have other non-tool messages
             # This prevents ending up with an empty messages list when using previous_response_id
             # without a database (e.g., in tests where session messages are empty)
@@ -694,7 +721,7 @@ class LiteLLMCompletionResponsesConfig:
                 # If no non-tool messages, keep the tool message even with empty call_id
                 # The API will return a proper error message about the missing tool_use block
                 continue
-            
+
             # Check if the previous assistant message has the corresponding tool_call
             # This needs to run for ALL tool messages with a valid tool_call_id,
             # not just those that had an empty tool_call_id initially
@@ -703,19 +730,17 @@ class LiteLLMCompletionResponsesConfig:
                 tool_calls = LiteLLMCompletionResponsesConfig._get_tool_calls_list(
                     prev_assistant
                 )
-                
+
                 if not LiteLLMCompletionResponsesConfig._check_tool_call_exists(
                     tool_calls, tool_call_id
                 ):
                     _tool_use_definition = TOOL_CALLS_CACHE.get_cache(key=tool_call_id)
-                    
+
                     if not _tool_use_definition and tools:
-                        _tool_use_definition = (
-                            LiteLLMCompletionResponsesConfig._reconstruct_tool_call_from_tools(
-                                tool_call_id, tools
-                            )
+                        _tool_use_definition = LiteLLMCompletionResponsesConfig._reconstruct_tool_call_from_tools(
+                            tool_call_id, tools
                         )
-                    
+
                     if _tool_use_definition:
                         if not isinstance(_tool_use_definition, dict):
                             _tool_use_definition = {}
@@ -727,11 +752,11 @@ class LiteLLMCompletionResponsesConfig:
                         LiteLLMCompletionResponsesConfig._add_tool_call_to_assistant(
                             prev_assistant, tool_call_chunk
                         )
-        
+
         # Remove messages with empty tool_call_id that couldn't be fixed
         for idx in reversed(messages_to_remove):
             fixed_messages.pop(idx)
-        
+
         return fixed_messages
 
     @staticmethod
@@ -821,7 +846,7 @@ class LiteLLMCompletionResponsesConfig:
         # Empty call_id means we can't create a valid tool message
         if not call_id:
             return []
-        
+
         tool_output_message = ChatCompletionToolMessage(
             role="tool",
             content=tool_call_output.get("output") or "",
@@ -859,7 +884,9 @@ class LiteLLMCompletionResponsesConfig:
             function: dict = _tool_use_definition.get("function") or {}
             tool_call_chunk = ChatCompletionToolCallChunk(
                 id=_tool_use_definition.get("id") or "",
-                type=cast(Literal["function"], _tool_use_definition.get("type") or "function"),
+                type=cast(
+                    Literal["function"], _tool_use_definition.get("type") or "function"
+                ),
                 function=ChatCompletionToolCallFunctionChunk(
                     name=function.get("name") or "",
                     arguments=str(function.get("arguments") or ""),
@@ -1095,7 +1122,7 @@ class LiteLLMCompletionResponsesConfig:
                         "description": typed_tool.get("description") or "",
                         "parameters": parameters,
                         "strict": typed_tool.get("strict", False) or False,
-                    }
+                    },
                 }
                 if tool.get("cache_control"):
                     chat_completion_tool["cache_control"] = tool.get("cache_control")  # type: ignore
@@ -1109,7 +1136,9 @@ class LiteLLMCompletionResponsesConfig:
                     cast(ChatCompletionToolParam, chat_completion_tool)
                 )
             else:
-                chat_completion_tools.append(cast(Union[ChatCompletionToolParam, OpenAIMcpServerTool], tool))
+                chat_completion_tools.append(
+                    cast(Union[ChatCompletionToolParam, OpenAIMcpServerTool], tool)
+                )
         return chat_completion_tools, web_search_options
 
     @staticmethod
@@ -1682,9 +1711,9 @@ class LiteLLMCompletionResponsesConfig:
                 hasattr(completion_details, "reasoning_tokens")
                 and completion_details.reasoning_tokens is not None
             ):
-                output_details_dict["reasoning_tokens"] = (
-                    completion_details.reasoning_tokens
-                )
+                output_details_dict[
+                    "reasoning_tokens"
+                ] = completion_details.reasoning_tokens
 
             if (
                 hasattr(completion_details, "text_tokens")

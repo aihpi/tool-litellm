@@ -105,9 +105,12 @@ class LiteLLMCompletionStreamingIterator(ResponsesAPIStreamingIterator):
             response_created_event_data["text"] = self.responses_api_request["text"]
         if "tool_choice" in self.responses_api_request:
             # Transform tool_choice from dict format (e.g., {"type": "auto"}) to string format
-            response_created_event_data["tool_choice"] = LiteLLMCompletionResponsesConfig._transform_tool_choice(
-                self.responses_api_request["tool_choice"]
-            ) or "auto"
+            response_created_event_data["tool_choice"] = (
+                LiteLLMCompletionResponsesConfig._transform_tool_choice(
+                    self.responses_api_request["tool_choice"]
+                )
+                or "auto"
+            )
         else:
             response_created_event_data["tool_choice"] = "auto"
         if "tools" in self.responses_api_request:
@@ -201,7 +204,6 @@ class LiteLLMCompletionStreamingIterator(ResponsesAPIStreamingIterator):
     def create_output_content_part_done_event(
         self, litellm_complete_object: ModelResponse
     ) -> ContentPartDoneEvent:
-
         text = getattr(litellm_complete_object.choices[0].message, "content", "") or ""  # type: ignore
         reasoning_content = getattr(litellm_complete_object.choices[0].message, "reasoning_content", "") or ""  # type: ignore
         annotations = getattr(litellm_complete_object.choices[0].message, "annotations", None)  # type: ignore
@@ -420,14 +422,17 @@ class LiteLLMCompletionStreamingIterator(ResponsesAPIStreamingIterator):
             if annotations and self.sent_annotation_events is False:
                 self.sent_annotation_events = True
                 # Store annotation events to emit them one by one
-                if not hasattr(self, '_pending_annotation_events'):
-                    
+                if not hasattr(self, "_pending_annotation_events"):
                     response_annotations = LiteLLMCompletionResponsesConfig._transform_chat_completion_annotations_to_response_output_annotations(
                         annotations=annotations
-                    )                    
+                    )
                     self._pending_annotation_events = []
                     for idx, annotation in enumerate(response_annotations):
-                        annotation_dict = annotation.model_dump() if hasattr(annotation, 'model_dump') else dict(annotation)
+                        annotation_dict = (
+                            annotation.model_dump()
+                            if hasattr(annotation, "model_dump")
+                            else dict(annotation)
+                        )
                         event = OutputTextAnnotationAddedEvent(
                             type=ResponsesAPIStreamEvents.OUTPUT_TEXT_ANNOTATION_ADDED,
                             item_id=chunk.id,
@@ -436,7 +441,7 @@ class LiteLLMCompletionStreamingIterator(ResponsesAPIStreamingIterator):
                             annotation_index=idx,
                             annotation=annotation_dict,
                         )
-                        self._pending_annotation_events.append(event)        
+                        self._pending_annotation_events.append(event)
         # Priority 1: Handle reasoning content (highest priority)
         if (
             chunk.choices
@@ -451,7 +456,7 @@ class LiteLLMCompletionStreamingIterator(ResponsesAPIStreamingIterator):
                 output_index=0,
                 delta=reasoning_content,
             )
-        
+
         # Priority 2: Handle text deltas
         delta_content = self._get_delta_string_from_streaming_choices(chunk.choices)
         if delta_content:
@@ -462,10 +467,13 @@ class LiteLLMCompletionStreamingIterator(ResponsesAPIStreamingIterator):
                 content_index=0,
                 delta=delta_content,
             )
-        
+
         # Priority 3: If we have pending annotation events, emit the next one
         # This happens when the current chunk has no text/reasoning content
-        if hasattr(self, '_pending_annotation_events') and self._pending_annotation_events:
+        if (
+            hasattr(self, "_pending_annotation_events")
+            and self._pending_annotation_events
+        ):
             event = self._pending_annotation_events.pop(0)
             return event
 
@@ -488,7 +496,6 @@ class LiteLLMCompletionStreamingIterator(ResponsesAPIStreamingIterator):
     def _emit_response_completed_event(
         self, litellm_model_response: ModelResponse
     ) -> Optional[ResponseCompletedEvent]:
-
         if litellm_model_response:
             # Add cost to usage object if include_cost_in_streaming_usage is True
             if (

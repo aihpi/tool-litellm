@@ -77,10 +77,10 @@ class BaseAWSLLM:
     def _get_ssl_verify(self):
         """
         Get SSL verification setting for boto3 clients.
-        
+
         This ensures that custom CA certificates are properly used for all AWS API calls,
         including STS and Bedrock services.
-        
+
         Returns:
             Union[bool, str]: SSL verification setting - False to disable, True to enable,
                             or a string path to a CA bundle file
@@ -90,7 +90,7 @@ class BaseAWSLLM:
 
         # Check environment variable first (highest priority)
         ssl_verify = os.getenv("SSL_VERIFY", litellm.ssl_verify)
-        
+
         # Convert string "False"/"True" to boolean
         if isinstance(ssl_verify, str):
             # Check if it's a file path
@@ -100,13 +100,13 @@ class BaseAWSLLM:
             ssl_verify_bool = str_to_bool(ssl_verify)
             if ssl_verify_bool is not None:
                 ssl_verify = ssl_verify_bool
-        
+
         # Check SSL_CERT_FILE environment variable for custom CA bundle
         if ssl_verify is True or ssl_verify == "True":
             ssl_cert_file = os.getenv("SSL_CERT_FILE")
             if ssl_cert_file and os.path.exists(ssl_cert_file):
                 return ssl_cert_file
-        
+
         return ssl_verify
 
     def get_cache_key(self, credential_args: Dict[str, Optional[str]]) -> str:
@@ -661,7 +661,9 @@ class BaseAWSLLM:
 
         # Create an STS client without credentials
         with tracer.trace("boto3.client(sts) for manual IRSA"):
-            sts_client = boto3.client("sts", region_name=region, verify=self._get_ssl_verify())
+            sts_client = boto3.client(
+                "sts", region_name=region, verify=self._get_ssl_verify()
+            )
 
         # Manually assume the IRSA role with the session name
         verbose_logger.debug(
@@ -723,7 +725,9 @@ class BaseAWSLLM:
 
         verbose_logger.debug("Same account role assumption, using automatic IRSA")
         with tracer.trace("boto3.client(sts) with automatic IRSA"):
-            sts_client = boto3.client("sts", region_name=region, verify=self._get_ssl_verify())
+            sts_client = boto3.client(
+                "sts", region_name=region, verify=self._get_ssl_verify()
+            )
 
         # Get current caller identity for debugging
         try:

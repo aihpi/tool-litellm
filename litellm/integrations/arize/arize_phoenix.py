@@ -10,7 +10,9 @@ from litellm.integrations.opentelemetry import OpenTelemetry
 if TYPE_CHECKING:
     from opentelemetry.trace import Span as _Span
 
-    from litellm.integrations.opentelemetry import OpenTelemetryConfig as _OpenTelemetryConfig
+    from litellm.integrations.opentelemetry import (
+        OpenTelemetryConfig as _OpenTelemetryConfig,
+    )
     from litellm.types.integrations.arize import Protocol as _Protocol
 
     Protocol = _Protocol
@@ -33,13 +35,16 @@ class ArizePhoenixLogger(OpenTelemetry):
     @staticmethod
     def set_arize_phoenix_attributes(span: Span, kwargs, response_obj):
         _utils.set_attributes(span, kwargs, response_obj, ArizeOTELAttributes)
-        
+
         # Set project name on the span for all traces to go to custom Phoenix projects
         config = ArizePhoenixLogger.get_arize_phoenix_config()
         if config.project_name:
-            from litellm.integrations.opentelemetry_utils.base_otel_llm_obs_attributes import safe_set_attribute
+            from litellm.integrations.opentelemetry_utils.base_otel_llm_obs_attributes import (
+                safe_set_attribute,
+            )
+
             safe_set_attribute(span, "openinference.project.name", config.project_name)
-        
+
         return
 
     @staticmethod
@@ -63,7 +68,9 @@ class ArizePhoenixLogger(OpenTelemetry):
 
         if collector_endpoint:
             # Parse the endpoint to determine protocol
-            if collector_endpoint.startswith("grpc://") or (":4317" in collector_endpoint and "/v1/traces" not in collector_endpoint):
+            if collector_endpoint.startswith("grpc://") or (
+                ":4317" in collector_endpoint and "/v1/traces" not in collector_endpoint
+            ):
                 endpoint = collector_endpoint
                 protocol = "otlp_grpc"
             else:
@@ -107,11 +114,10 @@ class ArizePhoenixLogger(OpenTelemetry):
             endpoint=endpoint,
             project_name=project_name,
         )
-    
+
     ## cannot suppress additional proxy server spans, removed previous methods.
 
     async def async_health_check(self):
-
         config = self.get_arize_phoenix_config()
 
         if not config.otlp_auth_headers:

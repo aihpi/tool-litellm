@@ -122,9 +122,7 @@ if MCP_AVAILABLE:
             )
             if validation_result.warnings:
                 error_messages_text = (
-                    error_messages_text
-                    + "\n"
-                    + "\n".join(validation_result.warnings)
+                    error_messages_text + "\n" + "\n".join(validation_result.warnings)
                 )
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,

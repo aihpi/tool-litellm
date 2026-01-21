@@ -59,12 +59,16 @@ async def new_budget(
     if budget_obj.max_budget is not None and budget_obj.max_budget < 0:
         raise HTTPException(
             status_code=400,
-            detail={"error": f"max_budget cannot be negative. Received: {budget_obj.max_budget}"}
+            detail={
+                "error": f"max_budget cannot be negative. Received: {budget_obj.max_budget}"
+            },
         )
     if budget_obj.soft_budget is not None and budget_obj.soft_budget < 0:
         raise HTTPException(
             status_code=400,
-            detail={"error": f"soft_budget cannot be negative. Received: {budget_obj.soft_budget}"}
+            detail={
+                "error": f"soft_budget cannot be negative. Received: {budget_obj.soft_budget}"
+            },
         )
 
     # if no budget_reset_at date is set, but a budget_duration is given, then set budget_reset_at initially to the first completed duration interval in future
@@ -123,12 +127,16 @@ async def update_budget(
     if budget_obj.max_budget is not None and budget_obj.max_budget < 0:
         raise HTTPException(
             status_code=400,
-            detail={"error": f"max_budget cannot be negative. Received: {budget_obj.max_budget}"}
+            detail={
+                "error": f"max_budget cannot be negative. Received: {budget_obj.max_budget}"
+            },
         )
     if budget_obj.soft_budget is not None and budget_obj.soft_budget < 0:
         raise HTTPException(
             status_code=400,
-            detail={"error": f"soft_budget cannot be negative. Received: {budget_obj.soft_budget}"}
+            detail={
+                "error": f"soft_budget cannot be negative. Received: {budget_obj.soft_budget}"
+            },
         )
 
     response = await prisma_client.db.litellm_budgettable.update(

@@ -75,9 +75,7 @@ class WebSearchTransformation:
             content = response.content or []
 
         if not content:
-            verbose_logger.debug(
-                "WebSearchInterception: Response has empty content"
-            )
+            verbose_logger.debug("WebSearchInterception: Response has empty content")
             return False, []
 
         # Find all WebSearch tool_use blocks
@@ -98,7 +96,9 @@ class WebSearchTransformation:
             # Check for LiteLLM standard or legacy web search tools
             # Handles: litellm_web_search, WebSearch, web_search
             if block_type == "tool_use" and block_name in (
-                LITELLM_WEB_SEARCH_TOOL_NAME, "WebSearch", "web_search"
+                LITELLM_WEB_SEARCH_TOOL_NAME,
+                "WebSearch",
+                "web_search",
             ):
                 # Convert to dict for easier handling
                 tool_call = {

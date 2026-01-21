@@ -180,7 +180,9 @@ async def aingest(
     except Exception as e:
         raise litellm.exception_type(
             model=None,
-            custom_llm_provider=ingest_options.get("vector_store", {}).get("custom_llm_provider"),
+            custom_llm_provider=ingest_options.get("vector_store", {}).get(
+                "custom_llm_provider"
+            ),
             original_exception=e,
             completion_kwargs=local_vars,
             extra_kwargs=kwargs,
@@ -413,7 +415,9 @@ def ingest(
     except Exception as e:
         raise litellm.exception_type(
             model=None,
-            custom_llm_provider=ingest_options.get("vector_store", {}).get("custom_llm_provider"),
+            custom_llm_provider=ingest_options.get("vector_store", {}).get(
+                "custom_llm_provider"
+            ),
             original_exception=e,
             completion_kwargs=local_vars,
             extra_kwargs=kwargs,

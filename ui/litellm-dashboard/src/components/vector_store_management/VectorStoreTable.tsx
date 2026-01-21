@@ -19,9 +19,18 @@ interface VectorStoreTableProps {
   onView: (vectorStoreId: string) => void;
   onEdit: (vectorStoreId: string) => void;
   onDelete: (vectorStoreId: string) => void;
+  onCreateCollection: (vectorStoreId: string) => void;
+  showCreateCollection?: boolean;
 }
 
-const VectorStoreTable: React.FC<VectorStoreTableProps> = ({ data, onView, onEdit, onDelete }) => {
+const VectorStoreTable: React.FC<VectorStoreTableProps> = ({
+  data,
+  onView,
+  onEdit,
+  onDelete,
+  onCreateCollection,
+  showCreateCollection = false,
+}) => {
   const [sorting, setSorting] = React.useState<SortingState>([{ id: "created_at", desc: true }]);
 
   const columns: ColumnDef<VectorStore>[] = [
@@ -110,6 +119,13 @@ const VectorStoreTable: React.FC<VectorStoreTableProps> = ({ data, onView, onEdi
               tooltipText="Edit vector store"
               onClick={() => onEdit(vectorStore.vector_store_id)}
             />
+            {showCreateCollection && vectorStore.custom_llm_provider === "qdrant" && (
+              <TableIconActionButton
+                variant="CreateCollection"
+                tooltipText="Create Qdrant collection"
+                onClick={() => onCreateCollection(vectorStore.vector_store_id)}
+              />
+            )}
             <TableIconActionButton
               variant="Delete"
               tooltipText="Delete vector store"

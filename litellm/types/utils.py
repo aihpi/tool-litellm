@@ -112,13 +112,14 @@ class SearchContextCostPerQuery(TypedDict, total=False):
 class AgenticLoopParams(TypedDict, total=False):
     """
     Parameters passed to agentic loop hooks (e.g., WebSearch interception).
-    
+
     Stored in logging_obj.model_call_details["agentic_loop_params"] to provide
     agentic hooks with the original request context needed for follow-up calls.
     """
+
     model: str
     """The model string with provider prefix (e.g., 'bedrock/invoke/...')"""
-    
+
     custom_llm_provider: str
     """The LLM provider name (e.g., 'bedrock', 'anthropic')"""
 
@@ -3013,6 +3014,7 @@ class LlmProviders(str, Enum):
     MORPH = "morph"
     LAMBDA_AI = "lambda_ai"
     DEEPSEEK = "deepseek"
+    QDRANT = "qdrant"
     SAMBANOVA = "sambanova"
     MARITALK = "maritalk"
     VOYAGE = "voyage"

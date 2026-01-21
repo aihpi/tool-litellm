@@ -825,10 +825,10 @@ async def handle_bedrock_count_tokens(
 
     except BedrockError as e:
         # Convert BedrockError to HTTPException for FastAPI
-        verbose_proxy_logger.error(f"BedrockError in handle_bedrock_count_tokens: {str(e)}")
-        raise HTTPException(
-            status_code=e.status_code, detail={"error": e.message}
+        verbose_proxy_logger.error(
+            f"BedrockError in handle_bedrock_count_tokens: {str(e)}"
         )
+        raise HTTPException(status_code=e.status_code, detail={"error": e.message})
     except HTTPException:
         # Re-raise HTTP exceptions as-is
         raise
@@ -1037,7 +1037,7 @@ async def bedrock_proxy_route(
         target=str(prepped.url),
         custom_headers=prepped.headers,  # type: ignore
         is_streaming_request=is_streaming_request,
-        _forward_headers=True
+        _forward_headers=True,
     )  # dynamically construct pass-through endpoint based on incoming path
     received_value = await endpoint_func(
         request,
@@ -1594,7 +1594,9 @@ async def _base_vertex_proxy_route(
             if llm_router:
                 try:
                     # Use the dedicated pass-through deployment selection method to automatically filter use_in_pass_through=True
-                    deployment = llm_router.get_available_deployment_for_pass_through(model=model_id)
+                    deployment = llm_router.get_available_deployment_for_pass_through(
+                        model=model_id
+                    )
                     if deployment:
                         litellm_params = deployment.get("litellm_params", {})
                         vertex_project = litellm_params.get("vertex_project")

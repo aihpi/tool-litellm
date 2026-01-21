@@ -343,9 +343,7 @@ class QualifireGuardrail(CustomGuardrail):
                 )
                 url = f"{self.qualifire_api_base}/api/evaluation/evaluate"
 
-            verbose_proxy_logger.debug(
-                f"Qualifire Guardrail: Making request to {url}"
-            )
+            verbose_proxy_logger.debug(f"Qualifire Guardrail: Making request to {url}")
 
             # Make the API request
             response = await self.async_handler.post(

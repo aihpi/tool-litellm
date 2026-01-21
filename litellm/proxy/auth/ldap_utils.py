@@ -56,7 +56,9 @@ def _get_bind_credentials() -> Tuple[str, str]:
 def _get_ldap_user_filter(settings: Dict[str, Any], username: str) -> str:
     from ldap3.utils.conv import escape_filter_chars
 
-    ldap_user_filter = settings.get("ldap_user_filter") or "(&(objectClass=user)(mail={username}))"
+    ldap_user_filter = (
+        settings.get("ldap_user_filter") or "(&(objectClass=user)(mail={username}))"
+    )
     return ldap_user_filter.replace("{username}", escape_filter_chars(username))
 
 
@@ -101,7 +103,9 @@ def authenticate_ldap_credentials(
     bind_dn, bind_password = _get_bind_credentials()
 
     try:
-        with Connection(server, user=bind_dn, password=bind_password, auto_bind=True) as conn:
+        with Connection(
+            server, user=bind_dn, password=bind_password, auto_bind=True
+        ) as conn:
             search_filter = _get_ldap_user_filter(settings, username)
             conn.search(
                 search_base=ldap_base_dn,

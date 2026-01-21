@@ -6,6 +6,7 @@ import {
   ChevronUpIcon,
   ChevronDownIcon,
   ExternalLinkIcon,
+  PlusIcon,
 } from "@heroicons/react/outline";
 import { Tooltip } from "antd";
 import BaseActionButton from "../BaseActionButton";
@@ -32,6 +33,7 @@ export const TableIconActionButtonMap: Record<string, TableIconActionButtonBaseP
   Up: { icon: ChevronUpIcon, className: "hover:text-blue-600" },
   Down: { icon: ChevronDownIcon, className: "hover:text-blue-600" },
   Open: { icon: ExternalLinkIcon, className: "hover:text-green-600" },
+  CreateCollection: { icon: PlusIcon, className: "hover:text-green-600" },
 };
 
 export default function TableIconActionButton({

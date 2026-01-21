@@ -190,7 +190,6 @@ def _get_token_base_cost(
                     1000 if "k" in threshold_str else 1
                 )
                 if usage.prompt_tokens > threshold:
-
                     prompt_base_cost = cast(
                         float, _get_cost_per_unit(model_info, key, prompt_base_cost)
                     )
@@ -619,7 +618,11 @@ def generic_cost_per_token(  # noqa: PLR0915
             # Calculate text tokens as remainder when we have a breakdown
             # This handles cases like OpenAI's reasoning models where text_tokens isn't provided
             text_tokens = max(
-                0, usage.completion_tokens - reasoning_tokens - audio_tokens - image_tokens
+                0,
+                usage.completion_tokens
+                - reasoning_tokens
+                - audio_tokens
+                - image_tokens,
             )
         else:
             # No breakdown at all, all tokens are text tokens

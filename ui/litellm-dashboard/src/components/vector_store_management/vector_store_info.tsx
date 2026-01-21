@@ -5,7 +5,11 @@ import { InfoCircleOutlined } from "@ant-design/icons";
 import { ArrowLeftIcon } from "@heroicons/react/outline";
 import { vectorStoreInfoCall, vectorStoreUpdateCall, credentialListCall, CredentialItem } from "../networking";
 import { VectorStore } from "./types";
-import { Providers, providerLogoMap, provider_map } from "../provider_info_helpers";
+import {
+  VectorStoreProviders,
+  vectorStoreProviderLogoMap,
+  vectorStoreProviderMap,
+} from "../vector_store_providers";
 import VectorStoreTester from "./VectorStoreTester";
 import NotificationsManager from "../molecules/notifications_manager";
 
@@ -170,35 +174,30 @@ const VectorStoreInfoView: React.FC<VectorStoreInfoViewProps> = ({
                       rules={[{ required: true, message: "Please select a provider" }]}
                     >
                       <Select2>
-                        {Object.entries(Providers).map(([providerEnum, providerDisplayName]) => {
-                          // Currently only showing Bedrock since it's the only supported provider
-                          if (providerEnum === "Bedrock") {
-                            return (
-                              <Select2.Option key={providerEnum} value={provider_map[providerEnum]}>
-                                <div className="flex items-center space-x-2">
-                                  <img
-                                    src={providerLogoMap[providerDisplayName]}
-                                    alt={`${providerEnum} logo`}
-                                    className="w-5 h-5"
-                                    onError={(e) => {
-                                      // Create a div with provider initial as fallback
-                                      const target = e.target as HTMLImageElement;
-                                      const parent = target.parentElement;
-                                      if (parent) {
-                                        const fallbackDiv = document.createElement("div");
-                                        fallbackDiv.className =
-                                          "w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-xs";
-                                        fallbackDiv.textContent = providerDisplayName.charAt(0);
-                                        parent.replaceChild(fallbackDiv, target);
-                                      }
-                                    }}
-                                  />
-                                  <span>{providerDisplayName}</span>
-                                </div>
-                              </Select2.Option>
-                            );
-                          }
-                          return null;
+                        {Object.entries(VectorStoreProviders).map(([providerEnum, providerDisplayName]) => {
+                          return (
+                            <Select2.Option key={providerEnum} value={vectorStoreProviderMap[providerEnum]}>
+                              <div className="flex items-center space-x-2">
+                                <img
+                                  src={vectorStoreProviderLogoMap[providerDisplayName]}
+                                  alt={`${providerEnum} logo`}
+                                  className="w-5 h-5"
+                                  onError={(e) => {
+                                    const target = e.target as HTMLImageElement;
+                                    const parent = target.parentElement;
+                                    if (parent) {
+                                      const fallbackDiv = document.createElement("div");
+                                      fallbackDiv.className =
+                                        "w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-xs";
+                                      fallbackDiv.textContent = providerDisplayName.charAt(0);
+                                      parent.replaceChild(fallbackDiv, target);
+                                    }
+                                  }}
+                                />
+                                <span>{providerDisplayName}</span>
+                              </div>
+                            </Select2.Option>
+                          );
                         })}
                       </Select2>
                     </Form.Item>
@@ -288,18 +287,23 @@ const VectorStoreInfoView: React.FC<VectorStoreInfoViewProps> = ({
                         {(() => {
                           const provider = vectorStoreDetails.custom_llm_provider || "bedrock";
                           const { displayName, logo } = (() => {
-                            // Find the enum key by matching provider_map values
-                            const enumKey = Object.keys(provider_map).find(
-                              (key) => provider_map[key].toLowerCase() === provider.toLowerCase(),
+                            // Find the enum key by matching vectorStoreProviderMap values
+                            const enumKey = Object.keys(vectorStoreProviderMap).find(
+                              (key) =>
+                                vectorStoreProviderMap[key].toLowerCase() === provider.toLowerCase(),
                             );
 
                             if (!enumKey) {
                               return { displayName: provider, logo: "" };
                             }
 
-                            // Get the display name from Providers enum and logo from map
-                            const displayName = Providers[enumKey as keyof typeof Providers];
-                            const logo = providerLogoMap[displayName];
+                            // Get the display name from VectorStoreProviders enum and logo from map
+                            const displayName =
+                              VectorStoreProviders[enumKey as keyof typeof VectorStoreProviders];
+                            const logo =
+                              vectorStoreProviderLogoMap[
+                                displayName as keyof typeof vectorStoreProviderLogoMap
+                              ];
 
                             return { displayName, logo };
                           })();

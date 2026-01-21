@@ -1302,7 +1302,10 @@ class CustomStreamWrapper:
                 if response_obj["is_finished"]:
                     self.received_finish_reason = response_obj["finish_reason"]
             else:  # openai / azure chat model
-                if self.custom_llm_provider in [LlmProviders.AZURE.value, LlmProviders.AZURE_AI.value]:
+                if self.custom_llm_provider in [
+                    LlmProviders.AZURE.value,
+                    LlmProviders.AZURE_AI.value,
+                ]:
                     if isinstance(chunk, BaseModel) and hasattr(chunk, "model"):
                         # for azure, we need to pass the model from the original chunk
                         self.model = getattr(chunk, "model", self.model)
