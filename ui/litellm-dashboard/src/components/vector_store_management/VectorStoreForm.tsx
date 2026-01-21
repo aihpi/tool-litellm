@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { TextInput, Button as TremorButton } from "@tremor/react";
 import { Modal, Form, Select, Tooltip, Input, Alert } from "antd";
 import { InfoCircleOutlined } from "@ant-design/icons";
-import { CredentialItem, vectorStoreCreateCall, modelInfoCall, modelUpdateCall, detectEmbeddingDimensionCall } from "../networking";
+import { CredentialItem, vectorStoreCreateCall } from "../networking";
 import {
   VectorStoreProviders,
   vectorStoreProviderLogoMap,
@@ -19,8 +19,6 @@ interface VectorStoreFormProps {
   onSuccess: () => void;
   accessToken: string | null;
   credentials: CredentialItem[];
-  userID: string | null;
-  userRole: string | null;
 }
 
 const VectorStoreForm: React.FC<VectorStoreFormProps> = ({
@@ -29,8 +27,6 @@ const VectorStoreForm: React.FC<VectorStoreFormProps> = ({
   onSuccess,
   accessToken,
   credentials,
-  userID,
-  userRole,
 }) => {
   const [form] = Form.useForm();
   const [metadataJson, setMetadataJson] = useState("{}");
@@ -96,32 +92,6 @@ const VectorStoreForm: React.FC<VectorStoreFormProps> = ({
     } catch (error) {
       console.error("Error creating vector store:", error);
       NotificationsManager.fromBackend("Error creating vector store: " + error);
-    }
-  };
-
-  const handleEmbeddingModelSelect = async (embeddingModel: string) => {
-    if (!accessToken || !userID || !userRole) return;
-    try {
-      const modelInfoResponse = await modelInfoCall(accessToken, userID, userRole);
-      const matchingModel = modelInfoResponse?.data?.find((model: any) => model.model_name === embeddingModel);
-      const modelId = matchingModel?.model_info?.id;
-      const existingDimensions = matchingModel?.model_info?.dimensions;
-
-      if (!modelId || existingDimensions) {
-        return;
-      }
-
-      const dimension = await detectEmbeddingDimensionCall(accessToken, embeddingModel);
-      await modelUpdateCall(accessToken, {
-        model_info: {
-          id: modelId,
-          dimensions: dimension,
-        },
-      });
-      NotificationsManager.success(`Saved embedding dimension (${dimension}) for ${embeddingModel}`);
-    } catch (error) {
-      console.error("Error detecting embedding dimensions:", error);
-      NotificationsManager.fromBackend(`Failed to save embedding dimension: ${error}`);
     }
   };
 
@@ -287,11 +257,6 @@ const VectorStoreForm: React.FC<VectorStoreFormProps> = ({
                   filterOption={(input, option) => (option?.label ?? "").toLowerCase().includes(input.toLowerCase())}
                   options={embeddingModels}
                   style={{ width: "100%" }}
-                  onChange={(value) => {
-                    if (field.name === "litellm_embedding_model") {
-                      handleEmbeddingModelSelect(value);
-                    }
-                  }}
                 />
               </Form.Item>
             );

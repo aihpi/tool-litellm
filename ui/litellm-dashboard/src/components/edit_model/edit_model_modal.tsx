@@ -45,15 +45,19 @@ export const handleEditModelSubmit = async (
     }
   }
 
+  const embeddingDimensions = newLiteLLMParams.embedding_dimensions;
+  delete newLiteLLMParams.embedding_dimensions;
+
   let payload: {
     litellm_params: Record<string, any> | undefined;
-    model_info: { id: any } | undefined;
+    model_info: { id: any; dimensions?: number | null } | undefined;
   } = {
     litellm_params: Object.keys(newLiteLLMParams).length > 0 ? newLiteLLMParams : undefined,
     model_info:
       model_info_model_id !== undefined
         ? {
             id: model_info_model_id,
+            dimensions: embeddingDimensions === "" ? null : embeddingDimensions,
           }
         : undefined,
   };
@@ -76,6 +80,7 @@ const EditModelModal: React.FC<EditModelModalProps> = ({ visible, onCancel, mode
   let litellm_params_to_edit: Record<string, any> = {};
   let model_name = "";
   let model_id = "";
+  let embedding_dimensions: number | undefined;
   if (model) {
     litellm_params_to_edit = {
       ...model.litellm_params,
@@ -90,8 +95,12 @@ const EditModelModal: React.FC<EditModelModalProps> = ({ visible, onCancel, mode
     let model_info = model.model_info;
     if (model_info) {
       model_id = model_info.id;
+      embedding_dimensions = model_info.dimensions;
       console.log(`model_id: ${model_id}`);
       litellm_params_to_edit.model_id = model_id;
+      if (embedding_dimensions !== undefined && embedding_dimensions !== null) {
+        litellm_params_to_edit.embedding_dimensions = embedding_dimensions;
+      }
     }
   }
 
@@ -163,6 +172,14 @@ const EditModelModal: React.FC<EditModelModalProps> = ({ visible, onCancel, mode
           </Form.Item>
           <Form.Item label="organization" name="organization" tooltip="OpenAI Organization ID">
             <TextInput />
+          </Form.Item>
+
+          <Form.Item
+            label="Embedding Dimensions"
+            name="embedding_dimensions"
+            tooltip="Vector size for embedding models (from the model card)"
+          >
+            <InputNumber min={1} step={1} />
           </Form.Item>
 
           <Form.Item
