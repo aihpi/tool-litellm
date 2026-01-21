@@ -89,6 +89,7 @@ const mockOnView = vi.fn();
 const mockOnEdit = vi.fn();
 const mockOnDelete = vi.fn();
 const mockOnCreateCollection = vi.fn();
+const mockOnViewCollection = vi.fn();
 
 const defaultProps = {
   data: mockVectorStores,
@@ -96,6 +97,7 @@ const defaultProps = {
   onEdit: mockOnEdit,
   onDelete: mockOnDelete,
   onCreateCollection: mockOnCreateCollection,
+  onViewCollection: mockOnViewCollection,
 };
 
 // Helper function to render component
@@ -295,6 +297,23 @@ describe("VectorStoreTable", () => {
       expect(screen.getByTestId("action-button-createcollection")).toBeInTheDocument();
     });
 
+    it("should render view collection button when qdrant collection exists", () => {
+      const qdrantStore: VectorStore = {
+        vector_store_id: "qdrant-store",
+        custom_llm_provider: "qdrant",
+        vector_store_metadata: {
+          qdrant_collection_name: "qdrant-store",
+        },
+        created_at: "2024-01-20T10:00:00Z",
+        updated_at: "2024-01-20T10:00:00Z",
+      };
+      renderComponent({
+        data: [qdrantStore],
+        showCreateCollection: true,
+      });
+      expect(screen.getByTestId("action-button-viewcollection")).toBeInTheDocument();
+    });
+
     it("should call onCreateCollection when create collection button is clicked", async () => {
       const user = userEvent.setup();
       const qdrantStore: VectorStore = {
@@ -310,6 +329,26 @@ describe("VectorStoreTable", () => {
       const createButton = screen.getByTestId("action-button-createcollection");
       await user.click(createButton);
       expect(mockOnCreateCollection).toHaveBeenCalledWith("qdrant-store");
+    });
+
+    it("should call onViewCollection when view collection button is clicked", async () => {
+      const user = userEvent.setup();
+      const qdrantStore: VectorStore = {
+        vector_store_id: "qdrant-store",
+        custom_llm_provider: "qdrant",
+        vector_store_metadata: {
+          qdrant_collection_name: "qdrant-store",
+        },
+        created_at: "2024-01-20T10:00:00Z",
+        updated_at: "2024-01-20T10:00:00Z",
+      };
+      renderComponent({
+        data: [qdrantStore],
+        showCreateCollection: true,
+      });
+      const viewButton = screen.getByTestId("action-button-viewcollection");
+      await user.click(viewButton);
+      expect(mockOnViewCollection).toHaveBeenCalledWith("qdrant-store");
     });
 
     it("should pass correct props to TableIconActionButton", () => {

@@ -20,6 +20,7 @@ interface VectorStoreTableProps {
   onEdit: (vectorStoreId: string) => void;
   onDelete: (vectorStoreId: string) => void;
   onCreateCollection: (vectorStoreId: string) => void;
+  onViewCollection: (vectorStoreId: string) => void;
   showCreateCollection?: boolean;
 }
 
@@ -29,9 +30,24 @@ const VectorStoreTable: React.FC<VectorStoreTableProps> = ({
   onEdit,
   onDelete,
   onCreateCollection,
+  onViewCollection,
   showCreateCollection = false,
 }) => {
   const [sorting, setSorting] = React.useState<SortingState>([{ id: "created_at", desc: true }]);
+  const getQdrantCollectionName = (vectorStore: VectorStore) => {
+    const metadata = vectorStore.vector_store_metadata;
+    if (!metadata) return null;
+    if (typeof metadata === "string") {
+      try {
+        const parsedMetadata = JSON.parse(metadata);
+        return parsedMetadata?.qdrant_collection_name || null;
+      } catch (error) {
+        console.error("Failed to parse vector store metadata:", error);
+        return null;
+      }
+    }
+    return metadata?.qdrant_collection_name || null;
+  };
 
   const columns: ColumnDef<VectorStore>[] = [
     {
@@ -112,6 +128,8 @@ const VectorStoreTable: React.FC<VectorStoreTableProps> = ({
       header: "",
       cell: ({ row }) => {
         const vectorStore = row.original;
+        const qdrantCollectionName =
+          vectorStore.custom_llm_provider === "qdrant" ? getQdrantCollectionName(vectorStore) : null;
         return (
           <div className="flex space-x-2">
             <TableIconActionButton
@@ -121,9 +139,13 @@ const VectorStoreTable: React.FC<VectorStoreTableProps> = ({
             />
             {showCreateCollection && vectorStore.custom_llm_provider === "qdrant" && (
               <TableIconActionButton
-                variant="CreateCollection"
-                tooltipText="Create Qdrant collection"
-                onClick={() => onCreateCollection(vectorStore.vector_store_id)}
+                variant={qdrantCollectionName ? "ViewCollection" : "CreateCollection"}
+                tooltipText={qdrantCollectionName ? "View Qdrant collection" : "Create Qdrant collection"}
+                onClick={() =>
+                  qdrantCollectionName
+                    ? onViewCollection(vectorStore.vector_store_id)
+                    : onCreateCollection(vectorStore.vector_store_id)
+                }
               />
             )}
             <TableIconActionButton

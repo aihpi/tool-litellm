@@ -335,6 +335,27 @@ async def create_qdrant_collection(
             response = await client.put(url, headers=headers, json=payload)
         if response.status_code >= 400:
             raise HTTPException(status_code=response.status_code, detail=response.text)
+        try:
+            vector_store_metadata = vector_store.vector_store_metadata or {}
+            if isinstance(vector_store_metadata, str):
+                vector_store_metadata = json.loads(vector_store_metadata)
+            vector_store_metadata = vector_store_metadata or {}
+            vector_store_metadata["qdrant_collection_name"] = collection_name
+
+            await prisma_client.db.litellm_managedvectorstorestable.update(
+                where={"vector_store_id": vector_store_id},
+                data={"vector_store_metadata": safe_dumps(vector_store_metadata)},
+            )
+
+            if litellm.vector_store_registry is not None:
+                litellm.vector_store_registry.update_vector_store_in_registry(
+                    vector_store_id=vector_store_id,
+                    updated_data={"vector_store_metadata": vector_store_metadata},
+                )
+        except Exception as metadata_error:
+            verbose_proxy_logger.warning(
+                "Failed to persist qdrant collection name metadata: %s", metadata_error
+            )
         return response.json()
     except HTTPException:
         raise
@@ -488,6 +509,75 @@ async def delete_vector_store(
                 status_code=404,
                 detail=f"Vector store with ID {data.vector_store_id} not found",
             )
+
+        # Attempt to delete Qdrant collection when deleting the vector store
+        if existing_vector_store is not None:
+            custom_llm_provider = existing_vector_store.custom_llm_provider or ""
+            if custom_llm_provider.lower() == "qdrant":
+                litellm_params = existing_vector_store.litellm_params or {}
+                if isinstance(litellm_params, str):
+                    litellm_params = json.loads(litellm_params)
+
+                def _resolve_secret_value(value: Any, key: str) -> Any:
+                    if isinstance(value, str):
+                        decrypted_value = decrypt_value_helper(
+                            value=value, key=key, return_original_value=True
+                        )
+                        if isinstance(decrypted_value, str) and decrypted_value.startswith(
+                            "os.environ/"
+                        ):
+                            return get_secret(decrypted_value)
+                        return decrypted_value
+                    return value
+
+                resolved_params: Dict[str, Any] = {
+                    key: _resolve_secret_value(value, key)
+                    for key, value in litellm_params.items()
+                }
+
+                api_base = resolved_params.get("api_base") or get_secret(
+                    "os.environ/QDRANT_API_BASE"
+                )
+                if not api_base:
+                    api_base = get_secret("os.environ/QDRANT_URL")
+                api_key = resolved_params.get("api_key") or get_secret(
+                    "os.environ/QDRANT_API_KEY"
+                )
+
+                vector_store_metadata = existing_vector_store.vector_store_metadata or {}
+                if isinstance(vector_store_metadata, str):
+                    try:
+                        vector_store_metadata = json.loads(vector_store_metadata)
+                    except Exception:
+                        vector_store_metadata = {}
+                collection_name = (
+                    vector_store_metadata.get("qdrant_collection_name")
+                    if isinstance(vector_store_metadata, dict)
+                    else None
+                ) or data.vector_store_id
+
+                if api_base:
+                    delete_headers = {"Content-Type": "application/json"}
+                    if api_key:
+                        delete_headers["api-key"] = api_key
+                    delete_url = f"{api_base.rstrip('/')}/collections/{collection_name}"
+                    try:
+                        async with httpx.AsyncClient() as client:
+                            response = await client.delete(
+                                delete_url, headers=delete_headers
+                            )
+                        if response.status_code >= 400:
+                            verbose_proxy_logger.warning(
+                                "Failed to delete Qdrant collection %s: %s",
+                                collection_name,
+                                response.text,
+                            )
+                    except Exception as delete_error:
+                        verbose_proxy_logger.warning(
+                            "Error deleting Qdrant collection %s: %s",
+                            collection_name,
+                            delete_error,
+                        )
 
         # Delete from database if exists
         if db_vector_store_exists:
