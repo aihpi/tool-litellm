@@ -29,6 +29,7 @@ from litellm.proxy.vector_store_endpoints.management_endpoints import (
     new_vector_store,
     update_qdrant_point,
     upsert_qdrant_points,
+    upsert_qdrant_points_default,
 )
 from litellm.proxy.vector_store_endpoints.utils import (
     check_vector_store_permission,
@@ -238,6 +239,23 @@ class TestCheckVectorStorePermission:
         )
 
         assert result is False
+
+    def test_permission_allowed_wildcard(self):
+        """Test that wildcard index grants access to any vector store."""
+        key_metadata = {
+            "allowed_vector_store_indexes": [
+                {"index_name": "*", "index_permissions": ["read", "write"]}
+            ]
+        }
+
+        result = check_vector_store_permission(
+            index_name="any-index",
+            permission="write",
+            key_metadata=key_metadata,
+            team_metadata=None,
+        )
+
+        assert result is True
 
     def test_permission_denied_no_metadata(self):
         """Test that permission is denied when no metadata provided."""
@@ -852,6 +870,92 @@ async def test_upsert_qdrant_points_generates_ids_and_calls_qdrant():
     called_args = mock_client.put.call_args.kwargs
     assert called_args["json"]["points"][0]["payload"]["text"] == "first"
     assert called_args["json"]["points"][1]["payload"]["text"] == "second"
+
+
+@pytest.mark.asyncio
+async def test_upsert_qdrant_points_default_uses_metadata():
+    vector_store_id = "vs-default"
+
+    mock_vector_store = MagicMock()
+    mock_vector_store.vector_store_id = vector_store_id
+    mock_vector_store.custom_llm_provider = "qdrant"
+    mock_vector_store.litellm_params = {
+        "litellm_embedding_model": "openai/test-embedding",
+        "litellm_embedding_config": {"api_base": "http://embeddings"},
+        "api_base": "http://qdrant:6333",
+    }
+    mock_vector_store.vector_store_metadata = {"qdrant_text_field": "text"}
+
+    mock_prisma_client = MagicMock()
+    mock_prisma_client.db.litellm_managedvectorstorestable.find_unique = AsyncMock(
+        return_value=mock_vector_store
+    )
+
+    embedding_response = MagicMock()
+    embedding_response.data = [{"embedding": [0.1, 0.2, 0.3]}]
+
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = {"result": "ok"}
+
+    mock_client = AsyncMock()
+    mock_client.put.return_value = mock_response
+
+    mock_async_client = AsyncMock()
+    mock_async_client.__aenter__.return_value = mock_client
+
+    user_api_key = MagicMock(spec=UserAPIKeyAuth)
+    user_api_key.user_role = None
+    user_api_key.metadata = {
+        "default_vector_store_id": vector_store_id,
+        "allowed_vector_store_indexes": [
+            {"index_name": vector_store_id, "index_permissions": ["write"]}
+        ],
+    }
+    user_api_key.team_metadata = None
+
+    request = QdrantPointsUpsertRequest(
+        items=[{"text": "first", "metadata": {"source": "a"}}]
+    )
+
+    proxy_server_stub = SimpleNamespace(
+        prisma_client=mock_prisma_client, llm_router=None, master_key="sk-test"
+    )
+
+    with patch(
+        "litellm.proxy.vector_store_endpoints.management_endpoints.litellm.aembedding",
+        new=AsyncMock(return_value=embedding_response),
+    ), patch(
+        "litellm.proxy.vector_store_endpoints.management_endpoints.httpx.AsyncClient",
+        return_value=mock_async_client,
+    ), patch.dict(
+        "sys.modules", {"litellm.proxy.proxy_server": proxy_server_stub}
+    ):
+        result = await upsert_qdrant_points_default(
+            request=request,
+            user_api_key_dict=user_api_key,
+        )
+
+    assert result["status"] == "success"
+    assert result["vector_store_id"] == vector_store_id
+
+
+@pytest.mark.asyncio
+async def test_upsert_qdrant_points_default_requires_metadata():
+    user_api_key = MagicMock(spec=UserAPIKeyAuth)
+    user_api_key.user_role = None
+    user_api_key.metadata = {}
+    user_api_key.team_metadata = None
+
+    request = QdrantPointsUpsertRequest(items=[{"text": "first"}])
+
+    with pytest.raises(HTTPException) as exc_info:
+        await upsert_qdrant_points_default(
+            request=request,
+            user_api_key_dict=user_api_key,
+        )
+
+    assert exc_info.value.status_code == 400
 
 
 @pytest.mark.asyncio

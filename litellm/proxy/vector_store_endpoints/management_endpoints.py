@@ -240,6 +240,22 @@ def _resolve_qdrant_text_field(
     return "text"
 
 
+def _resolve_default_vector_store_id(
+    user_api_key_dict: UserAPIKeyAuth,
+) -> Optional[str]:
+    metadata = user_api_key_dict.metadata or {}
+    if isinstance(metadata, str):
+        try:
+            metadata = json.loads(metadata)
+        except Exception:
+            metadata = {}
+    if isinstance(metadata, dict):
+        default_vector_store_id = metadata.get("default_vector_store_id")
+        if isinstance(default_vector_store_id, str) and default_vector_store_id:
+            return default_vector_store_id
+    return None
+
+
 async def _resolve_embedding_config(
     embedding_model: str,
     litellm_params: Dict[str, Any],
@@ -652,6 +668,89 @@ async def _get_embeddings_for_texts(
             )
         embeddings.append(embedding)
     return embeddings
+
+
+@router.post(
+    "/v1/vector_store/points",
+    tags=["vector store points"],
+    dependencies=[Depends(user_api_key_auth)],
+)
+@router.post(
+    "/vector_store/points",
+    tags=["vector store points"],
+    dependencies=[Depends(user_api_key_auth)],
+)
+async def upsert_qdrant_points_default(
+    request: QdrantPointsUpsertRequest,
+    user_api_key_dict: UserAPIKeyAuth = Depends(user_api_key_auth),
+):
+    vector_store_id = _resolve_default_vector_store_id(user_api_key_dict)
+    if not vector_store_id:
+        raise HTTPException(
+            status_code=400,
+            detail="default_vector_store_id not set for this API key. Use /v1/vector_stores/{vector_store_id}/points or set a default vector store on the key.",
+        )
+    return await upsert_qdrant_points(
+        vector_store_id=vector_store_id,
+        request=request,
+        user_api_key_dict=user_api_key_dict,
+    )
+
+
+@router.patch(
+    "/v1/vector_store/points/{point_id}",
+    tags=["vector store points"],
+    dependencies=[Depends(user_api_key_auth)],
+)
+@router.patch(
+    "/vector_store/points/{point_id}",
+    tags=["vector store points"],
+    dependencies=[Depends(user_api_key_auth)],
+)
+async def update_qdrant_point_default(
+    point_id: str,
+    request: QdrantPointUpdateRequest,
+    user_api_key_dict: UserAPIKeyAuth = Depends(user_api_key_auth),
+):
+    vector_store_id = _resolve_default_vector_store_id(user_api_key_dict)
+    if not vector_store_id:
+        raise HTTPException(
+            status_code=400,
+            detail="default_vector_store_id not set for this API key. Use /v1/vector_stores/{vector_store_id}/points/{point_id} or set a default vector store on the key.",
+        )
+    return await update_qdrant_point(
+        vector_store_id=vector_store_id,
+        point_id=point_id,
+        request=request,
+        user_api_key_dict=user_api_key_dict,
+    )
+
+
+@router.delete(
+    "/v1/vector_store/points/{point_id}",
+    tags=["vector store points"],
+    dependencies=[Depends(user_api_key_auth)],
+)
+@router.delete(
+    "/vector_store/points/{point_id}",
+    tags=["vector store points"],
+    dependencies=[Depends(user_api_key_auth)],
+)
+async def delete_qdrant_point_default(
+    point_id: str,
+    user_api_key_dict: UserAPIKeyAuth = Depends(user_api_key_auth),
+):
+    vector_store_id = _resolve_default_vector_store_id(user_api_key_dict)
+    if not vector_store_id:
+        raise HTTPException(
+            status_code=400,
+            detail="default_vector_store_id not set for this API key. Use /v1/vector_stores/{vector_store_id}/points/{point_id} or set a default vector store on the key.",
+        )
+    return await delete_qdrant_point(
+        vector_store_id=vector_store_id,
+        point_id=point_id,
+        user_api_key_dict=user_api_key_dict,
+    )
 
 
 @router.post(

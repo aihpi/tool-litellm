@@ -163,6 +163,7 @@ const CreateKey: React.FC<CreateKeyProps> = ({ team, teams, data, addKey }) => {
   const [modelAliases, setModelAliases] = useState<{ [key: string]: string }>({});
   const [autoRotationEnabled, setAutoRotationEnabled] = useState<boolean>(false);
   const [rotationInterval, setRotationInterval] = useState<string>("30d");
+  const [allowAllVectorStores, setAllowAllVectorStores] = useState<boolean>(false);
   const handleOk = () => {
     setIsModalVisible(false);
     form.resetFields();
@@ -172,6 +173,7 @@ const CreateKey: React.FC<CreateKeyProps> = ({ team, teams, data, addKey }) => {
     setModelAliases({});
     setAutoRotationEnabled(false);
     setRotationInterval("30d");
+    setAllowAllVectorStores(false);
   };
 
   const handleCancel = () => {
@@ -185,6 +187,7 @@ const CreateKey: React.FC<CreateKeyProps> = ({ team, teams, data, addKey }) => {
     setModelAliases({});
     setAutoRotationEnabled(false);
     setRotationInterval("30d");
+    setAllowAllVectorStores(false);
   };
 
   useEffect(() => {
@@ -295,6 +298,22 @@ const CreateKey: React.FC<CreateKeyProps> = ({ team, teams, data, addKey }) => {
         };
       }
 
+      if (allowAllVectorStores) {
+        metadata.allowed_vector_store_indexes = [
+          { index_name: "*", index_permissions: ["read", "write"] },
+        ];
+      } else if (
+        formValues.allowed_vector_store_ids &&
+        formValues.allowed_vector_store_ids.length > 0
+      ) {
+        metadata.allowed_vector_store_indexes = formValues.allowed_vector_store_ids.map(
+          (vectorStoreId: string) => ({
+            index_name: vectorStoreId,
+            index_permissions: ["read", "write"],
+          }),
+        );
+      }
+
       // Add auto-rotation settings as top-level fields
       if (autoRotationEnabled) {
         formValues.auto_rotate = true;
@@ -307,6 +326,10 @@ const CreateKey: React.FC<CreateKeyProps> = ({ team, teams, data, addKey }) => {
       }
 
       // Update the formValues with the final metadata
+      if (formValues.default_vector_store_id) {
+        metadata.default_vector_store_id = formValues.default_vector_store_id;
+        delete formValues.default_vector_store_id;
+      }
       formValues.metadata = JSON.stringify(metadata);
 
       // Transform allowed_vector_store_ids and allowed_mcp_servers_and_groups into object_permission format
@@ -972,20 +995,61 @@ const CreateKey: React.FC<CreateKeyProps> = ({ team, teams, data, addKey }) => {
                     label={
                       <span>
                         Allowed Vector Stores{" "}
-                        <Tooltip title="Select which vector stores this key can access. If none selected, the key will have access to all available vector stores">
+                        <Tooltip title="Select which vector stores this key can access. Use 'Allow All Vector Stores' to grant access to all stores.">
                           <InfoCircleOutlined style={{ marginLeft: "4px" }} />
                         </Tooltip>
                       </span>
                     }
                     name="allowed_vector_store_ids"
                     className="mt-4"
-                    help="Select vector stores this key can access. Leave empty for access to all vector stores"
+                    help="Select vector stores this key can access. Use 'Allow All Vector Stores' for all-store access."
                   >
                     <VectorStoreSelector
-                      onChange={(values: string[]) => form.setFieldValue("allowed_vector_store_ids", values)}
+                      onChange={(values) => form.setFieldValue("allowed_vector_store_ids", values)}
                       value={form.getFieldValue("allowed_vector_store_ids")}
                       accessToken={accessToken}
                       placeholder="Select vector stores (optional)"
+                      disabled={allowAllVectorStores}
+                    />
+                  </Form.Item>
+                  <Form.Item
+                    label="Allow All Vector Stores"
+                    className="mt-4"
+                    help="Grants access to all vector stores. When enabled, you must pass vector_store_id in API calls."
+                  >
+                    <Switch
+                      checked={allowAllVectorStores}
+                      onChange={(checked) => {
+                        setAllowAllVectorStores(checked);
+                        if (checked) {
+                          form.setFieldValue("allowed_vector_store_ids", []);
+                          form.setFieldValue("default_vector_store_id", undefined);
+                        }
+                      }}
+                    />
+                  </Form.Item>
+                  <Form.Item
+                    label={
+                      <span>
+                        Default Vector Store{" "}
+                        <Tooltip title="Optional default vector store for this key. When set, point endpoints can omit the vector_store_id.">
+                          <InfoCircleOutlined style={{ marginLeft: "4px" }} />
+                        </Tooltip>
+                      </span>
+                    }
+                    name="default_vector_store_id"
+                    className="mt-4"
+                    help="Optional default vector store for point ingestion. Disabled when access is set to all stores."
+                  >
+                    <VectorStoreSelector
+                      multiple={false}
+                      onChange={(value: string | undefined) =>
+                        form.setFieldValue("default_vector_store_id", value)
+                      }
+                      value={form.getFieldValue("default_vector_store_id")}
+                      accessToken={accessToken}
+                      placeholder="Select default vector store (optional)"
+                      disabled={allowAllVectorStores}
                     />
                   </Form.Item>
                   <Form.Item

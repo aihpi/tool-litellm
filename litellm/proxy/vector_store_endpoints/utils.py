@@ -59,7 +59,8 @@ def check_vector_store_permission(
             if not isinstance(index_config, dict):
                 continue
 
-            if index_config.get("index_name") == index_name:
+            index_name_value = index_config.get("index_name")
+            if index_name_value in (index_name, "*"):
                 index_permissions = index_config.get("index_permissions", [])
                 if (
                     isinstance(index_permissions, list)

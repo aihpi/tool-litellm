@@ -76,3 +76,46 @@ jobs:
           echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
           echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+  cleanup-dev-images:
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    if: github.event_name == 'push' && contains(fromJson('["main","master","aihpi-provider"]'), github.ref_name)
+    permissions:
+      packages: write
+      contents: read
+    steps:
+      - name: Delete dev-tagged images
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const packageName = context.repo.repo;
+            const isOrg = context.payload.repository.owner.type === "Organization";
+            const listEndpoint = isOrg
+              ? "GET /orgs/{org}/packages/container/{package_name}/versions"
+              : "GET /users/{username}/packages/container/{package_name}/versions";
+            const params = isOrg
+              ? { org: owner, package_name: packageName, per_page: 100 }
+              : { username: owner, package_name: packageName, per_page: 100 };
+
+            const versions = await github.paginate(listEndpoint, params);
+            const devTagRegex = /^dev([/-].*)?$/;
+
+            for (const version of versions) {
+              const tags = version.metadata?.container?.tags || [];
+              if (tags.length === 0) continue;
+
+              const allDev = tags.every((tag) => devTagRegex.test(tag));
+              if (!allDev) continue;
+
+              const deleteEndpoint = isOrg
+                ? "DELETE /orgs/{org}/packages/container/{package_name}/versions/{package_version_id}"
+                : "DELETE /users/{username}/packages/container/{package_name}/versions/{package_version_id}";
+              const deleteParams = isOrg
+                ? { org: owner, package_name: packageName, package_version_id: version.id }
+                : { username: owner, package_name: packageName, package_version_id: version.id };
+
+              core.info(`Deleting ${packageName} version ${version.id} with tags: ${tags.join(", ")}`);
+              await github.request(deleteEndpoint, deleteParams);
+            }

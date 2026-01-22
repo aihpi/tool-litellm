@@ -96,6 +96,7 @@ export default function KeyInfoView({
 
       const currentKey = formValues.token;
       formValues.key = currentKey;
+      const allowedVectorStores = formValues.vector_stores;
 
       // Guard premium features
       if (!premiumUser) {
@@ -193,6 +194,38 @@ export default function KeyInfoView({
               }
             : {}),
         };
+      }
+
+      if (formValues.default_vector_store_id) {
+        formValues.metadata = {
+          ...formValues.metadata,
+          default_vector_store_id: formValues.default_vector_store_id,
+        };
+      } else if ("default_vector_store_id" in formValues && formValues.metadata) {
+        const { default_vector_store_id: _omitDefault, ...rest } = formValues.metadata;
+        formValues.metadata = rest;
+      }
+      delete formValues.default_vector_store_id;
+
+      if (Array.isArray(allowedVectorStores)) {
+        if (allowedVectorStores.length === 0) {
+          formValues.metadata = {
+            ...formValues.metadata,
+            allowed_vector_store_indexes: [
+              { index_name: "*", index_permissions: ["read", "write"] },
+            ],
+          };
+        } else {
+          formValues.metadata = {
+            ...formValues.metadata,
+            allowed_vector_store_indexes: allowedVectorStores.map(
+              (vectorStoreId: string) => ({
+                index_name: vectorStoreId,
+                index_permissions: ["read", "write"],
+              }),
+            ),
+          };
+        }
       }
 
       // tags are merged into metadata; do not send as top-level field

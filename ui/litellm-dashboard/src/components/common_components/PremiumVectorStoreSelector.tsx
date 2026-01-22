@@ -3,8 +3,8 @@ import { Text } from "@tremor/react";
 import VectorStoreSelector from "../vector_store_management/VectorStoreSelector";
 
 interface PremiumVectorStoreSelectorProps {
-  onChange: (values: string[]) => void;
-  value: string[];
+  onChange: (values: string[] | string | undefined) => void;
+  value: string[] | string;
   accessToken: string;
   placeholder?: string;
   premiumUser?: boolean;

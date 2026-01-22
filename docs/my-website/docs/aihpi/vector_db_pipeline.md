@@ -15,6 +15,7 @@ Notes:
 - The vector store must define `litellm_embedding_model`.
 - Users can provide their own IDs or let the API generate them.
 - Permissions are enforced via vector store "write" access.
+- If the API key has a `default_vector_store_id`, you can omit the ID in the endpoint path.
 
 ## Create / Upsert points
 
@@ -66,6 +67,23 @@ resp.raise_for_status()
 print(resp.json())
 ```
 
+### Using the key default vector store
+
+If the API key metadata includes `default_vector_store_id`, you can call:
+`POST /v1/vector_store/points`
+
+Request body is the same:
+```json
+{
+  "items": [
+    { "text": "First chunk", "metadata": { "source": "doc-a" } }
+  ]
+}
+```
+
+If no default is set, this endpoint returns `400` and you must call the
+`/v1/vector_stores/{vector_store_id}/points` route.
+
 ## Update a point
 
 Endpoint:
@@ -110,6 +128,9 @@ resp.raise_for_status()
 print(resp.json())
 ```
 
+If the API key has `default_vector_store_id`, you can call:
+`PATCH /v1/vector_store/points/{point_id}`
+
 ## Delete a point
 
 Endpoint:
@@ -142,6 +163,9 @@ resp = requests.delete(
 resp.raise_for_status()
 print(resp.json())
 ```
+
+If the API key has `default_vector_store_id`, you can call:
+`DELETE /v1/vector_store/points/{point_id}`
 
 ## Field mapping
 

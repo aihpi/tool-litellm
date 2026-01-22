@@ -545,7 +545,7 @@ const CreateTeamModal = ({
                 help="Select vector stores this team can access. Leave empty for access to all vector stores"
               >
                 <VectorStoreSelector
-                  onChange={(values: string[]) => form.setFieldValue("allowed_vector_store_ids", values)}
+                  onChange={(values) => form.setFieldValue("allowed_vector_store_ids", values)}
                   value={form.getFieldValue("allowed_vector_store_ids")}
                   accessToken={accessToken || ""}
                   placeholder="Select vector stores (optional)"
