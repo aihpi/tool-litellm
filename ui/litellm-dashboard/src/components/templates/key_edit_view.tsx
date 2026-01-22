@@ -502,7 +502,12 @@ export function KeyEditView({
       >
         <VectorStoreSelector
           multiple={false}
-          onChange={(value: string | undefined) => form.setFieldValue("default_vector_store_id", value)}
+          onChange={(value) =>
+            form.setFieldValue(
+              "default_vector_store_id",
+              Array.isArray(value) ? value[0] : value,
+            )
+          }
           value={form.getFieldValue("default_vector_store_id")}
           accessToken={accessToken || ""}
           placeholder="Select default vector store (optional)"
