@@ -11,8 +11,9 @@ WORKDIR /app
 
 USER root
 
-# Install build dependencies
-RUN apk add --no-cache bash gcc py3-pip python3 python3-dev openssl openssl-dev nodejs npm
+# Install build dependencies (use faster mirror to reduce apk timeouts)
+RUN sed -i 's/dl-cdn.alpinelinux.org/fastly.cdn.alpinelinux.org/g' /etc/apk/repositories && \
+    apk add --no-cache bash gcc py3-pip python3 python3-dev openssl openssl-dev nodejs npm
 
 RUN python -m pip install build
 
@@ -49,8 +50,9 @@ FROM $LITELLM_RUNTIME_IMAGE AS runtime
 # Ensure runtime stage runs as root
 USER root
 
-# Install runtime dependencies
-RUN apk add --no-cache bash openssl tzdata nodejs npm python3 py3-pip
+# Install runtime dependencies (use faster mirror to reduce apk timeouts)
+RUN sed -i 's/dl-cdn.alpinelinux.org/fastly.cdn.alpinelinux.org/g' /etc/apk/repositories && \
+    apk add --no-cache bash openssl tzdata nodejs npm python3 py3-pip
 
 WORKDIR /app
 # Copy the current directory contents into the container at /app
