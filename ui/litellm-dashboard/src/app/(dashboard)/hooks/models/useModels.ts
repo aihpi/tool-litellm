@@ -38,7 +38,7 @@ export const useModelsInfo = (page: number = 1, size: number = 50) => {
         size,
       },
     }),
-    queryFn: async () => await modelInfoCall(accessToken!, userId!, userRole!, page, size),
+    queryFn: async () => await modelInfoCall(accessToken!, userId!, userRole!),
     enabled: Boolean(accessToken && userId && userRole),
   });
 };
@@ -56,7 +56,7 @@ export const useAllProxyModels = () => {
   const { accessToken, userId, userRole } = useAuthorized();
   return useQuery<AllProxyModelsResponse>({
     queryKey: allProxyModelsKeys.list({}),
-    queryFn: async () => await modelAvailableCall(accessToken!, userId!, userRole!, true, null, true, false, "expand"),
+    queryFn: async () => await modelAvailableCall(accessToken!, userId!, userRole!, true, null, true, false),
     enabled: Boolean(accessToken && userId && userRole),
   });
 };

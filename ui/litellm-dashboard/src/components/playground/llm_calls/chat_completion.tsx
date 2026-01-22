@@ -230,9 +230,9 @@ export async function makeOpenAIChatCompletionRequest(
           const functionArgs = toolCall.function?.arguments || toolCall.arguments || "{}";
           
           // Find corresponding result
-          const result = mcpMetadata.mcp_call_results?.find(
+          const result = mcpMetadata?.mcp_call_results?.find(
             (r: any) => r.tool_call_id === toolCall.id || r.tool_call_id === toolCall.call_id
-          ) || mcpMetadata.mcp_call_results?.[index];
+          ) || mcpMetadata?.mcp_call_results?.[index];
 
           const callEvent: MCPEvent = {
             type: "response.output_item.done",

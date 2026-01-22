@@ -270,7 +270,7 @@ const MultiCostResults: React.FC<MultiCostResultsProps> = ({ multiResult, timePe
     monthly_cost: e.result?.monthly_cost ?? null,
     error: e.error,
     loading: e.loading,
-    hasZeroCost: e.result && e.result.cost_per_request === 0,
+    hasZeroCost: Boolean(e.result && e.result.cost_per_request === 0),
   }));
 
   return (
