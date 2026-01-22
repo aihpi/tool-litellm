@@ -217,7 +217,7 @@ const Navbar: React.FC<NavbarProps> = ({
           {/* Right side nav items */}
           <div className="flex items-center space-x-5 ml-auto">
             <a
-              href={getUiAssetPath("/docs")}
+              href="https://docs.litellm.ai/docs/"
               className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
             >
               Docs
