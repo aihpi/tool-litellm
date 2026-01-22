@@ -18,7 +18,7 @@ import VectorStoreForm from "./VectorStoreForm";
 import DeleteResourceModal from "../common_components/DeleteResourceModal";
 import VectorStoreInfoView from "./vector_store_info";
 import VectorStoreCollectionView from "./VectorStoreCollectionView";
-import { isAdminRole } from "@/utils/roles";
+import { canManageVectorStores } from "@/utils/roles";
 import NotificationsManager from "../molecules/notifications_manager";
 
 interface VectorStoreProps {
@@ -251,7 +251,7 @@ const VectorStoreManagement: React.FC<VectorStoreProps> = ({ accessToken, userID
         vectorStoreId={selectedVectorStoreId}
         onClose={handleCloseInfo}
         accessToken={accessToken}
-        is_admin={isAdminRole(userRole || "")}
+        is_admin={canManageVectorStores(userRole || "")}
         editVectorStore={editVectorStore}
       />
     </div>

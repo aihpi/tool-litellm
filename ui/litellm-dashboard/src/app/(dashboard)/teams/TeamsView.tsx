@@ -4,7 +4,7 @@ import { fetchTeams } from "@/components/common_components/fetch_teams";
 import { Form } from "antd";
 import TeamInfoView from "@/components/team/team_info";
 import TeamSSOSettings from "@/components/TeamSSOSettings";
-import { isAdminRole } from "@/utils/roles";
+import { canCreateTeams, isAdminRole } from "@/utils/roles";
 import { Card, Button, Col, Text, Grid, TabPanel } from "@tremor/react";
 import AvailableTeamsPanel from "@/components/team/available_teams";
 import type { KeyResponse, Team } from "@/components/key_team_helpers/key_list";
@@ -245,7 +245,7 @@ const TeamsView: React.FC<TeamProps> = ({
     <div className="w-full mx-4 h-[75vh]">
       <Grid numItems={1} className="gap-2 p-8 w-full mt-2">
         <Col numColSpan={1} className="flex flex-col gap-2">
-          {(userRole == "Admin" || userRole == "Org Admin") && (
+          {canCreateTeams(userRole || "") && (
             <Button className="w-fit" onClick={() => setIsTeamModalVisible(true)}>
               + Create New Team
             </Button>
@@ -335,7 +335,7 @@ const TeamsView: React.FC<TeamProps> = ({
               )}
             </TeamsHeaderTabs>
           )}
-          {(userRole == "Admin" || userRole == "Org Admin") && (
+          {canCreateTeams(userRole || "") && (
             <CreateTeamModal
               isTeamModalVisible={isTeamModalVisible}
               handleOk={handleOk}

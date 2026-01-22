@@ -8,10 +8,19 @@ export const all_admin_roles = [...old_admin_roles, ...v2_admin_role_names];
 export const internalUserRoles = ["Internal User", "Internal Viewer"];
 export const rolesAllowedToSeeUsage = ["Admin", "Admin Viewer", "Internal User", "Internal Viewer"];
 export const rolesWithWriteAccess = ["Internal User", "Admin", "proxy_admin"];
+export const internalWriteRoles = ["Internal User"];
 
 // Helper function to check if a role is in all_admin_roles
 export const isAdminRole = (role: string): boolean => {
   return all_admin_roles.includes(role);
+};
+
+export const canCreateTeams = (role: string): boolean => {
+  return isAdminRole(role) || internalWriteRoles.includes(role);
+};
+
+export const canManageVectorStores = (role: string): boolean => {
+  return isAdminRole(role) || internalWriteRoles.includes(role);
 };
 
 export const isProxyAdminRole = (role: string): boolean => {

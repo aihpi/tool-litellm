@@ -589,6 +589,19 @@ class LiteLLMRoutes(enum.Enum):
 
     internal_user_routes = (
         [
+            "/team/new",
+            "/team/list",
+            "/team/info",
+            "/team/update",
+            "/team/delete",
+            "/vector_store/new",
+            "/vector_store/list",
+            "/vector_store/info",
+            "/vector_store/update",
+            "/vector_store/delete",
+            "/vector_store/qdrant/create_collection",
+            "/vector_store/qdrant/collection/info",
+            "/vector_store/qdrant/collection/points",
             "/global/spend/tags",
             "/global/spend/keys",
             "/global/spend/models",

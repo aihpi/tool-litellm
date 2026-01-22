@@ -325,10 +325,20 @@ async def new_vector_store(
                 detail=f"Vector store with ID {vector_store.get('vector_store_id')} already exists",
             )
 
-        if vector_store.get("vector_store_metadata") is not None:
-            vector_store["vector_store_metadata"] = safe_dumps(
-                vector_store.get("vector_store_metadata")
-            )
+        vector_store_metadata = vector_store.get("vector_store_metadata") or {}
+        if isinstance(vector_store_metadata, str):
+            try:
+                vector_store_metadata = json.loads(vector_store_metadata)
+            except Exception:
+                vector_store_metadata = {}
+
+        if user_api_key_dict.user_id and not vector_store_metadata.get("created_by"):
+            vector_store_metadata["created_by"] = user_api_key_dict.user_id
+        if user_api_key_dict.team_id and not vector_store_metadata.get("team_id"):
+            vector_store_metadata["team_id"] = user_api_key_dict.team_id
+
+        if vector_store_metadata:
+            vector_store["vector_store_metadata"] = safe_dumps(vector_store_metadata)
 
         # Safely handle JSON serialization of litellm_params
         litellm_params_json: Optional[str] = None
@@ -1132,6 +1142,41 @@ async def list_vector_stores(
                     )
 
         combined_vector_stores = list(vector_store_map.values())
+
+        if user_api_key_dict.user_role not in [
+            LitellmUserRoles.PROXY_ADMIN,
+            LitellmUserRoles.PROXY_ADMIN_VIEW_ONLY,
+            LitellmUserRoles.ORG_ADMIN,
+        ]:
+            team_ids: set[str] = set()
+            if user_api_key_dict.team_id:
+                team_ids.add(user_api_key_dict.team_id)
+            if user_api_key_dict.user_id:
+                team_memberships = await prisma_client.db.litellm_teammembership.find_many(
+                    where={"user_id": user_api_key_dict.user_id}
+                )
+                team_ids.update({tm.team_id for tm in team_memberships if tm.team_id})
+
+            def _has_access(vector_store: LiteLLM_ManagedVectorStore) -> bool:
+                metadata = vector_store.get("vector_store_metadata") or {}
+                if isinstance(metadata, str):
+                    try:
+                        metadata = json.loads(metadata)
+                    except Exception:
+                        metadata = {}
+                if not isinstance(metadata, dict):
+                    return False
+                created_by = metadata.get("created_by")
+                team_id = metadata.get("team_id")
+                if user_api_key_dict.user_id and created_by == user_api_key_dict.user_id:
+                    return True
+                if team_id and team_id in team_ids:
+                    return True
+                return False
+
+            combined_vector_stores = [
+                vector_store for vector_store in combined_vector_stores if _has_access(vector_store)
+            ]
         total_count = len(combined_vector_stores)
         total_pages = (total_count + page_size - 1) // page_size
 
