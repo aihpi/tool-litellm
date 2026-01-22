@@ -6,6 +6,7 @@ on:
       - main
       - master
       - aihpi-provider
+      - dev/*
     paths-ignore:
       - ".github/workflows/**"
     tags:
@@ -15,6 +16,7 @@ on:
       - main
       - master
       - aihpi-provider
+      - dev/*
   workflow_dispatch:
 
 env:
