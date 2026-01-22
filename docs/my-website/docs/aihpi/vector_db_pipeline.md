@@ -16,6 +16,7 @@ Notes:
 - Users can provide their own IDs or let the API generate them.
 - Permissions are enforced via vector store "write" access.
 - If the API key has a `default_vector_store_id`, you can omit the ID in the endpoint path.
+- Payload metadata is stored alongside the vector in Qdrant.
 
 ## Create / Upsert points
 
