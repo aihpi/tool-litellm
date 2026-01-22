@@ -688,7 +688,7 @@ async def upsert_qdrant_points_default(
     if not vector_store_id:
         raise HTTPException(
             status_code=400,
-            detail="default_vector_store_id not set for this API key. Use /v1/vector_stores/{vector_store_id}/points or set a default vector store on the key.",
+            detail="default_vector_store_id not set for this API key. Set a default vector store on the key or call /v1/vector_stores/{vector_store_id}/points.",
         )
     return await upsert_qdrant_points(
         vector_store_id=vector_store_id,
@@ -716,7 +716,7 @@ async def update_qdrant_point_default(
     if not vector_store_id:
         raise HTTPException(
             status_code=400,
-            detail="default_vector_store_id not set for this API key. Use /v1/vector_stores/{vector_store_id}/points/{point_id} or set a default vector store on the key.",
+            detail="default_vector_store_id not set for this API key. Set a default vector store on the key or call /v1/vector_stores/{vector_store_id}/points/{point_id}.",
         )
     return await update_qdrant_point(
         vector_store_id=vector_store_id,
@@ -744,7 +744,7 @@ async def delete_qdrant_point_default(
     if not vector_store_id:
         raise HTTPException(
             status_code=400,
-            detail="default_vector_store_id not set for this API key. Use /v1/vector_stores/{vector_store_id}/points/{point_id} or set a default vector store on the key.",
+            detail="default_vector_store_id not set for this API key. Set a default vector store on the key or call /v1/vector_stores/{vector_store_id}/points/{point_id}.",
         )
     return await delete_qdrant_point(
         vector_store_id=vector_store_id,
