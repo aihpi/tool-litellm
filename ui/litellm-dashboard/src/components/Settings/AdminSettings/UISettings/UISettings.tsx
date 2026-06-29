@@ -5,7 +5,7 @@ import { useUpdateUISettings } from "@/app/(dashboard)/hooks/uiSettings/useUpdat
 import useAuthorized from "@/app/(dashboard)/hooks/useAuthorized";
 import NotificationManager from "@/components/molecules/notifications_manager";
 import PageVisibilitySettings from "./PageVisibilitySettings";
-import { Alert, Button, Card, Divider, Form, Input, InputNumber, Skeleton, Space, Switch, Typography } from "antd";
+import { Alert, Button, Card, Divider, Form, Skeleton, Space, Switch, Typography } from "antd";
 
 export default function UISettings() {
   const { accessToken } = useAuthorized();
@@ -243,42 +243,6 @@ export default function UISettings() {
                 loading={isUpdating}
                 aria-label={properties?.disable_team_admin_delete_team_user?.description}
               />
-            </Form.Item>
-
-            <Typography.Title level={5} style={{ marginTop: 16 }}>
-              LDAP Settings
-            </Typography.Title>
-
-            <Form.Item label="Enable LDAP login" name="ldap_enabled" valuePropName="checked">
-              <Switch
-                disabled={isUpdating}
-                loading={isUpdating}
-                aria-label={properties?.ldap_enabled?.description}
-              />
-            </Form.Item>
-
-            <Form.Item label="LDAP Host" name="ldap_host">
-              <Input placeholder="ldap.example.com" disabled={isUpdating} />
-            </Form.Item>
-
-            <Form.Item label="LDAP Port" name="ldap_port">
-              <InputNumber min={1} max={65535} style={{ width: "100%" }} disabled={isUpdating} />
-            </Form.Item>
-
-            <Form.Item label="Use TLS (LDAPS)" name="ldap_use_tls" valuePropName="checked">
-              <Switch disabled={isUpdating} loading={isUpdating} aria-label={properties?.ldap_use_tls?.description} />
-            </Form.Item>
-
-            <Form.Item label="Base DN" name="ldap_base_dn">
-              <Input placeholder="DC=example,DC=com" disabled={isUpdating} />
-            </Form.Item>
-
-            <Form.Item label="User Filter" name="ldap_user_filter">
-              <Input placeholder="(&(objectClass=user)(mail={username}))" disabled={isUpdating} />
-            </Form.Item>
-
-            <Form.Item label="Admin Group DN" name="ldap_admin_group_dn">
-              <Input placeholder="CN=litellm-admins,OU=Groups,DC=example,DC=com" disabled={isUpdating} />
             </Form.Item>
 
             <Form.Item>
