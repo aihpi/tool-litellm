@@ -26,6 +26,7 @@ from litellm._logging import verbose_proxy_logger
 from litellm.caching import DualCache
 from litellm.proxy._types import (
     KeyRequestBase,
+    LiteLLMTeamRoles,
     LiteLLM_ManagementEndpoint_MetadataFields,
     LiteLLM_ManagementEndpoint_MetadataFields_Premium,
     LiteLLM_OrganizationTable,
@@ -106,6 +107,17 @@ def _check_passthrough_routes_caller_permission(
 def _is_user_team_admin(user_api_key_dict: UserAPIKeyAuth, team_obj: LiteLLM_TeamTable) -> bool:
     for member in team_obj.members_with_roles:
         if (member.user_id is not None and member.user_id == user_api_key_dict.user_id) and member.role == "admin":
+            return True
+
+    return False
+
+
+def _is_user_team_maintainer(user_api_key_dict: UserAPIKeyAuth, team_obj: LiteLLM_TeamTable) -> bool:
+    for member in team_obj.members_with_roles:
+        if (member.user_id is not None and member.user_id == user_api_key_dict.user_id) and member.role in (
+            LiteLLMTeamRoles.TEAM_ADMIN.value,
+            LiteLLMTeamRoles.TEAM_MAINTAINER.value,
+        ):
             return True
 
     return False

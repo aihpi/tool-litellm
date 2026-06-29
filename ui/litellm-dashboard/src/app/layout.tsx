@@ -8,10 +8,18 @@ import ReactQueryProvider from "@/contexts/ReactQueryProvider";
 
 const inter = Inter({ subsets: ["latin"] });
 
+const iconBase = process.env.NODE_ENV === "development" ? "" : "/ui";
+
 export const metadata: Metadata = {
-  title: "LiteLLM Dashboard",
-  description: "LiteLLM Proxy Admin UI",
-  icons: { icon: "/get_favicon" },
+  title: "AI Model Hub",
+  description: "AI Model Hub Admin UI",
+  icons: {
+    icon: [
+      { url: `${iconBase}/favicon-v2.ico` },
+      { url: `${iconBase}/favicon-96x96.png`, sizes: "96x96", type: "image/png" },
+    ],
+    apple: `${iconBase}/favicon.png`,
+  },
 };
 
 export default function RootLayout({

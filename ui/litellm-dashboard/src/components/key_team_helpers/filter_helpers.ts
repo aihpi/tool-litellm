@@ -1,6 +1,24 @@
-import { teamListCall, organizationListCall, keyListCall } from "../networking";
+import { isAdminRole } from "@/utils/roles";
+import { teamListCall, organizationListCall, keyAliasesCall, keyListCall } from "../networking";
 import { Team } from "./key_list";
 import { Organization } from "../networking";
+
+/**
+ * Fetches all key aliases via the dedicated /key/aliases endpoint
+ * @param accessToken The access token for API authentication
+ * @returns Array of all unique key aliases
+ */
+export const fetchAllKeyAliases = async (accessToken: string | null, userRole?: string | null): Promise<string[]> => {
+  if (!accessToken || !userRole || !isAdminRole(userRole)) return [];
+
+  try {
+    const { aliases } = await keyAliasesCall(accessToken);
+    return Array.from(new Set(aliases || []));
+  } catch (error) {
+    console.error("Error fetching key aliases:", error);
+    return [];
+  }
+};
 
 export interface TeamFilterOptions {
   keyAliases: string[];

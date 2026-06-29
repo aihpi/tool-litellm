@@ -149,7 +149,7 @@ const MakeAgentPublicForm: React.FC<MakeAgentPublicFormProps> = ({
                     <div className="flex-1">
                       <div className="flex items-center space-x-2">
                         <Text className="font-medium">{agent.name}</Text>
-                        <Badge color="blue" size="sm">
+                        <Badge color="orange" size="sm">
                           v{agent.version}
                         </Badge>
                       </div>
@@ -209,7 +209,7 @@ const MakeAgentPublicForm: React.FC<MakeAgentPublicFormProps> = ({
                       <div className="flex items-center space-x-2">
                         <Text className="font-medium">{agent?.name || agentId}</Text>
                         {agent && (
-                          <Badge color="blue" size="xs">
+                          <Badge color="orange" size="xs">
                             v{agent.version}
                           </Badge>
                         )}

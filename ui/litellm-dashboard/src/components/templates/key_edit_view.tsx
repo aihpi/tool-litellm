@@ -118,6 +118,9 @@ export function KeyEditView({
     const project = projects?.find((p) => p.project_id === keyData.project_id);
     return project?.project_alias ? `${project.project_alias} (${keyData.project_id})` : keyData.project_id;
   })();
+  const [allowAllVectorStores, setAllowAllVectorStores] = useState<boolean>(
+    (keyData.object_permission?.vector_stores || []).length === 0,
+  );
 
   useEffect(() => {
     const fetchModels = async () => {
@@ -180,6 +183,7 @@ export function KeyEditView({
     prompts: keyData.metadata?.prompts,
     tags: keyData.metadata?.tags,
     vector_stores: keyData.object_permission?.vector_stores || [],
+    default_vector_store_id: keyData.metadata?.default_vector_store_id,
     mcp_servers_and_groups: {
       servers: keyData.object_permission?.mcp_servers || [],
       accessGroups: keyData.object_permission?.mcp_access_groups || [],
@@ -213,6 +217,7 @@ export function KeyEditView({
       prompts: keyData.metadata?.prompts,
       tags: keyData.metadata?.tags,
       vector_stores: keyData.object_permission?.vector_stores || [],
+      default_vector_store_id: keyData.metadata?.default_vector_store_id,
       mcp_servers_and_groups: {
         servers: keyData.object_permission?.mcp_servers || [],
         accessGroups: keyData.object_permission?.mcp_access_groups || [],
@@ -230,6 +235,7 @@ export function KeyEditView({
           ? keyData.allowed_routes.join(", ")
           : "",
     });
+    setAllowAllVectorStores((keyData.object_permission?.vector_stores || []).length === 0);
   }, [keyData, form]);
 
   // Sync auto-rotation state with form values
@@ -596,7 +602,7 @@ export function KeyEditView({
           placement="top"
         >
           <PassThroughRoutesSelector
-            onChange={(values: string[]) => form.setFieldValue("allowed_passthrough_routes", values)}
+            onChange={(values) => form.setFieldValue("allowed_passthrough_routes", values)}
             value={form.getFieldValue("allowed_passthrough_routes")}
             accessToken={accessToken || ""}
             placeholder={
@@ -614,10 +620,51 @@ export function KeyEditView({
 
       <Form.Item label="Vector Stores" name="vector_stores">
         <VectorStoreSelector
-          onChange={(values: string[]) => form.setFieldValue("vector_stores", values)}
+          onChange={(values) => form.setFieldValue("vector_stores", values)}
           value={form.getFieldValue("vector_stores")}
           accessToken={accessToken || ""}
           placeholder="Select vector stores"
+          disabled={allowAllVectorStores}
+        />
+      </Form.Item>
+      <Form.Item
+        label="Allow All Vector Stores"
+        help="Grants access to all vector stores. When enabled, you must pass vector_store_id in API calls."
+      >
+        <Switch
+          checked={allowAllVectorStores}
+          onChange={(checked) => {
+            setAllowAllVectorStores(checked);
+            if (checked) {
+              form.setFieldValue("vector_stores", []);
+              form.setFieldValue("default_vector_store_id", undefined);
+            }
+          }}
+        />
+      </Form.Item>
+      <Form.Item
+        label={
+          <span>
+            Default Vector Store{" "}
+            <Tooltip title="Optional default vector store for this key. When set, point endpoints can omit the vector_store_id.">
+              <InfoCircleOutlined style={{ marginLeft: "4px" }} />
+            </Tooltip>
+          </span>
+        }
+        name="default_vector_store_id"
+      >
+        <VectorStoreSelector
+          multiple={false}
+          onChange={(value) =>
+            form.setFieldValue(
+              "default_vector_store_id",
+              Array.isArray(value) ? value[0] : value,
+            )
+          }
+          value={form.getFieldValue("default_vector_store_id")}
+          accessToken={accessToken || ""}
+          placeholder="Select default vector store (optional)"
+          disabled={allowAllVectorStores}
         />
       </Form.Item>
 

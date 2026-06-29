@@ -5,7 +5,7 @@ import { useUpdateUISettings } from "@/app/(dashboard)/hooks/uiSettings/useUpdat
 import useAuthorized from "@/app/(dashboard)/hooks/useAuthorized";
 import NotificationManager from "@/components/molecules/notifications_manager";
 import PageVisibilitySettings from "./PageVisibilitySettings";
-import { Alert, Card, Divider, Skeleton, Space, Switch, Typography } from "antd";
+import { Alert, Button, Card, Divider, Form, Input, InputNumber, Skeleton, Space, Switch, Typography } from "antd";
 
 export default function UISettings() {
   const { accessToken } = useAuthorized();
@@ -13,51 +13,35 @@ export default function UISettings() {
   const { mutate: updateSettings, isPending: isUpdating, error: updateError } = useUpdateUISettings(accessToken);
 
   const schema = data?.field_schema;
-  const property = schema?.properties?.disable_model_add_for_internal_users;
-  const disableTeamAdminDeleteProperty = schema?.properties?.disable_team_admin_delete_team_user;
-  const requireAuthForPublicAIHubProperty = schema?.properties?.require_auth_for_public_ai_hub;
-  const forwardClientHeadersProperty = schema?.properties?.forward_client_headers_to_llm_api;
-  const forwardLLMProviderAuthHeadersProperty = schema?.properties?.forward_llm_provider_auth_headers;
-  const enableProjectsUIProperty = schema?.properties?.enable_projects_ui;
-  const enabledPagesProperty = schema?.properties?.enabled_ui_pages_internal_users;
-  const disableAgentsProperty = schema?.properties?.disable_agents_for_internal_users;
-  const allowAgentsTeamAdminsProperty = schema?.properties?.allow_agents_for_team_admins;
-  const disableVectorStoresProperty = schema?.properties?.disable_vector_stores_for_internal_users;
-  const allowVectorStoresTeamAdminsProperty = schema?.properties?.allow_vector_stores_for_team_admins;
-  const scopeUserSearchProperty = schema?.properties?.scope_user_search_to_org;
-  const disableCustomApiKeysProperty = schema?.properties?.disable_custom_api_keys;
+  const [form] = Form.useForm();
+  const properties = schema?.properties ?? {};
+  const property = properties?.disable_model_add_for_internal_users;
+  const disableTeamAdminDeleteProperty = properties?.disable_team_admin_delete_team_user;
+  const requireAuthForPublicAIHubProperty = properties?.require_auth_for_public_ai_hub;
+  const forwardClientHeadersProperty = properties?.forward_client_headers_to_llm_api;
+  const forwardLLMProviderAuthHeadersProperty = properties?.forward_llm_provider_auth_headers;
+  const enableProjectsUIProperty = properties?.enable_projects_ui;
+  const enabledPagesProperty = properties?.enabled_ui_pages_internal_users;
+  const disableAgentsProperty = properties?.disable_agents_for_internal_users;
+  const allowAgentsTeamAdminsProperty = properties?.allow_agents_for_team_admins;
+  const disableVectorStoresProperty = properties?.disable_vector_stores_for_internal_users;
+  const allowVectorStoresTeamAdminsProperty = properties?.allow_vector_stores_for_team_admins;
+  const scopeUserSearchProperty = properties?.scope_user_search_to_org;
+  const disableCustomApiKeysProperty = properties?.disable_custom_api_keys;
+  const enabledPagesDescription = properties?.enabled_ui_pages_internal_users?.description;
   const values = data?.values ?? {};
-  const isDisabledForInternalUsers = Boolean(values.disable_model_add_for_internal_users);
-  const isDisabledTeamAdminDeleteTeamUser = Boolean(values.disable_team_admin_delete_team_user);
   const isAgentsDisabled = Boolean(values.disable_agents_for_internal_users);
   const isVectorStoresDisabled = Boolean(values.disable_vector_stores_for_internal_users);
 
-  const handleToggle = (checked: boolean) => {
-    updateSettings(
-      { disable_model_add_for_internal_users: checked },
-      {
-        onSuccess: () => {
-          NotificationManager.success("UI settings updated successfully");
-        },
-        onError: (error) => {
-          NotificationManager.fromBackend(error);
-        },
+  const handleSubmit = (formValues: Record<string, unknown>) => {
+    updateSettings(formValues, {
+      onSuccess: () => {
+        NotificationManager.success("UI settings updated successfully");
       },
-    );
-  };
-
-  const handleToggleTeamAdminDelete = (checked: boolean) => {
-    updateSettings(
-      { disable_team_admin_delete_team_user: checked },
-      {
-        onSuccess: () => {
-          NotificationManager.success("UI settings updated successfully");
-        },
-        onError: (error) => {
-          NotificationManager.fromBackend(error);
-        },
+      onError: (error) => {
+        NotificationManager.fromBackend(error);
       },
-    );
+    });
   };
 
   const handleUpdatePageVisibility = (settings: { enabled_ui_pages_internal_users: string[] | null }) => {
@@ -236,35 +220,73 @@ export default function UISettings() {
             />
           )}
 
-          <Space align="start" size="middle">
-            <Switch
-              checked={isDisabledForInternalUsers}
-              disabled={isUpdating}
-              loading={isUpdating}
-              onChange={handleToggle}
-              aria-label={property?.description ?? "Disable model add for internal users"}
-            />
-            <Space direction="vertical" size={4}>
-              <Typography.Text strong>Disable model add for internal users</Typography.Text>
-              {property?.description && <Typography.Text type="secondary">{property.description}</Typography.Text>}
-            </Space>
-          </Space>
+          <Form form={form} layout="vertical" initialValues={values} onFinish={handleSubmit}>
+            <Form.Item
+              label="Disable model add for internal users"
+              name="disable_model_add_for_internal_users"
+              valuePropName="checked"
+            >
+              <Switch
+                disabled={isUpdating}
+                loading={isUpdating}
+                aria-label={properties?.disable_model_add_for_internal_users?.description}
+              />
+            </Form.Item>
 
-          <Space align="start" size="middle">
-            <Switch
-              checked={isDisabledTeamAdminDeleteTeamUser}
-              disabled={isUpdating}
-              loading={isUpdating}
-              onChange={handleToggleTeamAdminDelete}
-              aria-label={disableTeamAdminDeleteProperty?.description ?? "Disable team admin delete team user"}
-            />
-            <Space direction="vertical" size={4}>
-              <Typography.Text strong>Disable team admin delete team user</Typography.Text>
-              {disableTeamAdminDeleteProperty?.description && (
-                <Typography.Text type="secondary">{disableTeamAdminDeleteProperty.description}</Typography.Text>
-              )}
-            </Space>
-          </Space>
+            <Form.Item
+              label="Disable team admin delete team user"
+              name="disable_team_admin_delete_team_user"
+              valuePropName="checked"
+            >
+              <Switch
+                disabled={isUpdating}
+                loading={isUpdating}
+                aria-label={properties?.disable_team_admin_delete_team_user?.description}
+              />
+            </Form.Item>
+
+            <Typography.Title level={5} style={{ marginTop: 16 }}>
+              LDAP Settings
+            </Typography.Title>
+
+            <Form.Item label="Enable LDAP login" name="ldap_enabled" valuePropName="checked">
+              <Switch
+                disabled={isUpdating}
+                loading={isUpdating}
+                aria-label={properties?.ldap_enabled?.description}
+              />
+            </Form.Item>
+
+            <Form.Item label="LDAP Host" name="ldap_host">
+              <Input placeholder="ldap.example.com" disabled={isUpdating} />
+            </Form.Item>
+
+            <Form.Item label="LDAP Port" name="ldap_port">
+              <InputNumber min={1} max={65535} style={{ width: "100%" }} disabled={isUpdating} />
+            </Form.Item>
+
+            <Form.Item label="Use TLS (LDAPS)" name="ldap_use_tls" valuePropName="checked">
+              <Switch disabled={isUpdating} loading={isUpdating} aria-label={properties?.ldap_use_tls?.description} />
+            </Form.Item>
+
+            <Form.Item label="Base DN" name="ldap_base_dn">
+              <Input placeholder="DC=example,DC=com" disabled={isUpdating} />
+            </Form.Item>
+
+            <Form.Item label="User Filter" name="ldap_user_filter">
+              <Input placeholder="(&(objectClass=user)(mail={username}))" disabled={isUpdating} />
+            </Form.Item>
+
+            <Form.Item label="Admin Group DN" name="ldap_admin_group_dn">
+              <Input placeholder="CN=litellm-admins,OU=Groups,DC=example,DC=com" disabled={isUpdating} />
+            </Form.Item>
+
+            <Form.Item>
+              <Button type="primary" htmlType="submit" loading={isUpdating} disabled={isUpdating}>
+                Save settings
+              </Button>
+            </Form.Item>
+          </Form>
 
           <Space align="start" size="middle">
             <Switch
@@ -451,10 +473,9 @@ export default function UISettings() {
 
           <Divider />
 
-          {/* Page Visibility for Internal Users */}
           <PageVisibilitySettings
             enabledPagesInternalUsers={values.enabled_ui_pages_internal_users}
-            enabledPagesPropertyDescription={enabledPagesProperty?.description}
+            enabledPagesPropertyDescription={enabledPagesDescription}
             isUpdating={isUpdating}
             onUpdate={handleUpdatePageVisibility}
           />

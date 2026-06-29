@@ -1029,8 +1029,11 @@ def is_pass_through_provider_route(route: str) -> bool:
 
 def _has_user_setup_sso():
     """
-    Check if the user has set up single sign-on (SSO) by verifying the presence of Microsoft client ID, Google client ID or generic client ID and UI username environment variables.
-    Returns a boolean indicating whether SSO has been set up.
+    Check if one of LiteLLM's built-in SSO providers is configured.
+
+    This helper is intentionally limited to the built-in providers because
+    published enterprise package behavior still keys off it for the legacy
+    free-tier usage meter.
     """
     microsoft_client_id = os.getenv("MICROSOFT_CLIENT_ID", None)
     google_client_id = os.getenv("GOOGLE_CLIENT_ID", None)
@@ -1039,6 +1042,37 @@ def _has_user_setup_sso():
     sso_setup = (microsoft_client_id is not None) or (google_client_id is not None) or (generic_client_id is not None)
 
     return sso_setup
+
+
+def _has_ui_sso_setup() -> bool:
+    """
+    Check if any Admin UI SSO provider is configured, including fork-specific
+    providers like Authentik.
+    """
+    authentik_client_id = os.getenv("AUTHENTIK_CLIENT_ID", None)
+    return _has_user_setup_sso() or (authentik_client_id is not None)
+
+
+def _has_free_sso_user_limit() -> bool:
+    """
+    Return True when the deployment is using one of the built-in SSO providers that
+    should surface the legacy free-tier "5 users" usage meter in the enterprise UI.
+
+    Fork-specific providers such as Authentik can participate in UI SSO without
+    inheriting that premium-reporting fallback.
+    """
+    microsoft_client_id = os.getenv("MICROSOFT_CLIENT_ID", None)
+    google_client_id = os.getenv("GOOGLE_CLIENT_ID", None)
+    generic_client_id = os.getenv("GENERIC_CLIENT_ID", None)
+
+    return any(
+        client_id is not None
+        for client_id in (
+            microsoft_client_id,
+            google_client_id,
+            generic_client_id,
+        )
+    )
 
 
 def get_customer_user_header_from_mapping(user_id_mapping) -> Optional[list]:

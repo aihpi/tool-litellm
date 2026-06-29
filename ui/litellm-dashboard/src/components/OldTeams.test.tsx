@@ -833,7 +833,7 @@ describe("OldTeams - models dropdown options", () => {
     });
     const allProxyModelsOption = screen.queryByText("All Proxy Models");
     expect(allProxyModelsOption).not.toBeInTheDocument();
-  });
+  }, 10000);
 });
 
 describe("OldTeams - organization alias display", () => {

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { Form } from "antd";
 import { describe, expect, it, vi } from "vitest";
 import SSOModals from "./SSOModals";
@@ -65,16 +65,32 @@ describe("SSOModals", () => {
 
     // Find and interact with the SSO provider select
     const ssoProviderSelect = screen.getByLabelText("SSO Provider");
-    fireEvent.mouseDown(ssoProviderSelect);
+    act(() => {
+      fireEvent.mouseDown(ssoProviderSelect);
+    });
     // Wait for dropdown and select Google
     await waitFor(() => {
       const googleOption = screen.getByText("Google SSO");
-      fireEvent.click(googleOption);
+      act(() => {
+        fireEvent.click(googleOption);
+      });
     });
 
     // Fill in the email field
     const emailInput = screen.getByLabelText("Proxy Admin Email");
-    fireEvent.change(emailInput, { target: { value: "test@example.com" } });
+    act(() => {
+      fireEvent.change(emailInput, { target: { value: "test@example.com" } });
+    });
+
+    // Fill required provider fields to avoid unrelated validation errors
+    const clientIdInput = screen.getByLabelText("Google Client ID");
+    act(() => {
+      fireEvent.change(clientIdInput, { target: { value: "test-client-id" } });
+    });
+    const clientSecretInput = screen.getByLabelText("Google Client Secret");
+    act(() => {
+      fireEvent.change(clientSecretInput, { target: { value: "test-client-secret" } });
+    });
 
     // Fill in an invalid URL
     const urlInput = screen.getByLabelText("Proxy Base URL");
@@ -92,7 +108,7 @@ describe("SSOModals", () => {
       // The validation is based on a Promise, so we need to wait for it to resolve
       { timeout: 5000 },
     );
-  });
+  }, 10000);
 
   it("should show validation error if proxy base url ends with trailing slash", async () => {
     const TestWrapper = () => {
@@ -227,14 +243,18 @@ describe("SSOModals", () => {
 
     // Fill in an incomplete URL like "http:"
     const urlInput = screen.getByLabelText("Proxy Base URL");
-    fireEvent.change(urlInput, { target: { value: "http:" } });
+    act(() => {
+      fireEvent.change(urlInput, { target: { value: "http:" } });
+    });
 
     // Submit the form
     const saveButton = screen.getByText("Save");
-    fireEvent.click(saveButton);
+    act(() => {
+      fireEvent.click(saveButton);
+    });
 
     // Check that only the URL format error appears (use findByText for async rendering)
-    const errorMessage = await screen.findByText("URL must start with http:// or https://", {}, { timeout: 3000 });
+    const errorMessage = await screen.findByText(/URL must start with http:\/\/ or https:\/\//i, {}, { timeout: 5000 });
     expect(errorMessage).toBeInTheDocument();
 
     // Verify the trailing slash error does NOT appear

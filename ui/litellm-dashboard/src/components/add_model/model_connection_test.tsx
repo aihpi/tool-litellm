@@ -56,8 +56,24 @@ const ModelConnectionTest: React.FC<ModelConnectionTestProps> = ({
       console.log("Result from prepareModelAddRequest:", result);
 
       const { litellmParamsObj, modelInfoObj, modelName: returnedModelName } = result[0];
+      const provider = litellmParamsObj?.custom_llm_provider;
+      const modelNameValue = litellmParamsObj?.model || returnedModelName || "";
+      const isAihpiEmbedding =
+        modelInfoObj?.mode === "embedding" &&
+        (provider === "aihpi-provider" || modelNameValue.startsWith("aihpi-provider/"));
+      const testInput = isAihpiEmbedding
+        ? [
+            "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=",
+          ]
+        : undefined;
 
-      const response = await testConnectionRequest(accessToken, litellmParamsObj, modelInfoObj, modelInfoObj?.mode);
+      const response = await testConnectionRequest(
+        accessToken,
+        litellmParamsObj,
+        modelInfoObj,
+        modelInfoObj?.mode,
+        testInput,
+      );
       if (response.status === "success") {
         NotificationsManager.success("Connection test successful!");
         setError(null);
@@ -145,7 +161,7 @@ ${formattedBody}
             <div
               style={{
                 border: "3px solid #f3f3f3",
-                borderTop: "3px solid #1890ff",
+                borderTop: "3px solid #dd6108",
                 borderRadius: "50%",
                 width: "30px",
                 height: "30px",

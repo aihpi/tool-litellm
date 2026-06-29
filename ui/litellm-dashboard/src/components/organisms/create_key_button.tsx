@@ -12,7 +12,7 @@ import { Accordion, AccordionBody, AccordionHeader, Button, Col, Grid, Text, Tex
 import { Button as Button2, Form, Input, Modal, Radio, Select, Switch, Tag, Tooltip, Typography } from "antd";
 import debounce from "lodash/debounce";
 import React, { useCallback, useEffect, useState } from "react";
-import { rolesWithWriteAccess } from "../../utils/roles";
+import { isAdminRole, rolesWithWriteAccess } from "../../utils/roles";
 import AgentSelector from "../agent_management/AgentSelector";
 import { mapDisplayToInternalNames } from "../callback_info_helpers";
 import AccessGroupSelector from "../common_components/AccessGroupSelector";
@@ -205,6 +205,7 @@ const CreateKey: React.FC<CreateKeyProps> = ({ team, teams, data, addKey, autoOp
   const [routerSettingsKey, setRouterSettingsKey] = useState<number>(0);
   const [agentsList, setAgentsList] = useState<{ agent_id: string; agent_name: string }[]>([]);
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
+  const [allowAllVectorStores, setAllowAllVectorStores] = useState<boolean>(false);
   const handleOk = () => {
     setIsModalVisible(false);
     form.resetFields();
@@ -219,6 +220,7 @@ const CreateKey: React.FC<CreateKeyProps> = ({ team, teams, data, addKey, autoOp
     setSelectedAgentId(null);
     setSelectedOrganizationId(null);
     setSelectedProjectId(null);
+    setAllowAllVectorStores(false);
     setBudgetLimits([]);
   };
 
@@ -238,6 +240,7 @@ const CreateKey: React.FC<CreateKeyProps> = ({ team, teams, data, addKey, autoOp
     setSelectedAgentId(null);
     setSelectedOrganizationId(null);
     setSelectedProjectId(null);
+    setAllowAllVectorStores(false);
     setBudgetLimits([]);
   };
 
@@ -257,6 +260,7 @@ const CreateKey: React.FC<CreateKeyProps> = ({ team, teams, data, addKey, autoOp
 
   useEffect(() => {
     const fetchGuardrails = async () => {
+      if (!accessToken || !isAdminRole(userRole || "")) return;
       try {
         const response = await getGuardrailsList(accessToken);
         const guardrailNames = response.guardrails.map((g: { guardrail_name: string }) => g.guardrail_name);
@@ -423,6 +427,22 @@ const CreateKey: React.FC<CreateKeyProps> = ({ team, teams, data, addKey, autoOp
         };
       }
 
+      if (allowAllVectorStores) {
+        metadata.allowed_vector_store_indexes = [
+          { index_name: "*", index_permissions: ["read", "write"] },
+        ];
+      } else if (
+        formValues.allowed_vector_store_ids &&
+        formValues.allowed_vector_store_ids.length > 0
+      ) {
+        metadata.allowed_vector_store_indexes = formValues.allowed_vector_store_ids.map(
+          (vectorStoreId: string) => ({
+            index_name: vectorStoreId,
+            index_permissions: ["read", "write"],
+          }),
+        );
+      }
+
       // Add auto-rotation settings as top-level fields
       if (autoRotationEnabled) {
         formValues.auto_rotate = true;
@@ -435,6 +455,10 @@ const CreateKey: React.FC<CreateKeyProps> = ({ team, teams, data, addKey, autoOp
       }
 
       // Update the formValues with the final metadata
+      if (formValues.default_vector_store_id) {
+        metadata.default_vector_store_id = formValues.default_vector_store_id;
+        delete formValues.default_vector_store_id;
+      }
       formValues.metadata = JSON.stringify(metadata);
 
       // disable_global_guardrails is premium-gated server-side; only send it when enabled
@@ -828,17 +852,24 @@ const CreateKey: React.FC<CreateKeyProps> = ({ team, teams, data, addKey, autoOp
               help={keyOwner === "service_account" ? "required" : ""}
             >
               <TeamDropdown
+                teams={
+                  selectedOrganizationId
+                    ? teams?.filter((t) => t.organization_id === selectedOrganizationId) ?? null
+                    : teams
+                }
                 disabled={selectedProjectId !== null}
-                organizationId={selectedOrganizationId}
-                onTeamSelect={(team) => {
-                  setSelectedCreateKeyTeam(team);
+                onChange={(teamId) => {
+                  const selected =
+                    typeof teamId === "string"
+                      ? teams?.find((t) => t.team_id === teamId) ?? null
+                      : null;
+                  setSelectedCreateKeyTeam(selected);
                   setSelectedProjectId(null);
                   form.setFieldValue("project_id", undefined);
-                  // Auto-populate org from team for non-admin users
-                  if (team?.organization_id) {
-                    setSelectedOrganizationId(team.organization_id);
-                    form.setFieldValue("organization_id", team.organization_id);
-                  } else if (!team) {
+                  if (selected?.organization_id) {
+                    setSelectedOrganizationId(selected.organization_id);
+                    form.setFieldValue("organization_id", selected.organization_id);
+                  } else if (!selected) {
                     setSelectedOrganizationId(null);
                     form.setFieldValue("organization_id", undefined);
                   }
@@ -1311,7 +1342,7 @@ const CreateKey: React.FC<CreateKeyProps> = ({ team, teams, data, addKey, autoOp
                     }
                   >
                     <PassThroughRoutesSelector
-                      onChange={(values: string[]) => form.setFieldValue("allowed_passthrough_routes", values)}
+                      onChange={(values) => form.setFieldValue("allowed_passthrough_routes", values)}
                       value={form.getFieldValue("allowed_passthrough_routes")}
                       accessToken={accessToken}
                       placeholder={
@@ -1327,20 +1358,64 @@ const CreateKey: React.FC<CreateKeyProps> = ({ team, teams, data, addKey, autoOp
                     label={
                       <span>
                         Allowed Vector Stores{" "}
-                        <Tooltip title="Select which vector stores this key can access. If none selected, the key will have access to all available vector stores">
+                        <Tooltip title="Select which vector stores this key can access. Use 'Allow All Vector Stores' to grant access to all stores.">
                           <InfoCircleOutlined style={{ marginLeft: "4px" }} />
                         </Tooltip>
                       </span>
                     }
                     name="allowed_vector_store_ids"
                     className="mt-4"
-                    help="Select vector stores this key can access. Leave empty for access to all vector stores"
+                    help="Select vector stores this key can access. Use 'Allow All Vector Stores' for all-store access."
                   >
                     <VectorStoreSelector
-                      onChange={(values: string[]) => form.setFieldValue("allowed_vector_store_ids", values)}
+                      onChange={(values) => form.setFieldValue("allowed_vector_store_ids", values)}
                       value={form.getFieldValue("allowed_vector_store_ids")}
                       accessToken={accessToken}
                       placeholder="Select vector stores (optional)"
+                      disabled={allowAllVectorStores}
+                    />
+                  </Form.Item>
+                  <Form.Item
+                    label="Allow All Vector Stores"
+                    className="mt-4"
+                    help="Grants access to all vector stores. When enabled, you must pass vector_store_id in API calls."
+                  >
+                    <Switch
+                      checked={allowAllVectorStores}
+                      onChange={(checked) => {
+                        setAllowAllVectorStores(checked);
+                        if (checked) {
+                          form.setFieldValue("allowed_vector_store_ids", []);
+                          form.setFieldValue("default_vector_store_id", undefined);
+                        }
+                      }}
+                    />
+                  </Form.Item>
+                  <Form.Item
+                    label={
+                      <span>
+                        Default Vector Store{" "}
+                        <Tooltip title="Optional default vector store for this key. When set, point endpoints can omit the vector_store_id.">
+                          <InfoCircleOutlined style={{ marginLeft: "4px" }} />
+                        </Tooltip>
+                      </span>
+                    }
+                    name="default_vector_store_id"
+                    className="mt-4"
+                    help="Optional default vector store for point ingestion. Disabled when access is set to all stores."
+                  >
+                    <VectorStoreSelector
+                      multiple={false}
+                      onChange={(value) =>
+                        form.setFieldValue(
+                          "default_vector_store_id",
+                          Array.isArray(value) ? value[0] : value,
+                        )
+                      }
+                      value={form.getFieldValue("default_vector_store_id")}
+                      accessToken={accessToken}
+                      placeholder="Select default vector store (optional)"
+                      disabled={allowAllVectorStores}
                     />
                   </Form.Item>
                   <Form.Item

@@ -96,7 +96,7 @@ export const modelHubColumns = (
         return (
           <div className="flex flex-wrap gap-1">
             {model.providers.slice(0, 2).map((provider) => (
-              <Tag key={provider} color="blue" className="text-xs">
+              <Tag key={provider} color="orange" className="text-xs">
                 {provider}
               </Tag>
             ))}

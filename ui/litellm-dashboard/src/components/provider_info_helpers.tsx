@@ -6,6 +6,7 @@ export enum Providers {
   AI21_CHAT = "Ai21 Chat",
   AIML = "AI/ML API",
   AIOHTTP_OPENAI = "Aiohttp Openai",
+  AIHPI_Provider = "AIHPI Provider",
   Anthropic = "Anthropic",
   ANTHROPIC_TEXT = "Anthropic Text",
   AssemblyAI = "AssemblyAI",
@@ -115,6 +116,7 @@ export const provider_map: Record<string, string> = {
   AI21_CHAT: "ai21_chat",
   AIML: "aiml",
   AIOHTTP_OPENAI: "aiohttp_openai",
+  AIHPI_Provider: "aihpi-provider",
   Anthropic: "anthropic",
   ANTHROPIC_TEXT: "anthropic_text",
   AssemblyAI: "assemblyai",
@@ -367,6 +369,8 @@ export const getPlaceholder = (selectedProvider: string): string => {
     return "jina_ai/";
   } else if (selectedProvider == Providers.VolcEngine) {
     return "volcengine/<any-model-on-volcengine>";
+  } else if (selectedProvider == Providers.AIHPI_Provider) {
+    return "aihpi-provider/qwen-image-edit";
   } else if (selectedProvider == Providers.DeepInfra) {
     return "deepinfra/<any-model-on-deepinfra>";
   } else if (selectedProvider == Providers.FalAI) {

@@ -53,7 +53,7 @@ export function VectorStorePermissions({ vectorStores, accessToken }: VectorStor
       <div className="flex items-center gap-2">
         <DatabaseIcon className="h-4 w-4 text-blue-600" />
         <Text className="font-semibold text-gray-900">Vector Stores</Text>
-        <Badge color="blue" size="xs">
+        <Badge color="orange" size="xs">
           {vectorStores.length}
         </Badge>
       </div>

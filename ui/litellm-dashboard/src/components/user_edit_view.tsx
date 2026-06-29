@@ -6,6 +6,7 @@ import { all_admin_roles } from "../utils/roles";
 import BudgetDurationDropdown from "./common_components/budget_duration_dropdown";
 import { getModelDisplayName } from "./key_team_helpers/fetch_available_models_team_key";
 import NumericalInput from "./shared/numerical_input";
+import TeamDropdown from "./common_components/team_dropdown";
 
 interface UserEditViewProps {
   userData: any;
@@ -40,7 +41,10 @@ export function UserEditView({
     const maxBudget = userData.user_info?.max_budget;
     const isUnlimited = maxBudget === null || maxBudget === undefined;
     setUnlimitedBudget(isUnlimited);
-
+    const teamsFromUser =
+      userData.teams?.map((team: { team_id: string }) => team.team_id) ??
+      userData.user_info?.teams ??
+      [];
     form.setFieldsValue({
       user_id: userData.user_id,
       user_email: userData.user_info?.user_email,
@@ -50,6 +54,7 @@ export function UserEditView({
       max_budget: isUnlimited ? "" : maxBudget,
       budget_duration: userData.user_info?.budget_duration,
       metadata: userData.user_info?.metadata ? JSON.stringify(userData.user_info.metadata, null, 2) : undefined,
+      teams: teamsFromUser,
     });
   }, [userData, form]);
 
@@ -70,6 +75,9 @@ export function UserEditView({
         console.error("Error parsing metadata JSON:", error);
         return;
       }
+    }
+    if (Array.isArray(values.teams) && values.teams.length === 0) {
+      delete values.teams;
     }
 
     if (unlimitedBudget || values.max_budget === "" || values.max_budget === undefined) {
@@ -181,6 +189,16 @@ export function UserEditView({
       <Form.Item label="Reset Budget" name="budget_duration">
         <BudgetDurationDropdown />
       </Form.Item>
+
+      {!isBulkEdit && (
+        <Form.Item
+          label="Teams"
+          name="teams"
+          help="If selected, user will be added as a 'user' role to each team."
+        >
+          <TeamDropdown teams={teams} multiple />
+        </Form.Item>
+      )}
 
       <Form.Item label="Metadata" name="metadata">
         <Textarea rows={4} placeholder="Enter metadata as JSON" />

@@ -1322,7 +1322,12 @@ const TeamInfoView: React.FC<TeamInfoProps> = ({
 
                     <Form.Item label="Vector Stores" name="vector_stores" aria-label="Vector Stores">
                       <VectorStoreSelector
-                        onChange={(values: string[]) => form.setFieldValue("vector_stores", values)}
+                        onChange={(values) =>
+                          form.setFieldValue(
+                            "vector_stores",
+                            Array.isArray(values) ? values : values ? [values] : [],
+                          )
+                        }
                         value={form.getFieldValue("vector_stores")}
                         accessToken={accessToken || ""}
                         placeholder="Select vector stores"
@@ -1341,7 +1346,7 @@ const TeamInfoView: React.FC<TeamInfoProps> = ({
                         placement="top"
                       >
                         <PassThroughRoutesSelector
-                          onChange={(values: string[]) => form.setFieldValue("allowed_passthrough_routes", values)}
+                          onChange={(values) => form.setFieldValue("allowed_passthrough_routes", values)}
                           value={form.getFieldValue("allowed_passthrough_routes")}
                           accessToken={accessToken || ""}
                           placeholder="Select pass through routes"

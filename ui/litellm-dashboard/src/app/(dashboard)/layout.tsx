@@ -12,6 +12,7 @@ import { MIGRATED_PAGES, migratedHref, legacyPageHref, legacyKeyForPathname } fr
 import { PluginModeProvider, usePluginMode } from "@/contexts/PluginModeContext";
 import { createApiClient } from "@/lib/http/client";
 import { getProxyBaseUrl } from "@/components/networking";
+import StickyLegalFooter from "@/components/common_components/StickyLegalFooter";
 
 const pluginApiClient = createApiClient({ getBaseUrl: () => getProxyBaseUrl() ?? "" });
 
@@ -70,6 +71,7 @@ export function AgentControlPlaneView() {
           <p className="text-lg font-medium mb-2">Plugin</p>
           <p className="text-sm">Configure the plugin URL in settings</p>
         </div>
+        <StickyLegalFooter />
       </div>
     );
   }
@@ -96,8 +98,9 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
-  const { accessToken } = useAuth();
+  const { accessToken, userID, userEmail, userRole, premiumUser } = useAuth();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [proxySettings, setProxySettings] = useState<any>(undefined);
   const { mode } = usePluginMode();
 
   const page = legacyKeyForPathname(pathname) || searchParams.get("page") || "api-keys";
@@ -114,6 +117,14 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
         isPublicPage={false}
         sidebarCollapsed={sidebarCollapsed}
         onToggleSidebar={() => setSidebarCollapsed((v) => !v)}
+        userID={userID}
+        userEmail={userEmail}
+        userRole={userRole}
+        premiumUser={premiumUser}
+        proxySettings={proxySettings}
+        setProxySettings={setProxySettings}
+        isDarkMode={false}
+        toggleDarkMode={() => {}}
       />
       <DebugWarningBanner accessToken={accessToken} />
       <div className="flex flex-1">
@@ -130,6 +141,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
           </>
         )}
       </div>
+      <StickyLegalFooter />
     </div>
   );
 }

@@ -93,7 +93,7 @@ const SearchConnectionTest: React.FC<SearchConnectionTestProps> = ({ litellmPara
             <div
               style={{
                 border: "3px solid #f3f3f3",
-                borderTop: "3px solid #1890ff",
+                borderTop: "3px solid #dd6108",
                 borderRadius: "50%",
                 width: "30px",
                 height: "30px",

@@ -415,7 +415,7 @@ export function UserDataTable({
                           }}
                           style={{
                             cursor: cell.column.id === "user_id" ? "pointer" : "default",
-                            color: cell.column.id === "user_id" ? "#3b82f6" : "inherit",
+                            color: cell.column.id === "user_id" ? "#dd6108" : "inherit",
                           }}
                         >
                           {flexRender(cell.column.columnDef.cell, cell.getContext())}

@@ -1,0 +1,123 @@
+name: Build and Publish Docker Image
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - aihpi-provider
+      - dev/*
+    paths-ignore:
+      - ".github/workflows/**"
+    tags:
+      - "v*"
+  pull_request:
+    branches:
+      - main
+      - master
+      - aihpi-provider
+      - dev/*
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=dev,enable=${{ startsWith(github.ref_name, 'dev/') }}
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha,prefix={{branch}}-
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          no-cache: true
+          platforms: linux/amd64
+
+      - name: Generate image URL
+        run: |
+          echo "## Docker Image Published" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Image: \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Pull command:" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+  cleanup-dev-images:
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    if: github.event_name == 'push' && contains(fromJson('["main","master","aihpi-provider"]'), github.ref_name)
+    permissions:
+      packages: write
+      contents: read
+    steps:
+      - name: Delete dev-tagged images
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const packageName = context.repo.repo;
+            const isOrg = context.payload.repository.owner.type === "Organization";
+            const listEndpoint = isOrg
+              ? "GET /orgs/{org}/packages/container/{package_name}/versions"
+              : "GET /users/{username}/packages/container/{package_name}/versions";
+            const params = isOrg
+              ? { org: owner, package_name: packageName, per_page: 100 }
+              : { username: owner, package_name: packageName, per_page: 100 };
+
+            const versions = await github.paginate(listEndpoint, params);
+            const devTagRegex = /^dev([/-].*)?$/;
+
+            for (const version of versions) {
+              const tags = version.metadata?.container?.tags || [];
+              if (tags.length === 0) continue;
+
+              const allDev = tags.every((tag) => devTagRegex.test(tag));
+              if (!allDev) continue;
+
+              const deleteEndpoint = isOrg
+                ? "DELETE /orgs/{org}/packages/container/{package_name}/versions/{package_version_id}"
+                : "DELETE /users/{username}/packages/container/{package_name}/versions/{package_version_id}";
+              const deleteParams = isOrg
+                ? { org: owner, package_name: packageName, package_version_id: version.id }
+                : { username: owner, package_name: packageName, package_version_id: version.id };
+
+              core.info(`Deleting ${packageName} version ${version.id} with tags: ${tags.join(", ")}`);
+              await github.request(deleteEndpoint, deleteParams);
+            }

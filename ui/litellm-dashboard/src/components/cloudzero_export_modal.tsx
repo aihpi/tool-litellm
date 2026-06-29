@@ -300,7 +300,7 @@ const CloudZeroExportModal: React.FC<CloudZeroExportModalProps> = ({ isOpen, onC
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
               </svg>
             )}
-            color="blue"
+            color="orange"
           >
             <Text>Export your usage data as a CSV file for analysis in spreadsheet applications.</Text>
           </Callout>

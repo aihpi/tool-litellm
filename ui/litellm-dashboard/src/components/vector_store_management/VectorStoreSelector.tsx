@@ -3,12 +3,13 @@ import { Select } from "antd";
 import { VectorStore } from "./types";
 import { vectorStoreListCall } from "../networking";
 interface VectorStoreSelectorProps {
-  onChange: (selectedVectorStores: string[]) => void;
-  value?: string[];
+  onChange: (selectedVectorStores: string[] | string | undefined) => void;
+  value?: string[] | string;
   className?: string;
   accessToken: string;
   placeholder?: string;
   disabled?: boolean;
+  multiple?: boolean;
 }
 
 const VectorStoreSelector: React.FC<VectorStoreSelectorProps> = ({
@@ -18,6 +19,7 @@ const VectorStoreSelector: React.FC<VectorStoreSelectorProps> = ({
   accessToken,
   placeholder = "Select vector stores",
   disabled = false,
+  multiple = true,
 }) => {
   const [vectorStores, setVectorStores] = useState<VectorStore[]>([]);
   const [loading, setLoading] = useState(false);
@@ -45,7 +47,7 @@ const VectorStoreSelector: React.FC<VectorStoreSelectorProps> = ({
   return (
     <div>
       <Select
-        mode="multiple"
+        mode={multiple ? "multiple" : undefined}
         placeholder={placeholder}
         onChange={onChange}
         value={value}

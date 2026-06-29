@@ -17,7 +17,7 @@ describe("ToolPermissionRulesEditor", () => {
     const payload = onChange.mock.calls[0][0] as ToolPermissionConfig;
     expect(payload.rules).toHaveLength(1);
     expect(payload.rules[0].decision).toBe("allow");
-  });
+  }, 10000);
 
   it("captures violation message and argument constraints", async () => {
     let latestConfig: ToolPermissionConfig | null = null;

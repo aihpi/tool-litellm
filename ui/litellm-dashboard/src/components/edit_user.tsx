@@ -5,6 +5,7 @@ import { Button as Button2, Modal, Form, Select as Select2, InputNumber } from "
 
 import NumericalInput from "./shared/numerical_input";
 import BudgetDurationDropdown from "./common_components/budget_duration_dropdown";
+import TeamDropdown from "./common_components/team_dropdown";
 
 interface EditUserModalProps {
   visible: boolean;
@@ -12,9 +13,10 @@ interface EditUserModalProps {
   onCancel: () => void;
   user: any;
   onSubmit: (data: any) => void;
+  teams: any[] | null;
 }
 
-const EditUserModal: React.FC<EditUserModalProps> = ({ visible, possibleUIRoles, onCancel, user, onSubmit }) => {
+const EditUserModal: React.FC<EditUserModalProps> = ({ visible, possibleUIRoles, onCancel, user, onSubmit, teams }) => {
   const [editedUser, setEditedUser] = useState(user);
   const [form] = Form.useForm();
 
@@ -28,8 +30,12 @@ const EditUserModal: React.FC<EditUserModalProps> = ({ visible, possibleUIRoles,
   };
 
   const handleEditSubmit = async (formValues: Record<string, any>) => {
+    const normalizedValues = { ...formValues };
+    if (Array.isArray(normalizedValues.teams) && normalizedValues.teams.length === 0) {
+      delete normalizedValues.teams;
+    }
     // Call API to update team with teamId and values
-    onSubmit(formValues);
+    onSubmit(normalizedValues);
     form.resetFields();
     onCancel();
   };
@@ -38,12 +44,15 @@ const EditUserModal: React.FC<EditUserModalProps> = ({ visible, possibleUIRoles,
     return null;
   }
 
+  const initialTeams = user?.teams ?? (user?.team_id ? [user.team_id] : []);
+  const initialValues = { ...user, teams: initialTeams };
+
   return (
     <Modal open={visible} onCancel={handleCancel} footer={null} title={"Edit User " + user.user_id} width={1000}>
       <Form
         form={form}
         onFinish={handleEditSubmit}
-        initialValues={user} // Pass initial values here
+        initialValues={initialValues} // Pass initial values here
         labelCol={{ span: 8 }}
         wrapperCol={{ span: 16 }}
         labelAlign="left"
@@ -93,6 +102,14 @@ const EditUserModal: React.FC<EditUserModalProps> = ({ visible, possibleUIRoles,
 
           <Form.Item label="Reset Budget" name="budget_duration">
             <BudgetDurationDropdown />
+          </Form.Item>
+
+          <Form.Item
+            label="Teams"
+            name="teams"
+            help="If selected, user will be added as a 'user' role to each team."
+          >
+            <TeamDropdown teams={teams} multiple />
           </Form.Item>
 
           <div style={{ textAlign: "right", marginTop: "10px" }}>

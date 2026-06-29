@@ -384,7 +384,10 @@ export function ToolDetail({ toolName, onBack, accessToken }: ToolDetailProps) {
                 {blockScope === "team" ? "Team" : "Key"}
               </span>
               {blockScope === "team" ? (
-                <TeamDropdown value={blockTeamId ?? undefined} onChange={(id) => setBlockTeamId(id || null)} />
+                <TeamDropdown
+                  value={blockTeamId ?? undefined}
+                  onChange={(id) => setBlockTeamId(typeof id === "string" ? id : null)}
+                />
               ) : (
                 <Select
                   placeholder="Select key"

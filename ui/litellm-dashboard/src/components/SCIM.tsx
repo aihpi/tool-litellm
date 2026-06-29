@@ -121,7 +121,7 @@ const SCIMConfig: React.FC<SCIMConfigProps> = ({ accessToken, userID, proxySetti
               </Title>
             </div>
 
-            <Callout title="Using SCIM" color="blue" className="mb-4">
+            <Callout title="Using SCIM" color="orange" className="mb-4">
               You need a SCIM token to authenticate with the SCIM API. Create one below and use it in your SCIM provider
               configuration.
             </Callout>

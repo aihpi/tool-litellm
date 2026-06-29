@@ -6,8 +6,16 @@ export const v2_admin_role_names = ["proxy_admin", "proxy_admin_viewer", "org_ad
 export const all_admin_roles = [...old_admin_roles, ...v2_admin_role_names];
 
 export const internalUserRoles = ["Internal User", "Internal Viewer", "internal_user", "internal_user_viewer"];
-export const rolesAllowedToSeeUsage = ["Admin", "Admin Viewer", "Internal User", "Internal Viewer"];
-export const rolesWithWriteAccess = ["Internal User", "Admin", "proxy_admin"];
+export const rolesAllowedToSeeUsage = [
+  "Admin",
+  "Admin Viewer",
+  "Internal User",
+  "Internal Viewer",
+  "internal_user",
+  "internal_user_viewer",
+];
+export const rolesWithWriteAccess = ["Internal User", "internal_user", "Admin", "proxy_admin"];
+export const internalWriteRoles = ["Internal User", "internal_user"];
 // Admin-tier read parity: Admin Viewer sees Models + Endpoints, Agents, and
 // other pages whose primary purpose is configuration/management read-only.
 // Per the Admin Viewer principle: read parity with Proxy Admin, no writes,
@@ -19,6 +27,14 @@ export const isAdminRole = (role: string): boolean => {
   return all_admin_roles.includes(role);
 };
 
+export const canCreateTeams = (role: string): boolean => {
+  return isAdminRole(role) || internalWriteRoles.includes(role);
+};
+
+export const canManageVectorStores = (role: string): boolean => {
+  return isAdminRole(role) || internalWriteRoles.includes(role);
+};
+
 export const isProxyAdminRole = (role: string): boolean => {
   return role === "proxy_admin" || role === "Admin";
 };
@@ -27,7 +43,7 @@ export const isUserTeamAdminForAnyTeam = (teams: Team[] | null, userID: string):
   if (teams == null) {
     return false;
   }
-  return teams.some((team) => isUserTeamAdminForSingleTeam(team.members_with_roles, userID));
+  return teams.some((team) => isUserTeamMaintainerForSingleTeam(team.members_with_roles, userID));
 };
 
 export const isUserTeamAdminForSingleTeam = (teamMemberWithRoles: Member[] | null, userID: string): boolean => {
@@ -35,6 +51,15 @@ export const isUserTeamAdminForSingleTeam = (teamMemberWithRoles: Member[] | nul
     return false;
   }
   return teamMemberWithRoles.some((member) => member.user_id === userID && member.role === "admin");
+};
+
+export const isUserTeamMaintainerForSingleTeam = (teamMemberWithRoles: Member[] | null, userID: string): boolean => {
+  if (teamMemberWithRoles == null) {
+    return false;
+  }
+  return teamMemberWithRoles.some(
+    (member) => member.user_id === userID && ["admin", "maintainer"].includes(member.role),
+  );
 };
 
 export const formatUserRole = (userRole: string): string => {

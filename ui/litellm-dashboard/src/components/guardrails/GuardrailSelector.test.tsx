@@ -4,6 +4,9 @@ import * as networking from "../networking";
 import GuardrailSelector from "./GuardrailSelector";
 
 vi.mock("../networking");
+vi.mock("@/app/(dashboard)/hooks/useAuthorized", () => ({
+  default: () => ({ userRole: "proxy_admin" }),
+}));
 
 Object.defineProperty(window, "matchMedia", {
   writable: true,

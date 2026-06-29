@@ -124,7 +124,7 @@ export function DeletedTeamsTable({ teams, isLoading, isFetching }: DeletedTeams
                   <Text>All Proxy Models</Text>
                 </Badge>
               ) : (
-                <Badge key={index} size={"xs"} color="blue">
+                <Badge key={index} size={"xs"} color="orange">
                   <Text>
                     {model.length > 30 ? `${getModelDisplayName(model).slice(0, 30)}...` : getModelDisplayName(model)}
                   </Text>
@@ -270,7 +270,7 @@ export function DeletedTeamsTable({ teams, isLoading, isFetching }: DeletedTeams
                                 top: 0,
                                 height: "100%",
                                 width: "5px",
-                                background: header.column.getIsResizing() ? "#3b82f6" : "transparent",
+                                background: header.column.getIsResizing() ? "#dd6108" : "transparent",
                                 cursor: "col-resize",
                                 userSelect: "none",
                                 touchAction: "none",

@@ -467,6 +467,8 @@ def get_llm_provider(
             custom_llm_provider = "amazon_nova"
         elif model.startswith("sap/"):
             custom_llm_provider = "sap"
+        elif model.startswith("aihpi-provider/"):
+            custom_llm_provider = "aihpi-provider"
 
         # Last resort for an otherwise-unknown model: a declarative
         # fallback-generalization rule (e.g. routes future claude-* to anthropic).

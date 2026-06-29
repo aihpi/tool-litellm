@@ -84,7 +84,7 @@ export const getAgentHubTableColumns = (
         const agent = row.original;
 
         return (
-          <Badge color="blue" size="sm">
+          <Badge color="orange" size="sm">
             v{agent.version}
           </Badge>
         );

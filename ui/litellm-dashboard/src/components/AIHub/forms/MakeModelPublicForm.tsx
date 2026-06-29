@@ -191,7 +191,7 @@ const MakeModelPublicForm: React.FC<MakeModelPublicFormProps> = ({
                     </div>
                     <div className="flex flex-wrap gap-1 mt-1">
                       {model.providers.map((provider) => (
-                        <Badge key={provider} color="blue" size="xs">
+                        <Badge key={provider} color="orange" size="xs">
                           {provider}
                         </Badge>
                       ))}
@@ -239,7 +239,7 @@ const MakeModelPublicForm: React.FC<MakeModelPublicFormProps> = ({
                       {model && (
                         <div className="flex flex-wrap gap-1 mt-1">
                           {model.providers.map((provider) => (
-                            <Badge key={provider} color="blue" size="xs">
+                            <Badge key={provider} color="orange" size="xs">
                               {provider}
                             </Badge>
                           ))}

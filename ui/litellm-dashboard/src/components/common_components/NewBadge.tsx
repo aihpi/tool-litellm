@@ -9,10 +9,10 @@ export default function NewBadge({ children, dot = false }: { children?: React.R
   }
 
   return children ? (
-    <Badge color="blue" count={dot ? undefined : "New"} dot={dot}>
+    <Badge color="orange" count={dot ? undefined : "New"} dot={dot}>
       {children}
     </Badge>
   ) : (
-    <Badge color="blue" count={dot ? undefined : "New"} dot={dot} />
+    <Badge color="orange" count={dot ? undefined : "New"} dot={dot} />
   );
 }

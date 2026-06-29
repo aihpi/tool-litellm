@@ -123,9 +123,9 @@ export const CreateUserButton: React.FC<CreateuserProps> = ({
     user_id: string;
     models?: string[];
     user_role: string;
+    teams?: string[];
     organization_ids?: string[];
     organizations?: string[];
-    send_invite_email?: boolean;
   }) => {
     try {
       NotificationsManager.info("Making API Call");
@@ -138,6 +138,9 @@ export const CreateUserButton: React.FC<CreateuserProps> = ({
       if (formValues.organization_ids) {
         formValues.organizations = formValues.organization_ids;
         delete formValues.organization_ids;
+      }
+      if (Array.isArray(formValues.teams) && formValues.teams.length === 0) {
+        delete formValues.teams;
       }
       const response = await userCreateCall(accessToken, null, formValues);
       await queryClient.invalidateQueries({ queryKey: ["userList"] });
@@ -188,14 +191,7 @@ export const CreateUserButton: React.FC<CreateuserProps> = ({
   // Modify the return statement to handle embedded mode
   if (isEmbedded) {
     return (
-      <Form
-        form={form}
-        onFinish={handleCreate}
-        labelCol={{ span: 8 }}
-        wrapperCol={{ span: 16 }}
-        labelAlign="left"
-        initialValues={{ user_role: "internal_user_viewer", send_invite_email: true }}
-      >
+      <Form form={form} onFinish={handleCreate} labelCol={{ span: 8 }} wrapperCol={{ span: 16 }} labelAlign="left">
         <Alert
           message="Email invitations"
           description={
@@ -229,8 +225,8 @@ export const CreateUserButton: React.FC<CreateuserProps> = ({
               ))}
           </Select2>
         </Form.Item>
-        <Form.Item label="Team" name="team_id">
-          <TeamDropdown />
+        <Form.Item label="Teams" name="teams">
+          <TeamDropdown teams={availableTeams} multiple />
         </Form.Item>
 
         <Form.Item label="Metadata" name="metadata">
@@ -281,14 +277,7 @@ export const CreateUserButton: React.FC<CreateuserProps> = ({
             className="mb-4"
           />
         </Space>
-        <Form
-          form={form}
-          onFinish={handleCreate}
-          labelCol={{ span: 8 }}
-          wrapperCol={{ span: 16 }}
-          labelAlign="left"
-          initialValues={{ user_role: "internal_user_viewer", send_invite_email: true }}
-        >
+        <Form form={form} onFinish={handleCreate} labelCol={{ span: 8 }} wrapperCol={{ span: 16 }} labelAlign="left">
           <Form.Item label="User Email" name="user_email">
             <Input />
           </Form.Item>
@@ -318,12 +307,12 @@ export const CreateUserButton: React.FC<CreateuserProps> = ({
           </Form.Item>
 
           <Form.Item
-            label="Team"
+            label="Teams"
             className="gap-2"
-            name="team_id"
-            help="If selected, user will be added as a 'user' role to the team."
+            name="teams"
+            help="If selected, user will be added as a 'user' role to each team."
           >
-            <TeamDropdown />
+            <TeamDropdown teams={availableTeams} multiple />
           </Form.Item>
 
           <Form.Item
@@ -380,7 +369,6 @@ export const CreateUserButton: React.FC<CreateuserProps> = ({
               </Form.Item>
             </AccordionBody>
           </Accordion>
-
           <div style={{ textAlign: "right", marginTop: "10px" }}>
             <Button type="primary" icon={<UserAddOutlined />} htmlType="submit">
               Invite User

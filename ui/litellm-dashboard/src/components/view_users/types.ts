@@ -6,6 +6,8 @@ export interface UserInfo {
   spend: number;
   max_budget: number | null;
   models: string[];
+  teams?: string[];
+  team_id?: string | null;
   key_count: number;
   created_at: string;
   updated_at: string;

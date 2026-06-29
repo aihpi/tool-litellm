@@ -8,14 +8,27 @@ module.exports = {
     current: "currentColor",
     extend: {
       colors: {
+        blue: {
+          50: "rgba(221, 97, 8, 0.06)",
+          100: "rgba(221, 97, 8, 0.12)",
+          200: "rgba(221, 97, 8, 0.25)",
+          300: "rgba(221, 97, 8, 0.5)",
+          400: "rgba(221, 97, 8, 0.75)",
+          500: "#dd6108",
+          600: "#c45507",
+          700: "#a94a06",
+          800: "#8f4005",
+          900: "#773504",
+          950: "#5c2a03",
+        },
         // light mode
         tremor: {
           brand: {
-            faint: colors.indigo[50],
-            muted: colors.indigo[200],
-            subtle: colors.indigo[400],
-            DEFAULT: colors.indigo[500],
-            emphasis: colors.indigo[700],
+            faint: "rgba(221, 97, 8, 0.06)",
+            muted: "rgba(221, 97, 8, 0.25)",
+            subtle: "rgba(221, 97, 8, 0.5)",
+            DEFAULT: "#dd6108",
+            emphasis: "#a94a06",
             inverted: colors.white,
           },
           background: {
@@ -42,11 +55,11 @@ module.exports = {
         "dark-tremor": {
           brand: {
             faint: "#0B1229",
-            muted: colors.indigo[950],
-            subtle: colors.indigo[800],
-            DEFAULT: colors.indigo[500],
-            emphasis: colors.indigo[400],
-            inverted: colors.indigo[950],
+            muted: "#5c2a03",
+            subtle: "#8f4005",
+            DEFAULT: "#dd6108",
+            emphasis: "rgba(221, 97, 8, 0.75)",
+            inverted: "#5c2a03",
           },
           background: {
             muted: "#131A2B",

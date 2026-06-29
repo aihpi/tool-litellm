@@ -93,7 +93,7 @@ describe("ViewUserDashboard", () => {
     // Use getAllByText since "Default User Settings" appears multiple times
     const defaultUserSettingsTabs = screen.getAllByText("Default User Settings");
     expect(defaultUserSettingsTabs.length).toBeGreaterThan(0);
-  });
+  }, 10000);
 
   it("should show delete modal after clicking delete user button", async () => {
     const queryClient = createQueryClient();

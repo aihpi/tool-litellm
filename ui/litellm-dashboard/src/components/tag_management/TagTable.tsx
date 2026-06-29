@@ -89,7 +89,7 @@ const TagTable: React.FC<TagTableProps> = ({ data, onEdit, onDelete, onSelectTag
               </Badge>
             ) : (
               tag?.models?.map((modelId) => (
-                <Badge key={modelId} size="xs" className="mb-1" color="blue">
+                <Badge key={modelId} size="xs" className="mb-1" color="orange">
                   <Tooltip title={`ID: ${modelId}`}>
                     <Text>{tag.model_info?.[modelId] || modelId}</Text>
                   </Tooltip>

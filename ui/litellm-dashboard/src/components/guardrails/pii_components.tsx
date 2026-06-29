@@ -47,7 +47,7 @@ export const CategoryFilter: React.FC<CategoryFilterProps> = ({ categories, sele
         optionFilterProp="children"
         className="mb-4"
         tagRender={(props) => (
-          <Tag color="blue" closable={props.closable} onClose={props.onClose} className="mr-2 mb-2">
+          <Tag color="orange" closable={props.closable} onClose={props.onClose} className="mr-2 mb-2">
             {props.label}
           </Tag>
         )}
@@ -168,7 +168,7 @@ export const PiiEntityList: React.FC<PiiEntityListProps> = ({
                   {formatEntityName(entity)}
                 </Text>
                 {entityToCategoryMap.get(entity) && (
-                  <Tag className="ml-2 text-xs" color="blue">
+                  <Tag className="ml-2 text-xs" color="orange">
                     {entityToCategoryMap.get(entity)}
                   </Tag>
                 )}

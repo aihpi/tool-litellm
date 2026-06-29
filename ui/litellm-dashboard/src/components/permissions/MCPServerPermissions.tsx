@@ -111,7 +111,7 @@ export function MCPServerPermissions({
       <div className="flex items-center gap-2">
         <ServerIcon className="h-4 w-4 text-blue-600" />
         <Text className="font-semibold text-gray-900">MCP Servers</Text>
-        <Badge color={blocksAllMcpServers ? "red" : "blue"} size="xs">
+        <Badge color={blocksAllMcpServers ? "red" : "orange"} size="xs">
           {blocksAllMcpServers ? "Blocked" : totalCount}
         </Badge>
       </div>

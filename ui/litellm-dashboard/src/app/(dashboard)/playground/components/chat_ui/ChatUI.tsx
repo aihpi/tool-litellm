@@ -1633,7 +1633,9 @@ const ChatUI: React.FC<ChatUIProps> = ({
                   </Text>
                   <VectorStoreSelector
                     value={selectedVectorStores}
-                    onChange={setSelectedVectorStores}
+                    onChange={(value) =>
+                      setSelectedVectorStores(Array.isArray(value) ? value : value ? [value] : [])
+                    }
                     className="mb-4"
                     accessToken={accessToken || ""}
                   />

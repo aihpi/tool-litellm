@@ -232,16 +232,11 @@ describe("Navbar", () => {
     expect(useHealthReadinessDetailsSpy).toHaveBeenCalledWith(null);
   });
 
-  it("should use custom logo from theme context", () => {
-    mockUseThemeImpl = () => ({ logoUrl: "https://example.com/custom-logo.png" });
-
+  it("should render the brand logos", () => {
     renderWithProviders(<Navbar {...defaultProps} />);
 
-    const logoImg = screen.getByAltText("LiteLLM Brand");
-    expect(logoImg).toHaveAttribute("src", "https://example.com/custom-logo.png");
-
-    // Reset mock
-    mockUseThemeImpl = () => ({ logoUrl: null });
+    expect(screen.getByAltText("AISC")).toHaveAttribute("src", "/ui/assets/aisc.png");
+    expect(screen.getByAltText("BMBF")).toHaveAttribute("src", "/ui/assets/BMFTR.png");
   });
 
   it("should hide user dropdown and notifications on public pages", () => {

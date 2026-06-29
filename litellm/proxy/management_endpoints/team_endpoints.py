@@ -79,6 +79,7 @@ from litellm.proxy.management_endpoints.common_utils import (
     _check_passthrough_routes_caller_permission,
     _is_user_org_admin_for_team,
     _is_user_team_admin,
+    _is_user_team_maintainer,
     _set_object_metadata_field,
     _team_member_has_permission,
     _update_metadata_fields,
@@ -1715,6 +1716,20 @@ async def update_team(
                         },
                     )
 
+        if user_api_key_dict.user_role != LitellmUserRoles.PROXY_ADMIN.value and not _is_user_team_maintainer(
+            user_api_key_dict=user_api_key_dict,
+            team_obj=LiteLLM_TeamTable(**existing_team_row.model_dump()),
+        ):
+            raise HTTPException(
+                status_code=403,
+                detail={
+                    "error": "Call not allowed. User not proxy admin OR team admin. route={}, team_id={}".format(
+                        "/team/update",
+                        data.team_id,
+                    )
+                },
+            )
+
         if data.organization_id is not None and len(data.organization_id) > 0:  # allow unsetting the organization_id
             # If the caller is relocating the team to a different org, they
             # must also be PROXY_ADMIN or an org-admin of the DESTINATION org.
@@ -2595,7 +2610,7 @@ async def team_member_delete(
 
     if (
         user_api_key_dict.user_role != LitellmUserRoles.PROXY_ADMIN.value
-        and not _is_user_team_admin(user_api_key_dict=user_api_key_dict, team_obj=existing_team_row)
+        and not _is_user_team_maintainer(user_api_key_dict=user_api_key_dict, team_obj=existing_team_row)
         and not await _is_user_org_admin_for_team(user_api_key_dict=user_api_key_dict, team_obj=existing_team_row)
     ):
         raise HTTPException(
@@ -4588,7 +4603,7 @@ async def team_model_add(
     # Authorization check - only proxy admin, team admin, or org admin can add models
     if (
         user_api_key_dict.user_role != LitellmUserRoles.PROXY_ADMIN.value
-        and not _is_user_team_admin(user_api_key_dict=user_api_key_dict, team_obj=team_obj)
+        and not _is_user_team_maintainer(user_api_key_dict=user_api_key_dict, team_obj=team_obj)
         and not await _is_user_org_admin_for_team(user_api_key_dict=user_api_key_dict, team_obj=team_obj)
     ):
         raise HTTPException(
@@ -4688,7 +4703,7 @@ async def team_model_delete(
     # Authorization check - only proxy admin, team admin, or org admin can remove models
     if (
         user_api_key_dict.user_role != LitellmUserRoles.PROXY_ADMIN.value
-        and not _is_user_team_admin(user_api_key_dict=user_api_key_dict, team_obj=team_obj)
+        and not _is_user_team_maintainer(user_api_key_dict=user_api_key_dict, team_obj=team_obj)
         and not await _is_user_org_admin_for_team(user_api_key_dict=user_api_key_dict, team_obj=team_obj)
     ):
         raise HTTPException(
@@ -4825,7 +4840,7 @@ async def update_team_member_permissions(
     if (
         hasattr(user_api_key_dict, "user_role")
         and user_api_key_dict.user_role != LitellmUserRoles.PROXY_ADMIN.value
-        and not _is_user_team_admin(user_api_key_dict=user_api_key_dict, team_obj=complete_team_data)
+        and not _is_user_team_maintainer(user_api_key_dict=user_api_key_dict, team_obj=complete_team_data)
         and not await _is_user_org_admin_for_team(user_api_key_dict=user_api_key_dict, team_obj=complete_team_data)
     ):
         raise HTTPException(

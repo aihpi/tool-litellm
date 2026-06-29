@@ -158,7 +158,7 @@ const MakeMCPPublicForm: React.FC<MakeMCPPublicFormProps> = ({
                             Public
                           </Badge>
                         )}
-                        <Badge color="blue" size="sm">
+                        <Badge color="orange" size="sm">
                           {server.transport}
                         </Badge>
                         <Badge
@@ -231,7 +231,7 @@ const MakeMCPPublicForm: React.FC<MakeMCPPublicFormProps> = ({
                         <Text className="font-medium">{server?.server_name || serverId}</Text>
                         {server && (
                           <>
-                            <Badge color="blue" size="xs">
+                            <Badge color="orange" size="xs">
                               {server.transport}
                             </Badge>
                             <Badge

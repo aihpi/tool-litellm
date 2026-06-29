@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Sign In{% endblock %}
+{% block content %}
+<section class="card auth-card">
+  <p class="eyebrow">KISZ Auth Wrapper</p>
+  <h1>Sign in with Authentik</h1>
+  <p class="lead">
+    Use your Authentik account to provision yourself in LiteLLM and manage your
+    personal API keys.
+  </p>
+  <a class="button" href="/login?start=1">Continue to Authentik</a>
+</section>
+{% endblock %}

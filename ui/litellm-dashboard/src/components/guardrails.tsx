@@ -50,7 +50,7 @@ const GuardrailsPanel: React.FC<GuardrailsPanelProps> = ({ accessToken, userRole
   const isAdmin = userRole ? isAdminRole(userRole) : false;
 
   const fetchGuardrails = async () => {
-    if (!accessToken) {
+    if (!accessToken || !isAdmin) {
       return;
     }
 
@@ -68,7 +68,7 @@ const GuardrailsPanel: React.FC<GuardrailsPanelProps> = ({ accessToken, userRole
 
   useEffect(() => {
     fetchGuardrails();
-  }, [accessToken]);
+  }, [accessToken, isAdmin]);
 
   const handleAddGuardrail = () => {
     if (selectedGuardrailId) {

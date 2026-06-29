@@ -102,6 +102,34 @@
     "default_model_placeholder": "gpt-3.5-turbo"
   },
   {
+    "provider": "AIHPI_Provider",
+    "provider_display_name": "AIHPI Provider",
+    "litellm_provider": "aihpi-provider",
+    "credential_fields": [
+      {
+        "key": "api_base",
+        "label": "API Base",
+        "placeholder": "https://...",
+        "tooltip": null,
+        "required": true,
+        "field_type": "text",
+        "options": null,
+        "default_value": null
+      },
+      {
+        "key": "api_key",
+        "label": "API Key",
+        "placeholder": null,
+        "tooltip": null,
+        "required": false,
+        "field_type": "password",
+        "options": null,
+        "default_value": null
+      }
+    ],
+    "default_model_placeholder": "aihpi-provider/qwen-image-edit"
+  },
+  {
     "provider": "Bedrock",
     "provider_display_name": "Amazon Bedrock",
     "litellm_provider": "bedrock",

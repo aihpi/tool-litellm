@@ -74,6 +74,8 @@ vi.mock("@/components/networking", () => {
     getUiConfig: vi.fn().mockResolvedValue({}),
     // Fetched by useUISettings(); resolve with empty settings so nudges stay default-on
     getUiSettings: vi.fn().mockResolvedValue({ values: {}, field_schema: {} }),
+    getUISettings: vi.fn().mockResolvedValue({ values: {} }),
+    getInProductNudgesCall: vi.fn().mockResolvedValue({ is_claude_code_enabled: false }),
     // Used to build the redirect URL
     proxyBaseUrl: "https://example.com",
     // Called when decoding a valid token

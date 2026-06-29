@@ -88,7 +88,7 @@ export const exportMultiToPDF = (multiResult: MultiModelResult): void => {
         }
         h1 {
           color: #1a1a1a;
-          border-bottom: 2px solid #1890ff;
+          border-bottom: 2px solid #dd6108;
           padding-bottom: 10px;
           margin-bottom: 30px;
         }
@@ -106,7 +106,7 @@ export const exportMultiToPDF = (multiResult: MultiModelResult): void => {
         }
         .provider {
           font-weight: normal;
-          color: #1890ff;
+          color: #dd6108;
           font-size: 14px;
         }
         .meta {
@@ -151,7 +151,7 @@ export const exportMultiToPDF = (multiResult: MultiModelResult): void => {
         }
         .summary-box h2 {
           margin-top: 0;
-          color: #1890ff;
+          color: #dd6108;
         }
         .summary-grid {
           display: grid;
@@ -172,7 +172,7 @@ export const exportMultiToPDF = (multiResult: MultiModelResult): void => {
           font-weight: bold;
           font-family: monospace;
         }
-        .summary-item .value.blue { color: #1890ff; }
+        .summary-item .value.blue { color: #dd6108; }
         .summary-item .value.green { color: #52c41a; }
         .summary-item .value.purple { color: #722ed1; }
         .model-section {

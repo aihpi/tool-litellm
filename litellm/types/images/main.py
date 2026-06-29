@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Literal, Optional, Union
+from typing import Any, Dict, Literal, Optional
 
 from typing_extensions import TypedDict
 
@@ -16,6 +16,10 @@ class ImageEditOptionalRequestParams(TypedDict, total=False):
     input_fidelity: Optional[Literal["high", "low"]]
     mask: Optional[str]
     n: Optional[int]
+    num_inference_steps: Optional[int]
+    true_cfg_scale: Optional[float]
+    seed: Optional[int]
+    negative_prompt: Optional[str]
     quality: Optional[Literal["high", "medium", "low", "standard", "auto"]]
     response_format: Optional[Literal["url", "b64_json"]]
     size: Optional[str]

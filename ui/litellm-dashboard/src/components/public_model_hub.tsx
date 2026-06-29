@@ -736,7 +736,7 @@ const PublicModelHub: React.FC<PublicModelHubProps> = ({ accessToken, isEmbedded
         if (features.length === 1) {
           return (
             <div className="h-6 flex items-center">
-              <Tag color="blue" className="text-xs">
+              <Tag color="orange" className="text-xs">
                 {features[0]}
               </Tag>
             </div>
@@ -745,7 +745,7 @@ const PublicModelHub: React.FC<PublicModelHubProps> = ({ accessToken, isEmbedded
 
         return (
           <div className="h-6 flex items-center space-x-1">
-            <Tag color="blue" className="text-xs">
+            <Tag color="orange" className="text-xs">
               {features[0]}
             </Tag>
             <Tooltip
@@ -959,7 +959,20 @@ const PublicModelHub: React.FC<PublicModelHubProps> = ({ accessToken, isEmbedded
     <ThemeProvider accessToken={accessToken}>
       <div className={isEmbedded ? "w-full" : "min-h-screen bg-white"}>
         {/* Navigation - only show when not embedded */}
-        {!isEmbedded && <Navbar accessToken={accessToken || null} isPublicPage={true} />}
+        {!isEmbedded && (
+          <Navbar
+            accessToken={accessToken || null}
+            isPublicPage={true}
+            userID={null}
+            userEmail={null}
+            userRole={null}
+            premiumUser={false}
+            proxySettings={undefined}
+            setProxySettings={() => {}}
+            isDarkMode={false}
+            toggleDarkMode={() => {}}
+          />
+        )}
 
         <div className={isEmbedded ? "w-full p-6" : "w-full px-8 py-12"}>
           {/* Embedded Explainer - only shown when embedded in dashboard */}
@@ -1327,7 +1340,7 @@ const PublicModelHub: React.FC<PublicModelHubProps> = ({ accessToken, isEmbedded
                       {(selectedModel.providers ?? []).map((provider) => {
                         const { logo } = getProviderLogoAndName(provider);
                         return (
-                          <Tag key={provider} color="blue">
+                          <Tag key={provider} color="orange">
                             <div className="flex items-center space-x-1">
                               {logo && (
                                 <img
@@ -1623,7 +1636,7 @@ const PublicModelHub: React.FC<PublicModelHubProps> = ({ accessToken, isEmbedded
                     <Text className="font-medium">Input Modes:</Text>
                     <div className="flex flex-wrap gap-1 mt-1">
                       {(selectedAgent.defaultInputModes ?? []).map((mode) => (
-                        <Tag key={mode} color="blue">
+                        <Tag key={mode} color="orange">
                           {mode}
                         </Tag>
                       ))}
@@ -1633,7 +1646,7 @@ const PublicModelHub: React.FC<PublicModelHubProps> = ({ accessToken, isEmbedded
                     <Text className="font-medium">Output Modes:</Text>
                     <div className="flex flex-wrap gap-1 mt-1">
                       {(selectedAgent.defaultOutputModes ?? []).map((mode) => (
-                        <Tag key={mode} color="blue">
+                        <Tag key={mode} color="orange">
                           {mode}
                         </Tag>
                       ))}
@@ -1851,7 +1864,7 @@ print(response.model_dump(mode='json', exclude_none=True))`;
                   </div>
                   <div>
                     <Text className="font-medium">Transport:</Text>
-                    <Tag color="blue">{selectedMcpServer.transport}</Tag>
+                    <Tag color="orange">{selectedMcpServer.transport}</Tag>
                   </div>
                   {selectedMcpServer.alias && (
                     <div>

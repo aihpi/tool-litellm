@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<header class="page-header">
+  <div>
+    <p class="eyebrow">Authenticated as</p>
+    <h1>{{ user.name }}</h1>
+    <p class="lead">{{ user.email or user.user_id }} · {{ user.role }}</p>
+  </div>
+  <form method="post" action="/logout">
+    <button class="button button-secondary" type="submit">Log out</button>
+  </form>
+</header>
+
+{% if error_message %}
+<div class="flash flash-error">{{ error_message }}</div>
+{% endif %}
+
+{% if generated_key %}
+<section class="card">
+  <h2>New API key</h2>
+  <p class="lead">This key is only shown once.</p>
+  <pre class="generated-key">{{ generated_key }}</pre>
+</section>
+{% endif %}
+
+<section class="grid">
+  <section class="card">
+    <h2>Create key</h2>
+    <form method="post" action="/keys/create" class="stack">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+
+      <label for="key_alias">Key alias</label>
+      <input id="key_alias" name="key_alias" type="text" placeholder="kisz-dev" />
+
+      <label for="max_budget">Max budget (optional)</label>
+      <input id="max_budget" name="max_budget" type="text" placeholder="10.0" />
+
+      <button class="button" type="submit">Generate key</button>
+    </form>
+  </section>
+
+  <section class="card">
+    <h2>User</h2>
+    <dl class="details">
+      <div><dt>User ID</dt><dd>{{ user.user_id }}</dd></div>
+      <div><dt>Email</dt><dd>{{ user.email or "-" }}</dd></div>
+      <div><dt>Role</dt><dd>{{ user.role }}</dd></div>
+      <div><dt>Spend</dt><dd>{{ user_info.spend if user_info else 0 }}</dd></div>
+      <div><dt>Max budget</dt><dd>{{ user_info.max_budget if user_info.max_budget is not none else "-" }}</dd></div>
+    </dl>
+  </section>
+</section>
+
+<section class="card">
+  <h2>Keys</h2>
+  {% if keys %}
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Spend</th>
+        <th>Budget</th>
+        <th>Created</th>
+        <th>Updated</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for key in keys %}
+      <tr>
+        <td>{{ key.display_name }}</td>
+        <td>{{ key.spend }}</td>
+        <td>{{ key.max_budget if key.max_budget is not none else "-" }}</td>
+        <td>{{ key.created_at }}</td>
+        <td>{{ key.updated_at }}</td>
+        <td>
+          {% if key.delete_value %}
+          <form method="post" action="/keys/delete">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+            <input type="hidden" name="key" value="{{ key.delete_value }}" />
+            <button class="button button-danger" type="submit">Delete</button>
+          </form>
+          {% else %}
+          <span class="muted">Unavailable</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="lead">No keys yet.</p>
+  {% endif %}
+</section>
+{% endblock %}

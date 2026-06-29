@@ -130,6 +130,16 @@ export default function UserInfoView({
         const modelDataResponse = await modelAvailableCall(accessToken, userId, userRole || "");
         const availableModels = modelDataResponse.data.map((model: any) => model.id);
         setUserModels(availableModels);
+
+        if (userRole && ["Admin", "Admin Viewer"].includes(userRole)) {
+          const teamData = await teamListCall(accessToken, null);
+          setAllTeams(
+            (teamData || []).map((team: any) => ({
+              team_id: team.team_id,
+              team_alias: team.team_alias || team.team_id,
+            })),
+          );
+        }
       } catch (error) {
         console.error("Error fetching user data:", error);
         NotificationsManager.fromBackend("Failed to fetch user data");
@@ -294,17 +304,26 @@ export default function UserInfoView({
       if (!accessToken || !userData) return;
 
       const response = await userUpdateUserCall(accessToken, formValues, null);
+      const updatedUser = response.data ?? userData;
+      let updatedTeamIds = userData.teams;
+      if (Array.isArray(formValues.teams)) {
+        updatedTeamIds = formValues.teams;
+      }
+      const updatedTeamDetails =
+        updatedTeamIds?.map((teamId) => allTeams.find((team) => team.team_id === teamId) || { team_id: teamId, team_alias: null }) || [];
 
       // Update local state with new values
       setUserData({
         ...userData,
-        user_email: formValues.user_email ?? userData.user_email,
-        user_alias: formValues.user_alias ?? userData.user_alias,
-        models: formValues.models ?? userData.models,
-        max_budget: formValues.max_budget ?? userData.max_budget,
-        budget_duration: formValues.budget_duration ?? userData.budget_duration,
-        metadata: formValues.metadata ?? userData.metadata,
+        user_email: updatedUser.user_email ?? formValues.user_email ?? userData.user_email,
+        user_alias: updatedUser.user_alias ?? formValues.user_alias ?? userData.user_alias,
+        models: updatedUser.models ?? formValues.models ?? userData.models,
+        max_budget: updatedUser.max_budget ?? formValues.max_budget ?? userData.max_budget,
+        budget_duration: updatedUser.budget_duration ?? formValues.budget_duration ?? userData.budget_duration,
+        metadata: updatedUser.metadata ?? formValues.metadata ?? userData.metadata,
+        teams: updatedTeamIds,
       });
+      setTeamDetails(updatedTeamDetails);
 
       NotificationsManager.success("User updated successfully");
       setIsEditing(false);
@@ -349,6 +368,7 @@ export default function UserInfoView({
   // Build a legacy-compatible shape for UserEditView
   const userDataForEdit = {
     user_id: userData.user_id,
+    teams: teamDetails,
     user_info: {
       user_email: userData.user_email,
       user_alias: userData.user_alias,
@@ -526,7 +546,7 @@ export default function UserInfoView({
                   userData={userDataForEdit}
                   onCancel={() => setIsEditing(false)}
                   onSubmit={handleUserUpdate}
-                  teams={teamDetails}
+                  teams={allTeams.length > 0 ? allTeams : teamDetails}
                   accessToken={accessToken}
                   userID={userId}
                   userRole={userRole}

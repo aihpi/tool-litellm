@@ -110,12 +110,10 @@ const VersionHistorySidePanel: React.FC<VersionHistorySidePanelProps> = ({
               >
                 <div className="flex justify-between items-start mb-2">
                   <div className="flex items-center gap-2">
-                    <Tag className="m-0">{getVersionNumber(item)}</Tag>
-                    {index === 0 && (
-                      <Tag color="blue" className="m-0">
-                        Latest
-                      </Tag>
-                    )}
+                    <Tag className="m-0">
+                      {getVersionNumber(item)}
+                    </Tag>
+                    {index === 0 && <Tag color="orange" className="m-0">Latest</Tag>}
                   </div>
                   {isSelected && (
                     <Tag color="green" className="m-0">

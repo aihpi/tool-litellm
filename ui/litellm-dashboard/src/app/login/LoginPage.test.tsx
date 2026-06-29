@@ -94,8 +94,10 @@ describe("LoginPage", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: "Login" })).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: "AI Model Hub" })).toBeInTheDocument();
     });
+    expect(screen.getByText("Local")).toBeInTheDocument();
+    expect(screen.queryByText("AISC Portal")).not.toBeInTheDocument();
   });
 
   it("should call router.replace to dashboard when jwt is valid", async () => {
@@ -172,7 +174,7 @@ describe("LoginPage", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: "Login" })).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: "AI Model Hub" })).toBeInTheDocument();
     });
 
     expect(mockPush).not.toHaveBeenCalled();
@@ -235,7 +237,7 @@ describe("LoginPage", () => {
     expect(mockReplace).not.toHaveBeenCalled();
   });
 
-  it("should show Login with SSO button when sso_configured is true", async () => {
+  it("should show Login with Authentik button when sso_configured is true", async () => {
     (useUIConfig as ReturnType<typeof vi.fn>).mockReturnValue({
       data: {
         auto_redirect_to_sso: false,
@@ -256,13 +258,13 @@ describe("LoginPage", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: "Login" })).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: "AI Model Hub" })).toBeInTheDocument();
     });
 
-    expect(screen.getByRole("button", { name: "Login with SSO" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Login with Authentik" })).toBeInTheDocument();
   });
 
-  it("should show disabled Login with SSO button with popover when sso_configured is false", async () => {
+  it("should show disabled Login with Authentik button with popover when sso_configured is false", async () => {
     (useUIConfig as ReturnType<typeof vi.fn>).mockReturnValue({
       data: {
         auto_redirect_to_sso: false,
@@ -283,10 +285,10 @@ describe("LoginPage", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: "Login" })).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: "AI Model Hub" })).toBeInTheDocument();
     });
 
-    const ssoButton = screen.getByRole("button", { name: "Login with SSO" });
+    const ssoButton = screen.getByRole("button", { name: "Login with Authentik" });
     expect(ssoButton).toBeInTheDocument();
     expect(ssoButton).toBeDisabled();
   });

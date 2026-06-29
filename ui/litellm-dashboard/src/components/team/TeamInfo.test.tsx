@@ -17,6 +17,9 @@ vi.mock("@/components/networking", () => ({
   fetchMCPAccessGroups: vi.fn(),
   getTeamPermissionsCall: vi.fn(),
   organizationInfoCall: vi.fn(),
+  vectorStoreListCall: vi.fn(),
+  getPassThroughEndpointsCall: vi.fn(),
+  getAgentsList: vi.fn(),
   getRouterSettingsCall: vi.fn().mockResolvedValue({ fields: [] }),
 }));
 
@@ -209,7 +212,6 @@ describe("TeamInfoView", () => {
       isFetching: false,
       refetch: vi.fn(),
     } as any);
-
     vi.mocked(networking.getGuardrailsList).mockResolvedValue({ guardrails: [] });
     vi.mocked(networking.getPoliciesList).mockResolvedValue({ policies: [] });
     vi.mocked(networking.fetchMCPAccessGroups).mockResolvedValue([]);
@@ -217,6 +219,9 @@ describe("TeamInfoView", () => {
       all_available_permissions: [],
       team_member_permissions: [],
     });
+    vi.mocked(networking.vectorStoreListCall).mockResolvedValue({ data: [] });
+    vi.mocked(networking.getPassThroughEndpointsCall).mockResolvedValue({ endpoints: [] });
+    vi.mocked(networking.getAgentsList).mockResolvedValue({ agents: [] });
   });
 
   afterEach(() => {

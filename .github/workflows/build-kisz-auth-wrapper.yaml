@@ -1,0 +1,77 @@
+name: Build and Publish KISZ Auth Wrapper
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - aihpi-provider
+      - dev/*
+    paths:
+      - "kisz-auth-wrapper/**"
+      - ".github/workflows/build-kisz-auth-wrapper.yaml"
+  pull_request:
+    branches:
+      - main
+      - master
+      - aihpi-provider
+      - dev/*
+    paths:
+      - "kisz-auth-wrapper/**"
+      - ".github/workflows/build-kisz-auth-wrapper.yaml"
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ghcr.io/aihpi/tool-kisz-auth-wrapper
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push wrapper image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: kisz-auth-wrapper/Dockerfile
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          no-cache: true
+          platforms: linux/amd64
+
+      - name: Generate image URL
+        run: |
+          echo "## KISZ Auth Wrapper Image" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Image: \`${{ env.IMAGE_NAME }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "Branch tag example: \`${{ env.IMAGE_NAME }}:${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY

@@ -16,7 +16,7 @@ export const FiltersButton: React.FC<FiltersButtonProps> = ({
   label = "Filters",
 }) => {
   return (
-    <Badge color="blue" dot={hasActiveFilters}>
+    <Badge color="orange" dot={hasActiveFilters}>
       <Button type="default" onClick={onClick} icon={<Filter size={16} />} className={active ? "bg-gray-100" : ""}>
         {label}
       </Button>

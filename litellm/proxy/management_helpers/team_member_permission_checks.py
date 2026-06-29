@@ -118,7 +118,7 @@ class TeamMemberPermissionChecks:
         # Non-Admin user trying to access information about a team's key
         if team_member_object is None:
             return False
-        if team_member_object.role == "admin":
+        if team_member_object.role in ["admin", "maintainer"]:
             return True
 
         _team_member_permissions = TeamMemberPermissionChecks.get_permissions_for_team_member(

@@ -64,6 +64,7 @@ const mockVectorStores: VectorStore[] = [
     created_at: "2024-01-15T10:30:00Z",
     updated_at: "2024-01-15T11:00:00Z",
     created_by: "user-1",
+    created_by_email: "user-1@example.com",
     updated_by: "user-1",
   },
   {
@@ -88,12 +89,16 @@ const mockVectorStores: VectorStore[] = [
 const mockOnView = vi.fn();
 const mockOnEdit = vi.fn();
 const mockOnDelete = vi.fn();
+const mockOnCreateCollection = vi.fn();
+const mockOnViewCollection = vi.fn();
 
 const defaultProps = {
   data: mockVectorStores,
   onView: mockOnView,
   onEdit: mockOnEdit,
   onDelete: mockOnDelete,
+  onCreateCollection: mockOnCreateCollection,
+  onViewCollection: mockOnViewCollection,
 };
 
 // Helper function to render component
@@ -133,6 +138,13 @@ describe("VectorStoreTable", () => {
       // Check that we have the expected number of header cells (7 data + 1 actions)
       const headers = screen.getAllByRole("columnheader");
       expect(headers).toHaveLength(8);
+    });
+
+    it("should render created by column when enabled", () => {
+      renderComponent({ showCreatedBy: true });
+      expect(screen.getByText("Created By")).toBeInTheDocument();
+      const headers = screen.getAllByRole("columnheader");
+      expect(headers).toHaveLength(9);
     });
 
     it("should render all vector store rows", () => {
@@ -277,6 +289,74 @@ describe("VectorStoreTable", () => {
       const deleteButtons = screen.getAllByTestId("action-button-delete");
       await user.click(deleteButtons[0]);
       expect(mockOnDelete).toHaveBeenCalledWith("short-id");
+    });
+
+    it("should render create collection button for qdrant rows when enabled", () => {
+      const qdrantStore: VectorStore = {
+        vector_store_id: "qdrant-store",
+        custom_llm_provider: "qdrant",
+        created_at: "2024-01-20T10:00:00Z",
+        updated_at: "2024-01-20T10:00:00Z",
+      };
+      renderComponent({
+        data: [qdrantStore],
+        showCreateCollection: true,
+      });
+      expect(screen.getByTestId("action-button-createcollection")).toBeInTheDocument();
+    });
+
+    it("should render view collection button when qdrant collection exists", () => {
+      const qdrantStore: VectorStore = {
+        vector_store_id: "qdrant-store",
+        custom_llm_provider: "qdrant",
+        vector_store_metadata: {
+          qdrant_collection_name: "qdrant-store",
+        },
+        created_at: "2024-01-20T10:00:00Z",
+        updated_at: "2024-01-20T10:00:00Z",
+      };
+      renderComponent({
+        data: [qdrantStore],
+        showCreateCollection: true,
+      });
+      expect(screen.getByTestId("action-button-viewcollection")).toBeInTheDocument();
+    });
+
+    it("should call onCreateCollection when create collection button is clicked", async () => {
+      const user = userEvent.setup();
+      const qdrantStore: VectorStore = {
+        vector_store_id: "qdrant-store",
+        custom_llm_provider: "qdrant",
+        created_at: "2024-01-20T10:00:00Z",
+        updated_at: "2024-01-20T10:00:00Z",
+      };
+      renderComponent({
+        data: [qdrantStore],
+        showCreateCollection: true,
+      });
+      const createButton = screen.getByTestId("action-button-createcollection");
+      await user.click(createButton);
+      expect(mockOnCreateCollection).toHaveBeenCalledWith("qdrant-store");
+    });
+
+    it("should call onViewCollection when view collection button is clicked", async () => {
+      const user = userEvent.setup();
+      const qdrantStore: VectorStore = {
+        vector_store_id: "qdrant-store",
+        custom_llm_provider: "qdrant",
+        vector_store_metadata: {
+          qdrant_collection_name: "qdrant-store",
+        },
+        created_at: "2024-01-20T10:00:00Z",
+        updated_at: "2024-01-20T10:00:00Z",
+      };
+      renderComponent({
+        data: [qdrantStore],
+        showCreateCollection: true,
+      });
+      const viewButton = screen.getByTestId("action-button-viewcollection");
+      await user.click(viewButton);
+      expect(mockOnViewCollection).toHaveBeenCalledWith("qdrant-store");
     });
 
     it("should pass correct props to TableIconActionButton", () => {

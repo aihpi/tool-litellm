@@ -72,7 +72,7 @@ export const useAllProxyModels = () => {
   const { accessToken, userId, userRole } = useAuthorized();
   return useQuery<AllProxyModelsResponse>({
     queryKey: allProxyModelsKeys.list({}),
-    queryFn: async () => await modelAvailableCall(accessToken!, userId!, userRole!, true, null, true, false, "expand"),
+    queryFn: async () => await modelAvailableCall(accessToken!, userId!, userRole!, true, null, true, false),
     enabled: Boolean(accessToken && userId && userRole),
   });
 };
