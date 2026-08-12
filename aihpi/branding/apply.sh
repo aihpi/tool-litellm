@@ -64,8 +64,96 @@ cp "$SCRIPT_DIR/layout.tsx" "$UI_DIR/src/app/(dashboard)/layout.tsx"
 echo "Replacing default nav logo with HPI logo..."
 cp "$UI_DIR/public/assets/aisc.png" litellm/proxy/logo.jpg
 
-echo "Replacing login page wordmark with HPI logo..."
-if grep -q 'alt="KI Service Zentrum"' "$LOGIN_PAGE"; then
+echo "Showing both HPI logos in the sidebar..."
+LEFTNAV="$UI_DIR/src/components/leftnav.tsx"
+python3 - "$LEFTNAV" <<'PY'
+import re, sys
+
+path = sys.argv[1]
+src = open(path).read()
+
+if 'alt="BMFTR"' in src:
+    print("  already applied, skipping")
+    raise SystemExit
+
+pattern = re.compile(
+    r'<img\s+src=\{logoSrc\}\s+alt="LiteLLM"\s+className="[^"]*"\s*/>', re.S
+)
+new = (
+    '<span className="flex items-center gap-2 group-data-[collapsed=true]/sidebar:gap-1">\n'
+    '                <img\n'
+    '                  src={logoSrc}\n'
+    '                  alt="KI Service Zentrum"\n'
+    '                  className="h-7 w-auto max-w-[120px] object-contain'
+    ' group-data-[collapsed=true]/sidebar:w-7"\n'
+    '                />\n'
+    '                <img\n'
+    '                  src={getUiAssetPath("/assets/BMFTR.png")}\n'
+    '                  alt="BMFTR"\n'
+    '                  className="h-9 w-auto max-w-[110px] object-contain'
+    ' group-data-[collapsed=true]/sidebar:hidden"\n'
+    '                />\n'
+    '              </span>'
+)
+src, n = pattern.subn(new, src, count=1)
+if n != 1:
+    raise SystemExit(
+        f"ERROR: sidebar logo <img> not found in {path}; "
+        "upstream changed it, update aihpi/branding/apply.sh"
+    )
+
+if "uiAssetPath" not in src:
+    src = src.replace(
+        'import ', 'import { getUiAssetPath } from "@/utils/uiAssetPath";\nimport ', 1
+    )
+open(path, "w").write(src)
+print("  applied")
+PY
+
+# Next.js auto-emits an icon <link> from src/app/favicon.ico and puts it ahead
+# of the ones declared in metadata, so the browser tab keeps using it. Replace
+# the file itself rather than trying to out-declare it.
+echo "Replacing Next.js app favicon with HPI favicon..."
+cp "$UI_DIR/public/favicon-v2.ico" "$UI_DIR/src/app/favicon.ico"
+
+echo "Setting page title and HPI favicon..."
+ROOT_LAYOUT="$UI_DIR/src/app/layout.tsx"
+python3 - "$ROOT_LAYOUT" <<'PY'
+import re, sys
+
+path = sys.argv[1]
+src = open(path).read()
+
+if "AI Model Hub" in src:
+    print("  already applied, skipping")
+    raise SystemExit
+
+pattern = re.compile(r"export const metadata: Metadata = \{.*?\n\};", re.S)
+new = '''const iconBase = process.env.NODE_ENV === "development" ? "" : "/ui";
+
+export const metadata: Metadata = {
+  title: "AI Model Hub",
+  description: "AI Model Hub Admin UI",
+  icons: {
+    icon: [
+      { url: `${iconBase}/favicon-v2.ico` },
+      { url: `${iconBase}/favicon-96x96.png`, sizes: "96x96", type: "image/png" },
+    ],
+    apple: `${iconBase}/favicon.png`,
+  },
+};'''
+src, n = pattern.subn(new, src, count=1)
+if n != 1:
+    raise SystemExit(
+        f"ERROR: metadata block not found in {path}; "
+        "upstream changed it, update aihpi/branding/apply.sh"
+    )
+open(path, "w").write(src)
+print("  applied")
+PY
+
+echo "Replacing login page wordmark with HPI title and logos..."
+if grep -q 'AI Model Hub' "$LOGIN_PAGE"; then
   echo "  already applied, skipping"
 elif grep -q '<Title level={2}>🚅 LiteLLM</Title>' "$LOGIN_PAGE"; then
   python3 - "$LOGIN_PAGE" <<'PY'
@@ -73,8 +161,15 @@ import sys
 path = sys.argv[1]
 old = "<Title level={2}>\U0001F685 LiteLLM</Title>"
 new = (
-    '<img src="/ui/assets/aisc.png" alt="KI Service Zentrum" '
-    'className="mx-auto h-14 w-auto object-contain" />'
+    '<Title level={2} className="mb-0">AI Model Hub</Title>\n'
+    '              <Text className="block text-sm mt-0">'
+    'by KI-Servicezentrum Berlin-Brandenburg</Text>\n'
+    '              <div className="mt-3 flex items-center justify-center gap-4">\n'
+    '                <img src="/ui/assets/aisc.png" alt="KI Service Zentrum"'
+    ' className="h-12 w-auto object-contain" />\n'
+    '                <img src="/ui/assets/BMFTR.png" alt="BMFTR"'
+    ' className="h-16 w-auto object-contain" />\n'
+    '              </div>'
 )
 src = open(path).read()
 assert old in src, "login wordmark not found"
@@ -106,6 +201,26 @@ cp "$AIHPI_DIR/authentik/_health_endpoints.py" litellm/proxy/health_endpoints/_h
 cp "$AIHPI_DIR/authentik/ui_sso.py" litellm/proxy/management_endpoints/ui_sso.py
 cp "$AIHPI_DIR/authentik/sso__init__.py" litellm/proxy/management_endpoints/sso/__init__.py
 cp "$AIHPI_DIR/authentik/proxy_server.py" litellm/proxy/proxy_server.py
+
+echo "Registering AIHPI provider in the UI's provider list..."
+python3 - "$SCRIPT_DIR/provider_create_field.json" <<'PY'
+import json, sys
+
+entry_path = sys.argv[1]
+target = "litellm/proxy/public_endpoints/provider_create_fields.json"
+
+entry = json.load(open(entry_path))
+providers = json.load(open(target))
+
+if any(p.get("litellm_provider") == entry["litellm_provider"] for p in providers):
+    print("  already present, skipping")
+else:
+    providers.append(entry)
+    with open(target, "w") as f:
+        json.dump(providers, f, indent=2)
+        f.write("\n")
+    print(f"  added {entry['provider_display_name']}")
+PY
 
 # The installed wheel only ships the litellm package, so the provider has to
 # live inside it to be importable as litellm.aihpi at runtime.
