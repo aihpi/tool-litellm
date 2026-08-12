@@ -51,8 +51,35 @@ jobs:
             echo "status=conflicts" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Resolve conflicts with LLM
+      - name: Auto-resolve build artifact conflicts
         if: steps.merge.outputs.status == 'conflicts'
+        run: |
+          # Build artifacts: we deleted them (gitignored), upstream modified them.
+          # Resolution: delete them (they're rebuilt at Docker build time).
+          artifact_conflicts=$(git diff --name-only --diff-filter=U | grep "^litellm/proxy/_experimental/out/" || true)
+          if [ -n "$artifact_conflicts" ]; then
+            echo "Auto-resolving $(echo "$artifact_conflicts" | wc -l) build artifact conflicts"
+            echo "$artifact_conflicts" | xargs git rm -f --quiet 2>/dev/null || true
+          fi
+
+          # Also accept any new upstream files in _experimental/out/ that
+          # were added (not conflicted) and delete them too
+          git ls-files --others -- litellm/proxy/_experimental/out/ | xargs rm -f 2>/dev/null || true
+
+          # Check if any real conflicts remain
+          remaining=$(git diff --name-only --diff-filter=U || true)
+          if [ -z "$remaining" ]; then
+            echo "All conflicts were build artifacts, resolved by deletion"
+            echo "remaining=none" >> "$GITHUB_OUTPUT"
+          else
+            echo "Real conflicts remain:"
+            echo "$remaining"
+            echo "remaining=some" >> "$GITHUB_OUTPUT"
+          fi
+        id: artifact_resolve
+
+      - name: Resolve remaining conflicts with LLM
+        if: steps.merge.outputs.status == 'conflicts' && steps.artifact_resolve.outputs.remaining == 'some'
         env:
           LITELLM_API_KEY: ${{ secrets.LITELLM_API_KEY }}
         run: |
@@ -134,7 +161,7 @@ jobs:
       - name: Commit merge resolution
         if: steps.merge.outputs.status == 'conflicts'
         run: |
-          git commit --no-edit
+          git commit --no-edit -m "chore: merge upstream litellm_internal_staging (auto-resolved)"
 
       - name: Push merged branch
         if: steps.check.outputs.ahead != '0'
