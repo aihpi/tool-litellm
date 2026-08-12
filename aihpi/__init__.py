@@ -1,10 +1,10 @@
-from aihpi.provider import handler
+from .provider import handler
 
 __all__ = ["handler"]
 
 
 def register() -> None:
-    """Startup hook for litellm proxy. Set LITELLM_WORKER_STARTUP_HOOKS=aihpi:register"""
+    """Startup hook for litellm proxy. Set LITELLM_WORKER_STARTUP_HOOKS=litellm.aihpi:register"""
     import litellm
     from litellm.utils import custom_llm_setup
 

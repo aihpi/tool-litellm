@@ -37,4 +37,10 @@ cp "$AIHPI_DIR/authentik/ui_sso.py" litellm/proxy/management_endpoints/ui_sso.py
 cp "$AIHPI_DIR/authentik/sso__init__.py" litellm/proxy/management_endpoints/sso/__init__.py
 cp "$AIHPI_DIR/authentik/proxy_server.py" litellm/proxy/proxy_server.py
 
+# The installed wheel only ships the litellm package, so the provider has to
+# live inside it to be importable as litellm.aihpi at runtime.
+echo "Installing aihpi provider into litellm package..."
+mkdir -p litellm/aihpi
+cp "$AIHPI_DIR/__init__.py" "$AIHPI_DIR/provider.py" litellm/aihpi/
+
 echo "All patches applied"

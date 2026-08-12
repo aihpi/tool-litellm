@@ -21,7 +21,7 @@ The proxy runs at http://localhost:4000 with the UI at http://localhost:4000/ui/
 Register the AIHPI custom provider by setting this env var before starting:
 
 ```bash
-export LITELLM_WORKER_STARTUP_HOOKS=aihpi:register
+export LITELLM_WORKER_STARTUP_HOOKS=litellm.aihpi:register
 ```
 
 ## Docker Build
@@ -38,7 +38,7 @@ Run the container:
 
 ```bash
 docker run -p 4000:4000 \
-  -e LITELLM_WORKER_STARTUP_HOOKS=aihpi:register \
+  -e LITELLM_WORKER_STARTUP_HOOKS=litellm.aihpi:register \
   -e LITELLM_MASTER_KEY=sk-1234 \
   -v $(pwd)/litellm/proxy/dev_config.yaml:/app/config.yaml \
   litellm-aihpi \
