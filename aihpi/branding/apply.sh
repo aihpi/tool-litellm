@@ -64,8 +64,38 @@ cp "$SCRIPT_DIR/layout.tsx" "$UI_DIR/src/app/(dashboard)/layout.tsx"
 echo "Replacing default nav logo with HPI logo..."
 cp "$UI_DIR/public/assets/aisc.png" litellm/proxy/logo.jpg
 
-# The sidebar keeps upstream's single-logo slot, fed by /get_image above. Both
-# logos live in the full-width top banner (LegalBanner) where they fit larger.
+# Both logos live in the full-width top banner (LegalBanner), so drop the
+# sidebar's logo to avoid showing the branding twice.
+echo "Removing sidebar logo..."
+python3 - "$UI_DIR/src/components/leftnav.tsx" <<'PY'
+import re, sys
+
+path = sys.argv[1]
+src = open(path).read()
+
+if 'aria-label="LiteLLM home"' not in src:
+    print("  already applied, skipping")
+    raise SystemExit
+
+pattern = re.compile(
+    r'\n\s*<Link href=\{migratedHref\(""\)\}[^>]*aria-label="LiteLLM home">'
+    r'\s*<img\s+src=\{logoSrc\}.*?/>\s*</Link>',
+    re.S,
+)
+src, n = pattern.subn("", src, count=1)
+if n != 1:
+    raise SystemExit(
+        f"ERROR: sidebar logo Link not found in {path}; "
+        "upstream changed it, update aihpi/branding/apply.sh"
+    )
+
+# logoSrc was only used by the <img> just removed; drop it so the unused
+# binding cannot trip lint.
+src = re.sub(r"\n\s*const logoSrc = logoUrl \|\| `\$\{baseUrl\}/get_image`;", "", src, count=1)
+
+open(path, "w").write(src)
+print("  applied")
+PY
 
 # Next.js auto-emits an icon <link> from src/app/favicon.ico and puts it ahead
 # of the ones declared in metadata, so the browser tab keeps using it. Replace
