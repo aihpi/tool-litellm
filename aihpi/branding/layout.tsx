@@ -5,6 +5,7 @@ import { DashboardHeader } from "@/components/DashboardHeader";
 import Navbar from "@/components/navbar";
 import LoadingScreen from "@/components/common_components/LoadingScreen";
 import StickyLegalFooter from "@/components/common_components/StickyLegalFooter";
+import LegalBanner from "@/components/common_components/LegalBanner";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { useAuth } from "@/contexts/AuthContext";
 import SidebarProvider from "@/app/(dashboard)/components/SidebarProvider";
@@ -104,6 +105,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
   if (!isGateway) {
     return (
       <div className="flex h-screen flex-col overflow-hidden bg-background">
+        <LegalBanner />
         <Navbar accessToken={accessToken} isPublicPage={false} />
         <DebugWarningBanner accessToken={accessToken} />
         <LicenseExpiryBanner accessToken={accessToken} />
@@ -125,6 +127,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
         onToggleCollapsed={() => setSidebarCollapsed((v) => !v)}
       />
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+        <LegalBanner />
         <DashboardHeader page={page} />
         <DebugWarningBanner accessToken={accessToken} />
         <LicenseExpiryBanner accessToken={accessToken} />
