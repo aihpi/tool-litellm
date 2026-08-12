@@ -181,13 +181,60 @@ else
 fi
 
 echo "Applying Authentik SSO backend patches..."
-cp "$AIHPI_DIR/authentik/auth_utils.py" litellm/proxy/auth/auth_utils.py
-cp "$AIHPI_DIR/authentik/login_utils.py" litellm/proxy/auth/login_utils.py
-cp "$AIHPI_DIR/authentik/ui_discovery_endpoints.py" litellm/proxy/discovery_endpoints/ui_discovery_endpoints.py
-cp "$AIHPI_DIR/authentik/_health_endpoints.py" litellm/proxy/health_endpoints/_health_endpoints.py
-cp "$AIHPI_DIR/authentik/ui_sso.py" litellm/proxy/management_endpoints/ui_sso.py
-cp "$AIHPI_DIR/authentik/sso__init__.py" litellm/proxy/management_endpoints/sso/__init__.py
-cp "$AIHPI_DIR/authentik/proxy_server.py" litellm/proxy/proxy_server.py
+python3 - "$AIHPI_DIR/authentik" <<'PY'
+import hashlib
+import pathlib
+import shutil
+import sys
+
+patch_dir = pathlib.Path(sys.argv[1])
+
+baseline = {}
+for line in (patch_dir / "baseline.sha256").read_text().splitlines():
+    if line.strip():
+        digest, name = line.split("\t")
+        baseline[name] = digest
+
+manifest = []
+for line in (patch_dir / "manifest.txt").read_text().splitlines():
+    if line.strip() and not line.startswith("#"):
+        ours, upstream = line.split("\t")
+        manifest.append((ours, pathlib.Path(upstream)))
+
+
+def sha256(path: pathlib.Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+stale = []
+for ours, upstream in manifest:
+    src = patch_dir / ours
+    if not upstream.exists():
+        stale.append((ours, upstream, "upstream file no longer exists"))
+        continue
+    if sha256(upstream) == sha256(src):
+        continue  # already applied
+    if sha256(upstream) != baseline.get(ours):
+        stale.append((ours, upstream, "upstream changed since this copy was taken"))
+
+if stale:
+    print("\nERROR: Authentik patch copies are out of date.\n", file=sys.stderr)
+    for ours, upstream, why in stale:
+        print(f"  {upstream}\n    {why}", file=sys.stderr)
+    print(
+        "\nCopying them anyway would silently discard upstream's changes to those\n"
+        "files. To resolve, for each file above:\n"
+        "  1. diff aihpi/authentik/<copy> against the file in the tree\n"
+        "  2. re-apply the Authentik additions on top of upstream's new version\n"
+        "  3. from a pristine tree, run: bash aihpi/authentik/rebaseline.sh\n",
+        file=sys.stderr,
+    )
+    raise SystemExit(1)
+
+for ours, upstream in manifest:
+    shutil.copyfile(patch_dir / ours, upstream)
+print(f"  applied {len(manifest)} files, all matching their recorded baseline")
+PY
 
 echo "Registering AIHPI provider in the UI's provider list..."
 python3 - "$SCRIPT_DIR/provider_create_field.json" <<'PY'
