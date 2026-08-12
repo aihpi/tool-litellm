@@ -1,4 +1,4 @@
-name: Rebase aihpi-provider onto upstream litellm_internal_staging
+name: Merge upstream litellm_internal_staging into aihpi-provider
 
 on:
   workflow_dispatch:
@@ -11,7 +11,7 @@ permissions:
   actions: write
 
 jobs:
-  rebase:
+  merge-upstream:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout fork branch
@@ -30,16 +30,120 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-      - name: Rebase onto upstream/litellm_internal_staging
+      - name: Check if upstream has new commits
+        id: check
         run: |
-          git checkout aihpi-provider
-          git rebase upstream/litellm_internal_staging
+          ahead=$(git rev-list --count aihpi-provider..upstream/litellm_internal_staging)
+          echo "ahead=$ahead" >> "$GITHUB_OUTPUT"
+          if [ "$ahead" -eq 0 ]; then
+            echo "No new upstream commits, skipping merge"
+          else
+            echo "$ahead new upstream commits to merge"
+          fi
 
-      - name: Push rebased branch
+      - name: Merge upstream
+        if: steps.check.outputs.ahead != '0'
+        id: merge
         run: |
-          git push origin aihpi-provider --force-with-lease
+          if git merge upstream/litellm_internal_staging --no-edit; then
+            echo "status=clean" >> "$GITHUB_OUTPUT"
+          else
+            echo "status=conflicts" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Resolve conflicts with Claude
+        if: steps.merge.outputs.status == 'conflicts'
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          conflicted=$(git diff --name-only --diff-filter=U)
+          if [ -z "$conflicted" ]; then
+            echo "No conflicted files found"
+            exit 1
+          fi
+
+          echo "Conflicted files:"
+          echo "$conflicted"
+
+          resolved_all=true
+          for file in $conflicted; do
+            echo "--- Resolving: $file ---"
+
+            conflict_content=$(cat "$file")
+
+            # Get both sides for context
+            ours=$(git show :2:"$file" 2>/dev/null || echo "(not available)")
+            theirs=$(git show :3:"$file" 2>/dev/null || echo "(not available)")
+
+            response=$(curl -s https://api.anthropic.com/v1/messages \
+              -H "x-api-key: $ANTHROPIC_API_KEY" \
+              -H "anthropic-version: 2023-06-01" \
+              -H "content-type: application/json" \
+              -d "$(python3 -c "
+          import json, sys
+
+          conflict = open('$file').read()
+
+          prompt = '''You are resolving a git merge conflict in a litellm fork.
+
+          This fork adds Authentik SSO support to litellm. The fork's changes should be preserved alongside upstream's changes. Both sides' code should be kept -- upstream is adding/changing their features, and the fork is adding Authentik SSO on top.
+
+          Rules:
+          - Keep ALL upstream changes (theirs)
+          - Keep ALL fork Authentik SSO additions (ours)
+          - Remove all conflict markers (<<<<<<, ======, >>>>>>)
+          - Output ONLY the resolved file content, no explanation
+
+          Here is the file with conflict markers:
+
+          ''' + conflict
+
+          print(json.dumps({
+              'model': 'claude-sonnet-4-20250514',
+              'max_tokens': 16000,
+              'messages': [{'role': 'user', 'content': prompt}]
+          }))
+          ")")
+
+            resolved=$(echo "$response" | python3 -c "
+          import json, sys
+          data = json.load(sys.stdin)
+          if 'content' in data and len(data['content']) > 0:
+              print(data['content'][0]['text'])
+          else:
+              print('ERROR: ' + json.dumps(data.get('error', data)), file=sys.stderr)
+              sys.exit(1)
+          ")
+
+            if [ $? -eq 0 ]; then
+              echo "$resolved" > "$file"
+              git add "$file"
+              echo "Resolved: $file"
+            else
+              echo "Failed to resolve: $file"
+              resolved_all=false
+            fi
+          done
+
+          if [ "$resolved_all" = true ]; then
+            echo "All conflicts resolved by Claude"
+          else
+            echo "Some conflicts could not be resolved"
+            exit 1
+          fi
+
+      - name: Commit merge resolution
+        if: steps.merge.outputs.status == 'conflicts'
+        run: |
+          git commit --no-edit
+
+      - name: Push merged branch
+        if: steps.check.outputs.ahead != '0'
+        run: |
+          git push origin aihpi-provider
 
       - name: Trigger build-and-publish workflow
+        if: steps.check.outputs.ahead != '0'
         uses: actions/github-script@v7
         with:
           script: |
@@ -54,9 +158,9 @@ jobs:
         if: failure()
         id: conflicts
         run: |
-          files=$(git status --porcelain | awk '$1 ~ /U/ {print $2}' | sort -u)
+          files=$(git diff --name-only --diff-filter=U 2>/dev/null | sort -u)
           if [ -z "$files" ]; then
-            files="(no conflicted files detected; check the workflow logs)"
+            files="(conflict resolution failed; check the workflow logs)"
           fi
           {
             echo "files<<EOF"
@@ -64,16 +168,16 @@ jobs:
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
 
-      - name: Create issue on conflict
+      - name: Create issue on unresolved conflict
         if: failure()
         uses: actions/github-script@v7
         with:
           script: |
             const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
             const files = `${{ steps.conflicts.outputs.files }}`;
-            const title = `Rebase conflict: aihpi-provider onto upstream/litellm_internal_staging (run ${context.runId})`;
+            const title = `Merge conflict: upstream into aihpi-provider (run ${context.runId})`;
             const body = [
-              "The scheduled rebase failed due to conflicts.",
+              "The scheduled upstream merge had conflicts that Claude could not resolve automatically.",
               "",
               `Workflow run: ${runUrl}`,
               "",
