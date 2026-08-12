@@ -51,10 +51,10 @@ jobs:
             echo "status=conflicts" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Resolve conflicts with Claude
+      - name: Resolve conflicts with LLM
         if: steps.merge.outputs.status == 'conflicts'
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          LITELLM_API_KEY: ${{ secrets.LITELLM_API_KEY }}
         run: |
           conflicted=$(git diff --name-only --diff-filter=U)
           if [ -z "$conflicted" ]; then
@@ -69,18 +69,8 @@ jobs:
           for file in $conflicted; do
             echo "--- Resolving: $file ---"
 
-            conflict_content=$(cat "$file")
-
-            # Get both sides for context
-            ours=$(git show :2:"$file" 2>/dev/null || echo "(not available)")
-            theirs=$(git show :3:"$file" 2>/dev/null || echo "(not available)")
-
-            response=$(curl -s https://api.anthropic.com/v1/messages \
-              -H "x-api-key: $ANTHROPIC_API_KEY" \
-              -H "anthropic-version: 2023-06-01" \
-              -H "content-type: application/json" \
-              -d "$(python3 -c "
-          import json, sys
+            response=$(python3 -c "
+          import json, sys, urllib.request, os
 
           conflict = open('$file').read()
 
@@ -92,31 +82,40 @@ jobs:
           - Keep ALL upstream changes (theirs)
           - Keep ALL fork Authentik SSO additions (ours)
           - Remove all conflict markers (<<<<<<, ======, >>>>>>)
-          - Output ONLY the resolved file content, no explanation
+          - Output ONLY the resolved file content, no explanation, no markdown fences
 
           Here is the file with conflict markers:
 
           ''' + conflict
 
-          print(json.dumps({
-              'model': 'claude-sonnet-4-20250514',
-              'max_tokens': 16000,
-              'messages': [{'role': 'user', 'content': prompt}]
-          }))
-          ")")
+          api_base = 'https://api.aisc.hpi.de'
+          req = urllib.request.Request(
+              f'{api_base}/v1/chat/completions',
+              data=json.dumps({
+                  'model': 'gemma-4-31b',
+                  'messages': [{'role': 'user', 'content': prompt}],
+                  'max_tokens': 16000,
+                  'temperature': 0,
+              }).encode(),
+              headers={
+                  'Authorization': f\"Bearer {os.environ['LITELLM_API_KEY']}\",
+                  'Content-Type': 'application/json',
+              },
+          )
+          resp = json.load(urllib.request.urlopen(req, timeout=120))
+          text = resp['choices'][0]['message']['content']
 
-            resolved=$(echo "$response" | python3 -c "
-          import json, sys
-          data = json.load(sys.stdin)
-          if 'content' in data and len(data['content']) > 0:
-              print(data['content'][0]['text'])
-          else:
-              print('ERROR: ' + json.dumps(data.get('error', data)), file=sys.stderr)
-              sys.exit(1)
+          # Strip markdown fences if the model wrapped the output
+          lines = text.split('\n')
+          if lines and lines[0].startswith('\`\`\`'):
+              lines = lines[1:]
+          if lines and lines[-1].strip() == '\`\`\`':
+              lines = lines[:-1]
+          print('\n'.join(lines))
           ")
 
             if [ $? -eq 0 ]; then
-              echo "$resolved" > "$file"
+              echo "$response" > "$file"
               git add "$file"
               echo "Resolved: $file"
             else
@@ -126,7 +125,7 @@ jobs:
           done
 
           if [ "$resolved_all" = true ]; then
-            echo "All conflicts resolved by Claude"
+            echo "All conflicts resolved by LLM"
           else
             echo "Some conflicts could not be resolved"
             exit 1
