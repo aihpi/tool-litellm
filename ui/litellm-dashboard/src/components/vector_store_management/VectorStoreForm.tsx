@@ -2,13 +2,7 @@ import React, { useState, useEffect } from "react";
 import { TextInput, Button as TremorButton } from "@tremor/react";
 import { Modal, Form, Select, Tooltip, Input, Alert } from "antd";
 import { InfoCircleOutlined } from "@ant-design/icons";
-import {
-  CredentialItem,
-  vectorStoreCreateCall,
-  modelInfoCall,
-  modelPatchUpdateCall,
-  detectEmbeddingDimensionCall,
-} from "../networking";
+import { CredentialItem, vectorStoreCreateCall } from "../networking";
 import {
   VectorStoreProviders,
   vectorStoreProviderLogoMap,
@@ -26,8 +20,6 @@ interface VectorStoreFormProps {
   onSuccess: () => void;
   accessToken: string | null;
   credentials: CredentialItem[];
-  userID: string | null;
-  userRole: string | null;
 }
 
 const VectorStoreForm: React.FC<VectorStoreFormProps> = ({
@@ -36,8 +28,6 @@ const VectorStoreForm: React.FC<VectorStoreFormProps> = ({
   onSuccess,
   accessToken,
   credentials,
-  userID,
-  userRole,
 }) => {
   const [form] = Form.useForm();
   const [metadataJson, setMetadataJson] = useState("{}");
@@ -112,51 +102,11 @@ const VectorStoreForm: React.FC<VectorStoreFormProps> = ({
     }
   };
 
-  const handleEmbeddingModelSelect = async (embeddingModel: string) => {
-    if (!accessToken || !userID || !userRole) return;
-    try {
-      const modelInfoResponse = await modelInfoCall(accessToken, userID, userRole);
-      const matchingModel = modelInfoResponse?.data?.find((model: any) => model.model_name === embeddingModel);
-      const modelId = matchingModel?.model_info?.id;
-      const existingDimensions = matchingModel?.model_info?.dimensions;
-
-      if (!modelId || existingDimensions) {
-        return;
-      }
-
-      const dimension = await detectEmbeddingDimensionCall(accessToken, embeddingModel);
-      await modelPatchUpdateCall(
-        accessToken,
-        {
-          model_info: {
-            id: modelId,
-            dimensions: dimension,
-          },
-        },
-        modelId,
-      );
-      NotificationsManager.success(`Saved embedding dimension (${dimension}) for ${embeddingModel}`);
-    } catch (error) {
-      console.error("Error detecting embedding dimensions:", error);
-      NotificationsManager.fromBackend(`Failed to save embedding dimension: ${error}`);
-    }
-  };
-
   const handleCancel = () => {
     form.resetFields();
     setMetadataJson("{}");
     setSelectedProvider("bedrock");
     onCancel();
-  };
-
-  const handleProviderChange = (value: string) => {
-    setSelectedProvider(value);
-    if (value === "qdrant") {
-      const currentApiBase = form.getFieldValue("api_base");
-      if (!currentApiBase) {
-        form.setFieldsValue({ api_base: "http://qdrant:6333" });
-      }
-    }
   };
 
   return (
@@ -175,7 +125,7 @@ const VectorStoreForm: React.FC<VectorStoreFormProps> = ({
           rules={[{ required: true, message: "Please select a provider" }]}
           initialValue="bedrock"
         >
-          <Select onChange={handleProviderChange}>
+          <Select onChange={(value) => setSelectedProvider(value)}>
             {Object.entries(VectorStoreProviders).map(([providerEnum, providerDisplayName]) => {
               return (
                 <Select.Option key={providerEnum} value={vectorStoreProviderMap[providerEnum]}>
@@ -355,17 +305,12 @@ const VectorStoreForm: React.FC<VectorStoreFormProps> = ({
                   field.required ? [{ required: true, message: `Please select the ${field.label.toLowerCase()}` }] : []
                 }
               >
-                  <Select
+                <Select
                   placeholder={field.placeholder}
                   showSearch={true}
                   filterOption={(input, option) => (option?.label ?? "").toLowerCase().includes(input.toLowerCase())}
                   options={selectOptions}
                   style={{ width: "100%" }}
-                  onChange={(value) => {
-                    if (field.name === "litellm_embedding_model") {
-                      handleEmbeddingModelSelect(value);
-                    }
-                  }}
                 />
               </Form.Item>
             );

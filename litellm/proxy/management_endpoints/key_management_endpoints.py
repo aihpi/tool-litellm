@@ -306,7 +306,7 @@ def _team_key_generation_check(
         _team_key_generation = litellm.key_generation_settings["team_key_generation"]
     else:
         _team_key_generation = TeamUIKeyGenerationConfig(
-            allowed_team_member_roles=["admin", "maintainer", "user"],
+            allowed_team_member_roles=["admin", "user"],
         )
 
     _team_key_operation_team_member_check(
@@ -3657,7 +3657,7 @@ async def _team_key_deletion_check(
             _team_key_generation = litellm.key_generation_settings["team_key_generation"]
         else:
             _team_key_generation = TeamUIKeyGenerationConfig(
-                allowed_team_member_roles=["admin", "maintainer", "user"],
+                allowed_team_member_roles=["admin", "user"],
             )
         # check if user is team admin
         if team_table is not None:

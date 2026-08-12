@@ -5676,7 +5676,7 @@ def _get_docs_url() -> Optional[str]:
 
     - If DOCS_URL is set, return it.
     - If NO_DOCS is True, return None.
-    - Otherwise, default to "/docs".
+    - Otherwise, default to "/".
     """
     if docs_url := os.getenv("DOCS_URL"):
         return docs_url
@@ -5684,7 +5684,7 @@ def _get_docs_url() -> Optional[str]:
     if str_to_bool(os.getenv("NO_DOCS")) is True:
         return None
 
-    return "/docs"
+    return "/"
 
 
 def _get_openapi_url() -> Optional[str]:

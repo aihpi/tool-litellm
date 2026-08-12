@@ -19,56 +19,10 @@ interface VectorStoreTableProps {
   onView: (vectorStoreId: string) => void;
   onEdit: (vectorStoreId: string) => void;
   onDelete: (vectorStoreId: string) => void;
-  onCreateCollection: (vectorStoreId: string) => void;
-  onViewCollection: (vectorStoreId: string) => void;
-  showCreateCollection?: boolean;
-  showCreatedBy?: boolean;
 }
 
-const VectorStoreTable: React.FC<VectorStoreTableProps> = ({
-  data,
-  onView,
-  onEdit,
-  onDelete,
-  onCreateCollection,
-  onViewCollection,
-  showCreateCollection = false,
-  showCreatedBy = false,
-}) => {
+const VectorStoreTable: React.FC<VectorStoreTableProps> = ({ data, onView, onEdit, onDelete }) => {
   const [sorting, setSorting] = React.useState<SortingState>([{ id: "created_at", desc: true }]);
-  const getQdrantCollectionName = (vectorStore: VectorStore) => {
-    const metadata = vectorStore.vector_store_metadata;
-    if (!metadata) return null;
-    if (typeof metadata === "string") {
-      try {
-        const parsedMetadata = JSON.parse(metadata);
-        return parsedMetadata?.qdrant_collection_name || null;
-      } catch (error) {
-        console.error("Failed to parse vector store metadata:", error);
-        return null;
-      }
-    }
-    return metadata?.qdrant_collection_name || null;
-  };
-  const getCreatedBy = (vectorStore: VectorStore) => {
-    if (vectorStore.created_by_email) {
-      return vectorStore.created_by_email;
-    }
-    const metadata = vectorStore.vector_store_metadata;
-    if (metadata) {
-      if (typeof metadata === "string") {
-        try {
-          const parsedMetadata = JSON.parse(metadata);
-          return parsedMetadata?.created_by_email || parsedMetadata?.created_by || vectorStore.created_by || null;
-        } catch (error) {
-          console.error("Failed to parse vector store metadata:", error);
-        }
-      } else if (metadata.created_by_email || metadata.created_by) {
-        return metadata.created_by_email || metadata.created_by;
-      }
-    }
-    return vectorStore.created_by || null;
-  };
 
   const columns: ColumnDef<VectorStore>[] = [
     {
@@ -117,22 +71,8 @@ const VectorStoreTable: React.FC<VectorStoreTableProps> = ({
       accessorKey: "vector_store_metadata",
       cell: ({ row }) => {
         const vectorStore = row.original;
-        let ingestedFiles: Array<{ filename?: string; file_url?: string }> = [];
-        const metadata = vectorStore.vector_store_metadata;
+        const ingestedFiles = vectorStore.vector_store_metadata?.ingested_files || [];
 
-        if (metadata) {
-          if (typeof metadata === "string") {
-            try {
-              const parsed = JSON.parse(metadata);
-              ingestedFiles = parsed?.ingested_files || [];
-            } catch (error) {
-              console.error("Failed to parse vector store metadata:", error);
-            }
-          } else {
-            ingestedFiles = metadata.ingested_files || [];
-          }
-        }
-        
         if (ingestedFiles.length === 0) {
           return <span className="text-xs text-gray-400">-</span>;
         }
@@ -165,19 +105,6 @@ const VectorStoreTable: React.FC<VectorStoreTableProps> = ({
         );
       },
     },
-    ...(showCreatedBy
-      ? [
-          {
-            header: "Created By",
-            accessorKey: "created_by",
-            cell: ({ row }: { row: { original: VectorStore } }) => {
-              const vectorStore = row.original;
-              const createdBy = getCreatedBy(vectorStore);
-              return <span className="text-xs">{createdBy || "-"}</span>;
-            },
-          } as ColumnDef<VectorStore>,
-        ]
-      : []),
     {
       header: "Created At",
       accessorKey: "created_at",
@@ -201,8 +128,6 @@ const VectorStoreTable: React.FC<VectorStoreTableProps> = ({
       header: "",
       cell: ({ row }) => {
         const vectorStore = row.original;
-        const qdrantCollectionName =
-          vectorStore.custom_llm_provider === "qdrant" ? getQdrantCollectionName(vectorStore) : null;
         return (
           <div className="flex space-x-2">
             <TableIconActionButton
@@ -210,17 +135,6 @@ const VectorStoreTable: React.FC<VectorStoreTableProps> = ({
               tooltipText="Edit vector store"
               onClick={() => onEdit(vectorStore.vector_store_id)}
             />
-            {showCreateCollection && vectorStore.custom_llm_provider === "qdrant" && (
-              <TableIconActionButton
-                variant={qdrantCollectionName ? "ViewCollection" : "CreateCollection"}
-                tooltipText={qdrantCollectionName ? "View Qdrant collection" : "Create Qdrant collection"}
-                onClick={() =>
-                  qdrantCollectionName
-                    ? onViewCollection(vectorStore.vector_store_id)
-                    : onCreateCollection(vectorStore.vector_store_id)
-                }
-              />
-            )}
             <TableIconActionButton
               variant="Delete"
               tooltipText="Delete vector store"

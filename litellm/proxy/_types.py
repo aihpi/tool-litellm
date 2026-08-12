@@ -89,8 +89,6 @@ class SupportedDBObjectType(str, enum.Enum):
 class LiteLLMTeamRoles(enum.Enum):
     # team admin
     TEAM_ADMIN = "admin"
-    # team maintainer
-    TEAM_MAINTAINER = "maintainer"
     # team member
     TEAM_MEMBER = "user"
 

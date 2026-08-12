@@ -4,7 +4,6 @@ import {
   isProxyAdminRole,
   isUserTeamAdminForAnyTeam,
   isUserTeamAdminForSingleTeam,
-  isUserTeamMaintainerForSingleTeam,
   rolesAllowedToViewWriteScopedPages,
   rolesWithWriteAccess,
 } from "./roles";
@@ -80,7 +79,7 @@ describe("roles", () => {
   });
 
   describe("isUserTeamAdminForAnyTeam", () => {
-    it("should return true when user is admin or maintainer of at least one team", () => {
+    it("should return true when user is admin of at least one team", () => {
       const teams: Team[] = [
         {
           team_id: "team-1",
@@ -106,7 +105,7 @@ describe("roles", () => {
           organization_id: "org-1",
           created_at: "2024-01-01",
           keys: [],
-          members_with_roles: [{ user_id: "user-1", user_email: "user1@test.com", role: "maintainer" }],
+          members_with_roles: [{ user_id: "user-1", user_email: "user1@test.com", role: "admin" }],
         },
       ];
       expect(isUserTeamAdminForAnyTeam(teams, "user-1")).toBe(true);
@@ -150,37 +149,6 @@ describe("roles", () => {
 
     it("should return false when teams is empty array", () => {
       expect(isUserTeamAdminForAnyTeam([], "user-1")).toBe(false);
-    });
-  });
-
-  describe("isUserTeamMaintainerForSingleTeam", () => {
-    it("should return true when user is team admin", () => {
-      const members_with_roles = [
-        { user_id: "user-1", user_email: "user1@test.com", role: "admin" },
-        { user_id: "user-2", user_email: "user2@test.com", role: "user" },
-      ];
-      expect(isUserTeamMaintainerForSingleTeam(members_with_roles, "user-1")).toBe(true);
-    });
-
-    it("should return true when user is team maintainer", () => {
-      const members_with_roles = [
-        { user_id: "user-1", user_email: "user1@test.com", role: "maintainer" },
-        { user_id: "user-2", user_email: "user2@test.com", role: "user" },
-      ];
-      expect(isUserTeamMaintainerForSingleTeam(members_with_roles, "user-1")).toBe(true);
-    });
-
-    it("should return false when user is not in team", () => {
-      const members_with_roles = [{ user_id: "user-2", user_email: "user2@test.com", role: "maintainer" }];
-      expect(isUserTeamMaintainerForSingleTeam(members_with_roles, "user-1")).toBe(false);
-    });
-
-    it("should return false when members_with_roles is null", () => {
-      expect(isUserTeamMaintainerForSingleTeam(null, "user-1")).toBe(false);
-    });
-
-    it("should return false when members_with_roles is empty array", () => {
-      expect(isUserTeamMaintainerForSingleTeam([], "user-1")).toBe(false);
     });
   });
 
