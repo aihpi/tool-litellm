@@ -4,7 +4,7 @@ import React, { Suspense, useState, useRef, useEffect } from "react";
 import { DashboardHeader } from "@/components/DashboardHeader";
 import Navbar from "@/components/navbar";
 import LoadingScreen from "@/components/common_components/LoadingScreen";
-import StickyLegalFooter from "@/components/common_components/StickyLegalFooter";
+import LegalFooter from "@/components/common_components/LegalFooter";
 import LegalBanner from "@/components/common_components/LegalBanner";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -113,28 +113,30 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
         <main className="flex min-h-0 flex-1 overflow-hidden">
           <AgentControlPlaneView />
         </main>
-        <StickyLegalFooter />
+        <LegalFooter />
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
-      <SidebarProvider
-        setPage={navigateToPage}
-        defaultSelectedKey={page}
-        sidebarCollapsed={sidebarCollapsed}
-        onToggleCollapsed={() => setSidebarCollapsed((v) => !v)}
-      />
-      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        <LegalBanner />
-        <DashboardHeader page={page} />
-        <DebugWarningBanner accessToken={accessToken} />
-        <LicenseExpiryBanner accessToken={accessToken} />
-        <UserBanner accessToken={accessToken} />
-        <main className="min-w-0 flex-1 overflow-y-auto">{children}</main>
+    <div className="flex h-screen flex-col overflow-hidden bg-background">
+      <div className="flex min-h-0 flex-1 overflow-hidden">
+        <SidebarProvider
+          setPage={navigateToPage}
+          defaultSelectedKey={page}
+          sidebarCollapsed={sidebarCollapsed}
+          onToggleCollapsed={() => setSidebarCollapsed((v) => !v)}
+        />
+        <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+          <LegalBanner />
+          <DashboardHeader page={page} />
+          <DebugWarningBanner accessToken={accessToken} />
+          <LicenseExpiryBanner accessToken={accessToken} />
+          <UserBanner accessToken={accessToken} />
+          <main className="min-w-0 flex-1 overflow-y-auto">{children}</main>
+        </div>
       </div>
-      <StickyLegalFooter />
+      <LegalFooter />
     </div>
   );
 }
