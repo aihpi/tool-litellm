@@ -1,23 +1,24 @@
 "use client";
 
 import React, { Suspense, useState, useRef, useEffect } from "react";
+import { DashboardHeader } from "@/components/DashboardHeader";
 import Navbar from "@/components/navbar";
 import LoadingScreen from "@/components/common_components/LoadingScreen";
+import StickyLegalFooter from "@/components/common_components/StickyLegalFooter";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { useAuth } from "@/contexts/AuthContext";
 import SidebarProvider from "@/app/(dashboard)/components/SidebarProvider";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { DebugWarningBanner } from "@/components/DebugWarningBanner";
+import { LicenseExpiryBanner } from "@/components/LicenseExpiryBanner";
+import { UserBanner } from "@/components/UserBanner";
 import { MIGRATED_PAGES, migratedHref, legacyPageHref, legacyKeyForPathname } from "@/utils/migratedPages";
 import { PluginModeProvider, usePluginMode } from "@/contexts/PluginModeContext";
 import { createApiClient } from "@/lib/http/client";
 import { getProxyBaseUrl } from "@/components/networking";
-import StickyLegalFooter from "@/components/common_components/StickyLegalFooter";
 
 const pluginApiClient = createApiClient({ getBaseUrl: () => getProxyBaseUrl() ?? "" });
 
-// Wrapper so PluginModeProvider receives the live accessToken from auth context,
-// which means plugin data refreshes on login/logout without stale cookie reads.
 function PluginModeProviderWithAuth({ children }: { children: React.ReactNode }) {
   const { accessToken } = useAuth();
   return <PluginModeProvider accessToken={accessToken}>{children}</PluginModeProvider>;
@@ -31,9 +32,6 @@ export function AgentControlPlaneView() {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [auth, setAuth] = useState<{ plugin: string; claim: string } | null>(null);
 
-  // Fetch a short-lived identity claim scoped to the *active* plugin. The claim
-  // is encrypted under that plugin's own per-plugin key, so it must be requested
-  // per plugin and re-fetched when the user switches plugins.
   useEffect(() => {
     if (!accessToken || !activePluginName) return;
     let cancelled = false;
@@ -48,17 +46,12 @@ export function AgentControlPlaneView() {
     };
   }, [accessToken, activePluginName]);
 
-  // Deliver the claim to the iframe via postMessage, but only while it was issued
-  // for the plugin currently mounted — never replay one plugin's claim to another.
-  // targetOrigin is the configured plugin URL — no other origin receives it.
   useEffect(() => {
     const iframe = iframeRef.current;
     if (!iframe || !auth || auth.plugin !== activePluginName || !agentPlatformUrl) return;
     const send = () => {
       iframe.contentWindow?.postMessage({ type: "litellm-auth", session_claim: auth.claim }, agentPlatformUrl);
     };
-    // Cover both orderings: the iframe may have already fired `load` before the
-    // claim arrived (send now), or it may load/reload later (send on the event).
     send();
     iframe.addEventListener("load", send);
     return () => iframe.removeEventListener("load", send);
@@ -71,12 +64,10 @@ export function AgentControlPlaneView() {
           <p className="text-lg font-medium mb-2">Plugin</p>
           <p className="text-sm">Configure the plugin URL in settings</p>
         </div>
-        <StickyLegalFooter />
       </div>
     );
   }
 
-  // Embed the plugin at its root; the plugin renders its own full UI (incl. nav) inside.
   return (
     <iframe
       ref={iframeRef}
@@ -98,48 +89,47 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
-  const { accessToken, userID, userEmail, userRole, premiumUser } = useAuth();
+  const { accessToken } = useAuth();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [proxySettings, setProxySettings] = useState<any>(undefined);
   const { mode } = usePluginMode();
 
   const page = legacyKeyForPathname(pathname) || searchParams.get("page") || "api-keys";
+  const isGateway = mode === "ai-gateway";
 
   const navigateToPage = (newPage: string) => {
     const migratedRoute = MIGRATED_PAGES[newPage];
     router.push(migratedRoute ? migratedHref(migratedRoute) : legacyPageHref(newPage));
   };
 
+  if (!isGateway) {
+    return (
+      <div className="flex h-screen flex-col overflow-hidden bg-background">
+        <Navbar accessToken={accessToken} isPublicPage={false} />
+        <DebugWarningBanner accessToken={accessToken} />
+        <LicenseExpiryBanner accessToken={accessToken} />
+        <UserBanner accessToken={accessToken} />
+        <main className="flex min-h-0 flex-1 overflow-hidden">
+          <AgentControlPlaneView />
+        </main>
+        <StickyLegalFooter />
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col min-h-screen">
-      <Navbar
-        accessToken={accessToken}
-        isPublicPage={false}
+    <div className="flex h-screen overflow-hidden bg-background">
+      <SidebarProvider
+        setPage={navigateToPage}
+        defaultSelectedKey={page}
         sidebarCollapsed={sidebarCollapsed}
-        onToggleSidebar={() => setSidebarCollapsed((v) => !v)}
-        userID={userID}
-        userEmail={userEmail}
-        userRole={userRole}
-        premiumUser={premiumUser}
-        proxySettings={proxySettings}
-        setProxySettings={setProxySettings}
-        isDarkMode={false}
-        toggleDarkMode={() => {}}
+        onToggleCollapsed={() => setSidebarCollapsed((v) => !v)}
       />
-      <DebugWarningBanner accessToken={accessToken} />
-      <div className="flex flex-1">
-        {mode !== "ai-gateway" ? (
-          <div className="flex-1 flex">
-            <AgentControlPlaneView />
-          </div>
-        ) : (
-          <>
-            <div className="mt-2">
-              <SidebarProvider setPage={navigateToPage} defaultSelectedKey={page} sidebarCollapsed={sidebarCollapsed} />
-            </div>
-            <main className="flex-1">{children}</main>
-          </>
-        )}
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+        <DashboardHeader page={page} />
+        <DebugWarningBanner accessToken={accessToken} />
+        <LicenseExpiryBanner accessToken={accessToken} />
+        <UserBanner accessToken={accessToken} />
+        <main className="min-w-0 flex-1 overflow-y-auto">{children}</main>
       </div>
       <StickyLegalFooter />
     </div>
@@ -147,17 +137,24 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
 }
 
 function LayoutContent({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const { accessToken, authLoading } = useAuth();
   const isInvitationFlow = Boolean(searchParams.get("invitation_id"));
 
-  if (authLoading) {
+  useEffect(() => {
+    if (!authLoading && isInvitationFlow) {
+      router.replace(`${migratedHref("onboarding")}?${searchParams.toString()}`);
+    }
+  }, [authLoading, isInvitationFlow, router, searchParams]);
+
+  if (authLoading || isInvitationFlow) {
     return <LoadingScreen />;
   }
 
   return (
     <ThemeProvider accessToken={accessToken}>
-      {isInvitationFlow ? children : <DashboardShell>{children}</DashboardShell>}
+      <DashboardShell>{children}</DashboardShell>
     </ThemeProvider>
   );
 }
