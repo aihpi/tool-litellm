@@ -80,6 +80,9 @@ aihpi/
   __init__.py                   register() -- the proxy startup hook
   provider.py                   CustomLLM subclass: embedding + image_edit
   authentik/                    fork copies of 7 upstream files carrying Authentik SSO
+    manifest.txt                which copy replaces which upstream path
+    baseline.sha256             hash of upstream's version each copy was taken from
+    rebaseline.sh               re-record baselines after re-syncing a copy
   branding/
     apply.sh                    applies everything below, plus authentik/
     hpi-theme.css               HPI palette, substituted into globals.css @theme vars
@@ -119,10 +122,34 @@ The anchors are:
 
 Fix by opening the file, finding where the code moved, and updating the anchor in `apply.sh`.
 
-A second failure mode has no guard: upstream may change a component's props so that
-`branding/layout.tsx` (a whole-file copy) no longer type-checks. The build fails with a TypeScript
-error naming the prop. Fix by diffing our copy against upstream's current version and re-applying
-the HPI additions (the `LegalBanner` and `LegalFooter` lines) on top.
+Upstream may also change a component's props so that `branding/layout.tsx` (a whole-file copy) no
+longer type-checks. The build fails with a TypeScript error naming the prop. Fix by diffing our copy
+against upstream's current version and re-applying the HPI additions (the `LegalBanner` and
+`LegalFooter` lines) on top.
+
+### Stale Authentik copies
+
+The 7 files in `authentik/` are whole-file copies, so `apply.sh` overwriting upstream's version would
+silently discard any change upstream made to it. `proxy_server.py` alone is 17k lines and upstream
+touches it constantly, so this is the one place the fork could lose an upstream fix without anyone
+noticing.
+
+`apply.sh` guards it. `baseline.sha256` records the hash of upstream's version each copy was taken
+from, and every file is checked before being copied:
+
+- hash matches our copy: already applied, skip
+- hash matches the baseline: safe, apply
+- neither: **build fails**, naming the file
+
+To resolve, for each file named:
+
+1. `diff aihpi/authentik/<copy> <the upstream path from manifest.txt>` to see both our additions and
+   upstream's new work
+2. re-apply the Authentik additions on top of upstream's current version
+3. from a pristine tree (`git checkout -- litellm/ ui/`), run `bash aihpi/authentik/rebaseline.sh`
+
+`rebaseline.sh` refuses to run on a dirty tree, because baselining a patched tree would record our
+own output as the baseline and disable the guard permanently.
 
 ## Why branding is applied where it is
 
