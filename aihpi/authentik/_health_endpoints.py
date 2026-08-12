@@ -7,7 +7,7 @@ import time
 import traceback
 from collections.abc import Iterable, Mapping
 from datetime import datetime, timedelta
-from typing import Any, Final, Literal, TypedDict, cast
+from typing import Any, Final, Literal, Optional, TypedDict, cast
 
 import fastapi
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
@@ -1771,6 +1771,14 @@ async def test_model_connection(
         None,
         description="The mode to test the model with. If not provided, auto-detected from model capabilities.",
     ),
+    test_prompt: Optional[str] = fastapi.Body(
+        None,
+        description="Optional prompt override for the health check",
+    ),
+    test_input: Optional[list] = fastapi.Body(
+        None,
+        description="Optional input override for the health check",
+    ),
     litellm_params: dict = fastapi.Body(
         None,
         description="Parameters for litellm.completion, litellm.embedding for the health check",
@@ -1937,8 +1945,8 @@ async def test_model_connection(
             litellm.ahealth_check(
                 model_params=litellm_params,
                 mode=mode,
-                prompt="test from litellm",
-                input=["test from litellm"],
+                prompt=test_prompt or "test from litellm",
+                input=test_input or ["test from litellm"],
             ),
             HEALTH_CHECK_TIMEOUT_SECONDS,
         )

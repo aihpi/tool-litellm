@@ -1334,6 +1334,37 @@ def _has_user_setup_sso() -> bool:
     )
 
 
+def _has_ui_sso_setup() -> bool:
+    """
+    Check if any Admin UI SSO provider is configured, including fork-specific
+    providers like Authentik.
+    """
+    authentik_client_id = os.getenv("AUTHENTIK_CLIENT_ID", None)
+    return _has_user_setup_sso() or (authentik_client_id is not None)
+
+
+def _has_free_sso_user_limit() -> bool:
+    """
+    Return True when the deployment is using one of the built-in SSO providers that
+    should surface the legacy free-tier "5 users" usage meter in the enterprise UI.
+
+    Fork-specific providers such as Authentik can participate in UI SSO without
+    inheriting that premium-reporting fallback.
+    """
+    microsoft_client_id = os.getenv("MICROSOFT_CLIENT_ID", None)
+    google_client_id = os.getenv("GOOGLE_CLIENT_ID", None)
+    generic_client_id = os.getenv("GENERIC_CLIENT_ID", None)
+
+    return any(
+        client_id is not None
+        for client_id in (
+            microsoft_client_id,
+            google_client_id,
+            generic_client_id,
+        )
+    )
+
+
 def get_customer_user_header_from_mapping(user_id_mapping) -> list | None:
     """Return the header_name mapped to CUSTOMER role, if any (dict-based)."""
     if not user_id_mapping:

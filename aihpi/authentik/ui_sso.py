@@ -87,7 +87,6 @@ from litellm.proxy._types import (
 from litellm.proxy.auth.auth_checks import ExperimentalUIJWTToken, get_user_object
 from litellm.proxy.auth.auth_utils import (
     _get_request_ip_address,
-    _has_user_setup_sso,
 )
 from litellm.proxy.auth.handle_jwt import JWTHandler
 from litellm.proxy.auth.user_api_key_auth import user_api_key_auth
@@ -101,7 +100,11 @@ from litellm.proxy.common_utils.html_forms.jwt_display_template import (
 from litellm.proxy.common_utils.html_forms.ui_login import build_ui_login_form
 from litellm.proxy.common_utils.user_api_key_cache import UserApiKeyCache
 from litellm.proxy.management_endpoints.internal_user_endpoints import new_user
-from litellm.proxy.management_endpoints.sso import CustomMicrosoftSSO
+from litellm.proxy.management_endpoints.sso import (
+    CustomMicrosoftSSO,
+    get_authentik_discovery_document,
+    get_authentik_scope,
+)
 from litellm.proxy.management_endpoints.sso.saml_sso import SAMLAuthHandler
 from litellm.proxy.management_endpoints.sso_helper_utils import (
     check_is_admin_only_access,
@@ -806,6 +809,25 @@ def normalize_email(email: str | None) -> str | None:
     return email.lower() if isinstance(email, str) else email
 
 
+def normalize_sso_groups(user_groups_raw: Any) -> List[str]:
+    if isinstance(user_groups_raw, list):
+        return [str(g) for g in user_groups_raw]
+    if isinstance(user_groups_raw, str):
+        return [g.strip() for g in user_groups_raw.split(",") if g.strip()]
+    if user_groups_raw is not None:
+        return [str(user_groups_raw)]
+    return []
+
+
+def determine_authentik_role_from_claims(claims: Any) -> LitellmUserRoles:
+    groups_attribute = os.getenv("AUTHENTIK_GROUPS_ATTRIBUTE", "groups")
+    admin_group = os.getenv("AUTHENTIK_ADMIN_GROUP", "SCI-ADMINS")
+    user_groups = normalize_sso_groups(get_nested_value(claims, groups_attribute, default=[]))
+    if admin_group in user_groups:
+        return LitellmUserRoles.PROXY_ADMIN
+    return LitellmUserRoles.INTERNAL_USER
+
+
 def determine_role_from_groups(
     user_groups: list[str],
     role_mappings: "RoleMappings",
@@ -920,13 +942,7 @@ def process_sso_jwt_access_token(
                 group_claim: Final = role_mappings.group_claim
                 user_groups_raw: Final[Any] = get_nested_value(access_token_payload, group_claim)
 
-                user_groups: list[str] = []
-                if isinstance(user_groups_raw, list):
-                    user_groups = [str(g) for g in user_groups_raw]
-                elif isinstance(user_groups_raw, str):
-                    user_groups = [g.strip() for g in user_groups_raw.split(",") if g.strip()]
-                elif user_groups_raw is not None:
-                    user_groups = [str(user_groups_raw)]
+                user_groups = normalize_sso_groups(user_groups_raw)
 
                 if user_groups:
                     user_role = determine_role_from_groups(user_groups, role_mappings)
@@ -1004,6 +1020,7 @@ async def google_login(
 
     microsoft_client_id: Final = os.getenv("MICROSOFT_CLIENT_ID", None)
     google_client_id: Final = os.getenv("GOOGLE_CLIENT_ID", None)
+    authentik_client_id: Final = os.getenv("AUTHENTIK_CLIENT_ID", None)
     generic_client_id: Final = os.getenv("GENERIC_CLIENT_ID", None)
 
     ####### Check if UI is disabled #######
@@ -1076,6 +1093,7 @@ async def google_login(
         SSOAuthenticationHandler.should_use_sso_handler(
             microsoft_client_id=microsoft_client_id,
             google_client_id=google_client_id,
+            authentik_client_id=authentik_client_id,
             generic_client_id=generic_client_id,
         )
         is True
@@ -1085,6 +1103,7 @@ async def google_login(
             redirect_url=redirect_url,
             microsoft_client_id=microsoft_client_id,
             google_client_id=google_client_id,
+            authentik_client_id=authentik_client_id,
             generic_client_id=generic_client_id,
             state=cli_state,
             request=request,
@@ -1174,16 +1193,7 @@ def generic_response_convertor(
         group_claim: Final = role_mappings.group_claim
         user_groups_raw: Final[Any] = get_nested_value(response, group_claim)
 
-        # Handle different formats: could be a list, string (comma-separated), or single value
-        user_groups: list[str] = []
-        if isinstance(user_groups_raw, list):
-            user_groups = [str(g) for g in user_groups_raw]
-        elif isinstance(user_groups_raw, str):
-            # Handle comma-separated string
-            user_groups = [g.strip() for g in user_groups_raw.split(",") if g.strip()]
-        elif user_groups_raw is not None:
-            # Single value
-            user_groups = [str(user_groups_raw)]
+        user_groups = normalize_sso_groups(user_groups_raw)
 
         if user_groups:
             user_role = determine_role_from_groups(user_groups, role_mappings)
@@ -1231,6 +1241,126 @@ def generic_response_convertor(
         user_role=user_role,
         extra_fields=extra_fields,
     )
+
+
+def authentik_response_convertor(
+    response: dict,
+    jwt_handler: JWTHandler,
+    sso_jwt_handler: Optional[JWTHandler] = None,
+) -> CustomOpenID:
+    all_teams: List[str] = []
+    if sso_jwt_handler is not None:
+        all_teams.extend(sso_jwt_handler.get_team_ids_from_jwt(cast(dict, response)))
+    else:
+        all_teams.extend(jwt_handler.get_team_ids_from_jwt(cast(dict, response)))
+
+    email = normalize_email(get_nested_value(response, "email"))
+    user_id = get_nested_value(response, "sub")
+    display_name = get_nested_value(response, "name") or email or user_id
+
+    return CustomOpenID(
+        id=user_id,
+        display_name=display_name,
+        email=email,
+        first_name=get_nested_value(response, "given_name"),
+        last_name=get_nested_value(response, "family_name"),
+        provider="authentik",
+        team_ids=all_teams,
+        user_role=determine_authentik_role_from_claims(response),
+    )
+
+
+def apply_authentik_access_token_claims(
+    access_token_str: Optional[str],
+    result: Union[OpenID, dict],
+    sso_jwt_handler: Optional[JWTHandler] = None,
+) -> None:
+    if not access_token_str or isinstance(result, dict):
+        return
+
+    try:
+        access_token_payload = jwt.decode(access_token_str, options={"verify_signature": False})
+    except jwt.exceptions.DecodeError:
+        verbose_proxy_logger.debug("Authentik access token is not a JWT, skipping claim extraction")
+        return
+
+    if sso_jwt_handler is not None and not getattr(result, "team_ids", []):
+        setattr(
+            result,
+            "team_ids",
+            sso_jwt_handler.get_team_ids_from_jwt(access_token_payload),
+        )
+
+    access_token_role = determine_authentik_role_from_claims(access_token_payload)
+    if access_token_role == LitellmUserRoles.PROXY_ADMIN:
+        setattr(result, "user_role", access_token_role)
+
+
+async def get_authentik_sso_response(
+    request: Request,
+    jwt_handler: JWTHandler,
+    sso_jwt_handler: Optional[JWTHandler],
+    authentik_client_id: str,
+    redirect_url: str,
+) -> Tuple[Union[OpenID, dict], Optional[dict]]:
+    from fastapi_sso.sso.generic import create_provider
+
+    authentik_client_secret = os.getenv("AUTHENTIK_CLIENT_SECRET", None)
+    authentik_issuer = os.getenv("AUTHENTIK_ISSUER", None)
+
+    if authentik_client_secret is None:
+        raise ProxyException(
+            message="AUTHENTIK_CLIENT_SECRET not set. Set it in .env file",
+            type=ProxyErrorTypes.auth_error,
+            param="AUTHENTIK_CLIENT_SECRET",
+            code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+    if authentik_issuer is None:
+        raise ProxyException(
+            message="AUTHENTIK_ISSUER not set. Set it in .env file",
+            type=ProxyErrorTypes.auth_error,
+            param="AUTHENTIK_ISSUER",
+            code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+    discovery = await get_authentik_discovery_document(authentik_issuer)
+    authentik_scope = get_authentik_scope()
+    received_response: Optional[dict] = None
+
+    def response_convertor(response, client):
+        nonlocal received_response
+        received_response = response
+        return authentik_response_convertor(
+            response=response,
+            jwt_handler=jwt_handler,
+            sso_jwt_handler=sso_jwt_handler,
+        )
+
+    SSOProvider = create_provider(
+        name="authentik",
+        discovery_document=discovery,
+        response_convertor=response_convertor,
+    )
+    authentik_sso = SSOProvider(
+        client_id=authentik_client_id,
+        client_secret=authentik_client_secret,
+        redirect_uri=redirect_url,
+        allow_insecure_http=redirect_url.startswith("http://"),
+        scope=authentik_scope,
+    )
+
+    try:
+        result = await authentik_sso.verify_and_process(request)
+    except Exception:
+        verbose_proxy_logger.exception("Error verifying and processing Authentik SSO")
+        raise
+
+    apply_authentik_access_token_claims(
+        access_token_str=authentik_sso.access_token,
+        result=result or {},
+        sso_jwt_handler=sso_jwt_handler,
+    )
+    return result or {}, received_response
 
 
 def _setup_generic_sso_env_vars(
@@ -1966,6 +2096,7 @@ async def auth_callback(request: Request, state: str | None = None):
 
     microsoft_client_id: Final = os.getenv("MICROSOFT_CLIENT_ID", None)
     google_client_id: Final = os.getenv("GOOGLE_CLIENT_ID", None)
+    authentik_client_id: Final = os.getenv("AUTHENTIK_CLIENT_ID", None)
     generic_client_id: Final = os.getenv("GENERIC_CLIENT_ID", None)
     received_response: dict | None = None
     access_token_payload: dict | None = None
@@ -1992,6 +2123,14 @@ async def auth_callback(request: Request, state: str | None = None):
         result = await MicrosoftSSOHandler.get_microsoft_callback_response(
             request=request,
             microsoft_client_id=microsoft_client_id,
+            redirect_url=redirect_url,
+        )
+    elif authentik_client_id is not None:
+        result, received_response = await get_authentik_sso_response(
+            request=request,
+            jwt_handler=jwt_handler,
+            sso_jwt_handler=sso_jwt_handler,
+            authentik_client_id=authentik_client_id,
             redirect_url=redirect_url,
         )
 
@@ -2531,7 +2670,9 @@ async def get_ui_settings(request: Request):
     _proxy_base_url: Final = os.getenv("PROXY_BASE_URL", None)
     _logout_url: Final = os.getenv("PROXY_LOGOUT_URL", None)
     _api_doc_base_url: Final = os.getenv("LITELLM_UI_API_DOC_BASE_URL", None)
-    _is_sso_enabled: Final = _has_user_setup_sso()
+    from litellm.proxy.auth.auth_utils import _has_ui_sso_setup
+
+    _is_sso_enabled: Final = _has_ui_sso_setup()
     disable_expensive_db_queries: Final = (
         proxy_state.get_proxy_state_variable("spend_logs_row_count") > MAX_SPENDLOG_ROWS_TO_QUERY
     )
@@ -2563,6 +2704,7 @@ async def sso_readiness():
     """
     microsoft_client_id: Final = os.getenv("MICROSOFT_CLIENT_ID", None)
     google_client_id: Final = os.getenv("GOOGLE_CLIENT_ID", None)
+    authentik_client_id: Final = os.getenv("AUTHENTIK_CLIENT_ID", None)
     generic_client_id: Final = os.getenv("GENERIC_CLIENT_ID", None)
 
     # Determine which SSO provider is configured
@@ -2571,6 +2713,8 @@ async def sso_readiness():
         configured_provider = "google"
     elif microsoft_client_id is not None:
         configured_provider = "microsoft"
+    elif authentik_client_id is not None:
+        configured_provider = "authentik"
     elif generic_client_id is not None:
         configured_provider = "generic"
 
@@ -2597,6 +2741,14 @@ async def sso_readiness():
             missing_vars.append("MICROSOFT_CLIENT_SECRET")
         if microsoft_tenant is None:
             missing_vars.append("MICROSOFT_TENANT")
+
+    elif configured_provider == "authentik":
+        authentik_client_secret = os.getenv("AUTHENTIK_CLIENT_SECRET", None)
+        authentik_issuer = os.getenv("AUTHENTIK_ISSUER", None)
+        if authentik_client_secret is None:
+            missing_vars.append("AUTHENTIK_CLIENT_SECRET")
+        if authentik_issuer is None:
+            missing_vars.append("AUTHENTIK_ISSUER")
 
     elif configured_provider == "generic":
         generic_client_secret: Final = os.getenv("GENERIC_CLIENT_SECRET", None)
@@ -2761,6 +2913,7 @@ class SSOAuthenticationHandler:
         redirect_url: str,
         google_client_id: str | None = None,
         microsoft_client_id: str | None = None,
+        authentik_client_id: str | None = None,
         generic_client_id: str | None = None,
         state: str | None = None,
         request: Request | None = None,
@@ -2772,6 +2925,7 @@ class SSOAuthenticationHandler:
             redirect_url (str): The URL to redirect the user to after login
             google_client_id (Optional[str], optional): The Google Client ID. Defaults to None.
             microsoft_client_id (Optional[str], optional): The Microsoft Client ID. Defaults to None.
+            authentik_client_id (Optional[str], optional): The Authentik Client ID. Defaults to None.
             generic_client_id (Optional[str], optional): The Generic Client ID. Defaults to None.
             request: Optional FastAPI request, used to drive the ``Secure``
                 attribute on the ``litellm_oauth_state`` CSRF cookie.
@@ -2823,6 +2977,41 @@ class SSOAuthenticationHandler:
             )
             with microsoft_sso:
                 return await microsoft_sso.get_login_redirect(state=state)
+        elif authentik_client_id is not None:
+            from fastapi_sso.sso.generic import create_provider
+
+            authentik_client_secret = os.getenv("AUTHENTIK_CLIENT_SECRET", None)
+            authentik_issuer = os.getenv("AUTHENTIK_ISSUER", None)
+            if authentik_client_secret is None:
+                raise ProxyException(
+                    message="AUTHENTIK_CLIENT_SECRET not set. Set it in .env file",
+                    type=ProxyErrorTypes.auth_error,
+                    param="AUTHENTIK_CLIENT_SECRET",
+                    code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                )
+            if authentik_issuer is None:
+                raise ProxyException(
+                    message="AUTHENTIK_ISSUER not set. Set it in .env file",
+                    type=ProxyErrorTypes.auth_error,
+                    param="AUTHENTIK_ISSUER",
+                    code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                )
+
+            discovery = await get_authentik_discovery_document(authentik_issuer)
+            authentik_scope = get_authentik_scope()
+            SSOProvider = create_provider(
+                name="authentik",
+                discovery_document=discovery,
+            )
+            authentik_sso = SSOProvider(
+                client_id=authentik_client_id,
+                client_secret=authentik_client_secret,
+                redirect_uri=redirect_url,
+                allow_insecure_http=redirect_url.startswith("http://"),
+                scope=authentik_scope,
+            )
+            with authentik_sso:
+                return await authentik_sso.get_login_redirect(state=state)
         elif generic_client_id is not None:
             from fastapi_sso.sso.base import DiscoveryDocument
             from fastapi_sso.sso.generic import create_provider
@@ -3062,9 +3251,15 @@ class SSOAuthenticationHandler:
     def should_use_sso_handler(
         google_client_id: str | None = None,
         microsoft_client_id: str | None = None,
+        authentik_client_id: str | None = None,
         generic_client_id: str | None = None,
     ) -> bool:
-        if google_client_id is not None or microsoft_client_id is not None or generic_client_id is not None:
+        if (
+            google_client_id is not None
+            or microsoft_client_id is not None
+            or authentik_client_id is not None
+            or generic_client_id is not None
+        ):
             return True
         return False
 
@@ -4484,6 +4679,7 @@ async def debug_sso_login(request: Request):
 
     microsoft_client_id: Final = os.getenv("MICROSOFT_CLIENT_ID", None)
     google_client_id: Final = os.getenv("GOOGLE_CLIENT_ID", None)
+    authentik_client_id: Final = os.getenv("AUTHENTIK_CLIENT_ID", None)
     generic_client_id: Final = os.getenv("GENERIC_CLIENT_ID", None)
 
     ####### Check if user is a Enterprise / Premium User #######
@@ -4507,6 +4703,7 @@ async def debug_sso_login(request: Request):
         SSOAuthenticationHandler.should_use_sso_handler(
             microsoft_client_id=microsoft_client_id,
             google_client_id=google_client_id,
+            authentik_client_id=authentik_client_id,
             generic_client_id=generic_client_id,
         )
         is True
@@ -4515,6 +4712,7 @@ async def debug_sso_login(request: Request):
             redirect_url=redirect_url,
             microsoft_client_id=microsoft_client_id,
             google_client_id=google_client_id,
+            authentik_client_id=authentik_client_id,
             generic_client_id=generic_client_id,
             request=request,
         )
@@ -4553,6 +4751,7 @@ async def debug_sso_callback(request: Request):
 
     microsoft_client_id: Final = os.getenv("MICROSOFT_CLIENT_ID", None)
     google_client_id: Final = os.getenv("GOOGLE_CLIENT_ID", None)
+    authentik_client_id: Final = os.getenv("AUTHENTIK_CLIENT_ID", None)
     generic_client_id: Final = os.getenv("GENERIC_CLIENT_ID", None)
 
     redirect_url = os.getenv("PROXY_BASE_URL", str(request.base_url))
@@ -4577,6 +4776,14 @@ async def debug_sso_callback(request: Request):
             microsoft_client_id=microsoft_client_id,
             redirect_url=redirect_url,
             return_raw_sso_response=True,
+        )
+    elif authentik_client_id is not None:
+        result, _ = await get_authentik_sso_response(
+            request=request,
+            jwt_handler=jwt_handler,
+            authentik_client_id=authentik_client_id,
+            redirect_url=redirect_url,
+            sso_jwt_handler=sso_jwt_handler,
         )
 
     elif generic_client_id is not None:

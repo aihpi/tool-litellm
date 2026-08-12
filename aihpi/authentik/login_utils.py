@@ -24,7 +24,9 @@ from litellm.proxy._types import (
     UpdateUserRequest,
     UserAPIKeyAuth,
 )
-from litellm.proxy.management_endpoints.internal_user_endpoints import user_update
+from litellm.proxy.management_endpoints.internal_user_endpoints import (
+    user_update,
+)
 from litellm.proxy.management_endpoints.key_management_endpoints import (
     generate_key_helper_fn,
 )
@@ -141,6 +143,10 @@ async def authenticate_user(
 
     ui_username, ui_password = get_ui_credentials(master_key)
 
+    is_admin_credentials = secrets.compare_digest(
+        username.encode("utf-8"), ui_username.encode("utf-8")
+    ) and secrets.compare_digest(password.encode("utf-8"), ui_password.encode("utf-8"))
+
     # Check if we can find the `username` in the db. On the UI, users can enter username=their email
     _user_row: LiteLLM_UserTable | None = None
     user_role: (
@@ -166,9 +172,7 @@ async def authenticate_user(
     - Login with UI_USERNAME and UI_PASSWORD
     - Login with Invite Link `user_email` and `password` combination
     """
-    if secrets.compare_digest(username.encode("utf-8"), ui_username.encode("utf-8")) and secrets.compare_digest(
-        password.encode("utf-8"), ui_password.encode("utf-8")
-    ):
+    if is_admin_credentials:
         # Non SSO -> If user is using UI_USERNAME and UI_PASSWORD they are Proxy admin
         user_role = LitellmUserRoles.PROXY_ADMIN
         user_id = LITELLM_PROXY_ADMIN_NAME
