@@ -5,19 +5,7 @@ import { all_admin_roles, isUserTeamAdminForAnyTeam } from "@/utils/roles";
 import { modelCreationScope } from "@/utils/modelPermissions";
 import { Switch, Text } from "@tremor/react";
 import type { FormInstance } from "antd";
-import {
-  Select as AntdSelect,
-  Button,
-  Card,
-  Col,
-  Form,
-  Modal,
-  Row,
-  Tooltip,
-  Typography,
-  Alert,
-  InputNumber,
-} from "antd";
+import { Select as AntdSelect, Button, Card, Col, Form, Modal, Row, Tooltip, Typography, Alert } from "antd";
 import type { UploadProps } from "antd/es/upload";
 import React, { useEffect, useMemo, useState } from "react";
 import TeamDropdown from "../common_components/team_dropdown";
@@ -90,7 +78,6 @@ const AddModelForm: React.FC<AddModelFormProps> = ({
   const [modelAccessGroups, setModelAccessGroups] = useState<string[]>([]);
   // Team admin specific state
   const [teamAdminSelectedTeam, setTeamAdminSelectedTeam] = useState<string | null>(null);
-  const selectedMode = Form.useWatch("mode", form) || testMode;
 
   useEffect(() => {
     const fetchModelAccessGroups = async () => {
@@ -148,11 +135,7 @@ const AddModelForm: React.FC<AddModelFormProps> = ({
                 >
                   <TeamDropdown
                     onChange={(value) => {
-                      if (Array.isArray(value)) {
-                        setTeamAdminSelectedTeam(value[0] ?? null);
-                        return;
-                      }
-                      setTeamAdminSelectedTeam(value ?? null);
+                      setTeamAdminSelectedTeam(value);
                     }}
                   />
                 </Form.Item>
@@ -233,15 +216,6 @@ const AddModelForm: React.FC<AddModelFormProps> = ({
                     options={TEST_MODES}
                   />
                 </Form.Item>
-                {selectedMode === "embedding" && (
-                  <Form.Item
-                    label="Embedding Dimensions"
-                    name="embedding_dimensions"
-                    tooltip="Vector size for this embedding model (from the model card)"
-                  >
-                    <InputNumber min={1} className="w-full" placeholder="4096" />
-                  </Form.Item>
-                )}
                 <Row>
                   <Col span={10}></Col>
                   <Col span={10}>

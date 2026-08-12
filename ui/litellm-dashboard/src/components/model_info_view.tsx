@@ -69,7 +69,6 @@ import { Logo } from "@/components/molecules/logo/Logo";
 import UpdateModelCredentialsModal from "./update_model_credentials_modal";
 import NumericalInput from "./shared/numerical_input";
 import { Tag } from "./tag_management/types";
-import { isAdminRole } from "@/utils/roles";
 import { getDisplayModelName } from "./view_model/model_name_display";
 
 interface ModelInfoViewProps {
@@ -327,7 +326,7 @@ export default function ModelInfoView({
     };
 
     const fetchGuardrails = async () => {
-      if (!accessToken || !isAdminRole(userRole || "")) return;
+      if (!accessToken) return;
       try {
         const response = await getGuardrailsList(accessToken);
         const guardrailNames = response.guardrails.map((g: { guardrail_name: string }) => g.guardrail_name);
@@ -583,16 +582,6 @@ export default function ModelInfoView({
     }
     try {
       NotificationsManager.info("Testing connection...");
-      const provider = localModelData.litellm_params.custom_llm_provider;
-      const modelName = localModelData.litellm_model_name || "";
-      const isAihpiEmbedding =
-        localModelData.model_info?.mode === "embedding" &&
-        (provider === "aihpi-provider" || modelName.startsWith("aihpi-provider/"));
-      const testInput = isAihpiEmbedding
-        ? [
-            "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=",
-          ]
-        : undefined;
       const response = await testConnectionRequest(
         accessToken,
         {
@@ -610,33 +599,18 @@ export default function ModelInfoView({
           mode: localModelData.model_info?.mode,
         },
         localModelData.model_info?.mode,
-        testInput,
       );
 
       if (response.status === "success") {
         NotificationsManager.success("Connection test successful!");
-        Modal.success({
-          title: "Connection test successful!",
-          content: "Model connection is healthy.",
-        });
       } else {
         throw new Error(response?.result?.error || response?.message || "Unknown error");
       }
     } catch (error) {
       if (error instanceof Error) {
-        const errorMessage = truncateString(error.message, 100);
-        NotificationsManager.error("Error testing connection: " + errorMessage);
-        Modal.error({
-          title: "Connection test failed",
-          content: errorMessage,
-        });
+        NotificationsManager.error("Error testing connection: " + truncateString(error.message, 100));
       } else {
-        const errorMessage = String(error);
-        NotificationsManager.error("Error testing connection: " + errorMessage);
-        Modal.error({
-          title: "Connection test failed",
-          content: errorMessage,
-        });
+        NotificationsManager.error("Error testing connection: " + String(error));
       }
     }
   };

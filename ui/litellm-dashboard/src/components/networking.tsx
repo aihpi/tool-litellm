@@ -2234,8 +2234,6 @@ export const testConnectionRequest = async (
   litellm_params: Record<string, any>,
   model_info: Record<string, any>,
   mode: string,
-  testInput?: any,
-  testPrompt?: string,
 ) => {
   try {
     // Construct the URL based on environment
@@ -2251,8 +2249,6 @@ export const testConnectionRequest = async (
         litellm_params: litellm_params,
         model_info: model_info,
         mode: mode,
-        test_input: testInput,
-        test_prompt: testPrompt,
       }),
     });
 
@@ -5320,7 +5316,7 @@ export const tagCreateCall = async (accessToken: string, formValues: TagNewReque
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
+        [globalLitellmHeaderName]: `Bearer ${accessToken}`,
       },
       body: JSON.stringify(formValues),
     });
@@ -5346,7 +5342,7 @@ export const tagUpdateCall = async (accessToken: string, formValues: TagUpdateRe
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
+        [globalLitellmHeaderName]: `Bearer ${accessToken}`,
       },
       body: JSON.stringify(formValues),
     });
@@ -5372,7 +5368,7 @@ export const tagInfoCall = async (accessToken: string, tagNames: string[]): Prom
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
+        [globalLitellmHeaderName]: `Bearer ${accessToken}`,
       },
       body: JSON.stringify({ names: tagNames }),
     });
@@ -5417,7 +5413,7 @@ export const tagListCall = async (
     const response = await fetch(url, {
       method: "GET",
       headers: {
-        Authorization: `Bearer ${accessToken}`,
+        [globalLitellmHeaderName]: `Bearer ${accessToken}`,
       },
     });
 
@@ -5443,7 +5439,7 @@ export const tagDeleteCall = async (accessToken: string, tagName: string): Promi
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
+        [globalLitellmHeaderName]: `Bearer ${accessToken}`,
       },
       body: JSON.stringify({ name: tagName }),
     });
@@ -5491,7 +5487,7 @@ export const getTeamPermissionsCall = async (accessToken: string, teamId: string
       method: "GET",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
+        [globalLitellmHeaderName]: `Bearer ${accessToken}`,
       },
     });
 
@@ -5580,7 +5576,7 @@ export const vectorStoreCreateCall = async (accessToken: string, formValues: Rec
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
+        [globalLitellmHeaderName]: `Bearer ${accessToken}`,
       },
       body: JSON.stringify(formValues),
     });
@@ -5609,7 +5605,7 @@ export const vectorStoreListCall = async (
       method: "GET",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
+        [globalLitellmHeaderName]: `Bearer ${accessToken}`,
       },
     });
 
@@ -5647,7 +5643,7 @@ export const vectorStoreDeleteCall = async (accessToken: string, vectorStoreId: 
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
+        [globalLitellmHeaderName]: `Bearer ${accessToken}`,
       },
       body: JSON.stringify({ vector_store_id: vectorStoreId }),
     });
@@ -5672,7 +5668,7 @@ export const vectorStoreInfoCall = async (accessToken: string, vectorStoreId: st
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
+        [globalLitellmHeaderName]: `Bearer ${accessToken}`,
       },
       body: JSON.stringify({ vector_store_id: vectorStoreId }),
     });
@@ -5689,47 +5685,6 @@ export const vectorStoreInfoCall = async (accessToken: string, vectorStoreId: st
   }
 };
 
-export const detectEmbeddingDimensionCall = async (
-  accessToken: string,
-  model: string,
-  input: string = "- test",
-): Promise<number> => {
-  try {
-    const normalizedBaseUrl = getProxyBaseUrl().replace(/\/+$/, "");
-    const requestUrl = `${normalizedBaseUrl}/embeddings`;
-
-    const response = await fetch(requestUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
-      },
-      body: JSON.stringify({
-        model,
-        input,
-        encoding_format: "float",
-      }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(errorText || `Request failed with status ${response.status}`);
-    }
-
-    const responseData = await response.json();
-    const embedding = responseData?.data?.[0]?.embedding;
-
-    if (!Array.isArray(embedding)) {
-      throw new Error("No embedding returned from server");
-    }
-
-    return embedding.length;
-  } catch (error) {
-    console.error("Error detecting embedding dimension:", error);
-    throw error;
-  }
-};
-
 export const vectorStoreUpdateCall = async (accessToken: string, formValues: Record<string, any>): Promise<any> => {
   try {
     let url = proxyBaseUrl ? `${proxyBaseUrl}/vector_store/update` : `/vector_store/update`;
@@ -5738,7 +5693,7 @@ export const vectorStoreUpdateCall = async (accessToken: string, formValues: Rec
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
+        [globalLitellmHeaderName]: `Bearer ${accessToken}`,
       },
       body: JSON.stringify(formValues),
     });
@@ -6924,7 +6879,7 @@ export const vectorStoreSearchCall = async (
     const response = await fetch(url, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${accessToken}`,
+        [globalLitellmHeaderName]: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -6957,7 +6912,7 @@ export const searchToolQueryCall = async (
     const response = await fetch(url, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${accessToken}`,
+        [globalLitellmHeaderName]: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({

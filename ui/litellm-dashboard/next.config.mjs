@@ -16,7 +16,7 @@ const nextConfig = {
     unoptimized: true,
   },
   basePath: "",
-  assetPrefix: "/litellm-asset-prefix", // If a server_root_path is set, this will be overridden by runtime injection
+  assetPrefix: "/litellm-asset-prefix",
   trailingSlash: true,
   turbopack: {
     // Must be absolute; "." is no longer allowed

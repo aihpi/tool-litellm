@@ -126,12 +126,7 @@ export function ComparisonPanel({
               <label className="text-xs font-medium text-gray-600 block mb-0.5">Vector Stores</label>
               <VectorStoreSelector
                 value={comparison.vectorStores}
-                onChange={(value) =>
-                  handleSettingChange(
-                    "vectorStores",
-                    Array.isArray(value) ? value : value ? [value] : [],
-                  )
-                }
+                onChange={(value) => handleSettingChange("vectorStores", value)}
                 accessToken={apiKey}
               />
             </div>

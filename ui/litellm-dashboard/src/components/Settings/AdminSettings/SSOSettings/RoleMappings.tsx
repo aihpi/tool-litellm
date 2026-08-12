@@ -24,7 +24,7 @@ export default function RoleMappings({ roleMappings }: { roleMappings: RoleMappi
         <>
           {groups.length > 0 ? (
             groups.map((group, index) => (
-              <Tag key={index} color="orange">
+              <Tag key={index} color="blue">
                 {group}
               </Tag>
             ))

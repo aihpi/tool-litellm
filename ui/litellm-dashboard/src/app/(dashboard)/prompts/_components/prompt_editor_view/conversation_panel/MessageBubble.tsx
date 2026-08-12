@@ -28,7 +28,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
             }}
           >
             {message.role === "user" ? (
-              <UserOutlined style={{ fontSize: "12px", color: "#c45507" }} />
+              <UserOutlined style={{ fontSize: "12px", color: "#2563eb" }} />
             ) : (
               <RobotOutlined style={{ fontSize: "12px", color: "#4b5563" }} />
             )}

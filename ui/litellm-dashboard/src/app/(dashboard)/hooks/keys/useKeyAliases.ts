@@ -2,17 +2,11 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { createQueryKeys } from "../common/queryKeysFactory";
 import { keyAliasesCall, type PaginatedKeyAliasResponse } from "@/components/networking";
 import useAuthorized from "../useAuthorized";
-import { isAdminRole } from "@/utils/roles";
 
 const infiniteKeyAliasKeys = createQueryKeys("infiniteKeyAliases");
 
-export const useInfiniteKeyAliases = (
-  size: number = 50,
-  search?: string,
-  team_id?: string,
-) => {
-  const { accessToken, userRole } = useAuthorized();
-  const isAdmin = Boolean(userRole && isAdminRole(userRole));
+export const useInfiniteKeyAliases = (size: number = 50, search?: string, team_id?: string) => {
+  const { accessToken } = useAuthorized();
   return useInfiniteQuery<PaginatedKeyAliasResponse>({
     queryKey: infiniteKeyAliasKeys.list({
       filters: {
@@ -31,6 +25,6 @@ export const useInfiniteKeyAliases = (
       }
       return undefined;
     },
-    enabled: Boolean(accessToken && isAdmin),
+    enabled: Boolean(accessToken),
   });
 };

@@ -232,7 +232,7 @@ const LoggingSettings: React.FC<LoggingSettingsProps> = ({
               key={index}
               className="border border-gray-200 shadow-xs hover:shadow-md transition-shadow duration-200"
               decoration="top"
-              decorationColor="orange"
+              decorationColor="blue"
             >
               <div className="flex justify-between items-start mb-4">
                 <div className="flex items-center space-x-2">

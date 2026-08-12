@@ -628,7 +628,7 @@ const ModelHubTable: React.FC<ModelHubTableProps> = ({ accessToken, publicPage, 
                   <Text className="font-medium">Providers:</Text>
                   <div className="flex flex-wrap gap-1 mt-1">
                     {selectedModel.providers.map((provider) => (
-                      <Badge key={provider} color="orange">
+                      <Badge key={provider} color="blue">
                         {provider}
                       </Badge>
                     ))}
@@ -728,67 +728,7 @@ const ModelHubTable: React.FC<ModelHubTableProps> = ({ accessToken, publicPage, 
             <div>
               <Text className="text-lg font-semibold mb-4">Usage Example</Text>
               <SyntaxHighlighter language="python" className="text-sm">
-                {(selectedModel.mode === "embedding" &&
-                  (selectedModel.providers?.includes("aihpi-provider") ||
-                    selectedModel.litellm_provider === "aihpi-provider" ||
-                    selectedModel.custom_llm_provider === "aihpi-provider" ||
-                    selectedModel.model_group?.startsWith("aihpi-provider/")))
-                  ? `import openai
-
-import base64
-
-client = openai.OpenAI(
-    api_key="your_api_key",
-    base_url="http://0.0.0.0:4000"  # Your LiteLLM Proxy URL
-)
-
-with open("image.jpg", "rb") as f:
-    image_base64 = base64.b64encode(f.read()).decode("utf-8")
-
-response = client.embeddings.create(
-    model="${selectedModel.model_group}",
-    input=[
-        {"image_base64": image_base64}
-        # {"image_url": "https://example.de/image.jpg"}
-    ]
-)
-
-print(response.data[0].embedding)`
-                  : (selectedModel.providers?.includes("aihpi-provider") ||
-                        selectedModel.litellm_provider === "aihpi-provider" ||
-                        selectedModel.custom_llm_provider === "aihpi-provider") &&
-                      selectedModel.model_group?.includes("qwen-image-edit")
-                    ? `import base64
-import requests
-
-API_BASE = "http://0.0.0.0:4000"
-API_KEY = "your_api_key"
-MODEL = "${selectedModel.model_group}"
-
-with open("input.png", "rb") as f:
-    resp = requests.post(
-        f"{API_BASE}/v1/images/edits",
-        headers={"Authorization": f"Bearer {API_KEY}"},
-        files={"image": f},
-        data={
-            "model": MODEL,
-            "prompt": "Make it a watercolor painting",
-            # Optional params:
-            # "num_inference_steps": "28",
-            # "true_cfg_scale": "4.0",
-            # "seed": "123",
-            # "negative_prompt": "blurry",
-        },
-        timeout=120,
-    )
-
-resp.raise_for_status()
-b64 = resp.json()["data"][0]["b64_json"]
-with open("output.png", "wb") as out:
-    out.write(base64.b64decode(b64))
-
-print("saved output.png")`
-                  : `import openai
+                {`import openai
 
 client = openai.OpenAI(
     api_key="your_api_key",
@@ -833,7 +773,7 @@ print(response.choices[0].message.content)`}
                 </div>
                 <div>
                   <Text className="font-medium">Version:</Text>
-                  <Badge color="orange">v{selectedAgent.version}</Badge>
+                  <Badge color="blue">v{selectedAgent.version}</Badge>
                 </div>
                 <div>
                   <Text className="font-medium">Protocol Version:</Text>
@@ -880,7 +820,7 @@ print(response.choices[0].message.content)`}
                   <Text className="font-medium">Input Modes:</Text>
                   <div className="flex flex-wrap gap-1 mt-1">
                     {selectedAgent.defaultInputModes?.map((mode) => (
-                      <Badge key={mode} color="orange">
+                      <Badge key={mode} color="blue">
                         {mode}
                       </Badge>
                     )) || <Text>Not specified</Text>}
@@ -988,7 +928,7 @@ print(response.choices[0].message.content)`}
                 )}
                 <div>
                   <Text className="font-medium">Transport:</Text>
-                  <Badge color="orange">{selectedMcpServer.transport}</Badge>
+                  <Badge color="blue">{selectedMcpServer.transport}</Badge>
                 </div>
                 <div>
                   <Text className="font-medium">Auth Type:</Text>
@@ -1054,7 +994,7 @@ print(response.choices[0].message.content)`}
                 <Text className="text-lg font-semibold mb-4">Teams</Text>
                 <div className="flex flex-wrap gap-2">
                   {selectedMcpServer.teams.map((team, idx) => (
-                    <Badge key={idx} color="orange">
+                    <Badge key={idx} color="blue">
                       {team}
                     </Badge>
                   ))}

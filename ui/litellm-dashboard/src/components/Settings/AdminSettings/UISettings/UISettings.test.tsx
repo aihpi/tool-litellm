@@ -76,7 +76,7 @@ describe("UISettings", () => {
     expect(screen.getByRole("switch", { name: "Require authentication for public AI Hub" })).toBeInTheDocument();
   });
 
-  it("should submit settings and call update", () => {
+  it("should toggle setting and call update", () => {
     const mutateMock = vi.fn((_settings, options) => {
       options?.onSuccess?.();
     });
@@ -90,17 +90,13 @@ describe("UISettings", () => {
     render(<UISettings />);
 
     const toggle = screen.getByRole("switch", { name: "Disable model add for internal users" });
-    const saveButton = screen.getByRole("button", { name: "Save settings" });
 
     act(() => {
       fireEvent.click(toggle);
-      fireEvent.click(saveButton);
     });
 
     expect(mutateMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        disable_model_add_for_internal_users: true,
-      }),
+      { disable_model_add_for_internal_users: true },
       expect.objectContaining({
         onSuccess: expect.any(Function),
         onError: expect.any(Function),

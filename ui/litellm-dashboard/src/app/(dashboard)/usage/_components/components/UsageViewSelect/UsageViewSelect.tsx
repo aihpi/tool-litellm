@@ -187,7 +187,7 @@ export const UsageViewSelect: React.FC<UsageViewSelectProps> = ({
                   </div>
                   {opt.badgeText && (
                     <div className="items-center">
-                      <Badge color="orange" count={opt.badgeText} />
+                      <Badge color="blue" count={opt.badgeText} />
                     </div>
                   )}
                 </div>

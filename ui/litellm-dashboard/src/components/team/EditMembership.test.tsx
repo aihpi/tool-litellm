@@ -32,7 +32,7 @@ describe("EditMembership", () => {
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     expect(screen.getByLabelText("Email")).toBeInTheDocument();
     expect(screen.getByLabelText("Role")).toBeInTheDocument();
-  }, 10000);
+  });
 
   it("should submit form data when adding a member", async () => {
     renderWithProviders(
@@ -68,5 +68,5 @@ describe("EditMembership", () => {
         }),
       );
     });
-  }, 10000);
+  });
 });

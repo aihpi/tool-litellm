@@ -432,7 +432,6 @@ const ViewUserDashboard: React.FC<ViewUserDashboardProps> = ({
         onCancel={handleEditCancel}
         user={selectedUser}
         onSubmit={handleEditSubmit}
-        teams={teams}
       />
 
       <DeleteResourceModal

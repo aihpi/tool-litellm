@@ -219,8 +219,8 @@ const PriceDataReload: React.FC<PriceDataReloadProps> = ({
           cancelText="No"
           okButtonProps={{
             style: {
-              backgroundColor: "#dd6108",
-              borderColor: "#dd6108",
+              backgroundColor: "#6366f1",
+              borderColor: "#6366f1",
               color: "white",
               fontWeight: "500",
               borderRadius: "0.375rem",
@@ -231,10 +231,10 @@ const PriceDataReload: React.FC<PriceDataReloadProps> = ({
               transition: "all 0.2s ease-in-out",
             },
             onMouseEnter: (e) => {
-              e.currentTarget.style.backgroundColor = "#c45507";
+              e.currentTarget.style.backgroundColor = "#4f46e5";
             },
             onMouseLeave: (e) => {
-              e.currentTarget.style.backgroundColor = "#dd6108";
+              e.currentTarget.style.backgroundColor = "#6366f1";
             },
           }}
         >
@@ -244,8 +244,8 @@ const PriceDataReload: React.FC<PriceDataReloadProps> = ({
             loading={isLoading}
             icon={showIcon ? <ReloadOutlined /> : undefined}
             style={{
-              backgroundColor: "#dd6108",
-              borderColor: "#dd6108",
+              backgroundColor: "#6366f1",
+              borderColor: "#6366f1",
               color: "white",
               fontWeight: "500",
               borderRadius: "0.375rem",
@@ -256,10 +256,10 @@ const PriceDataReload: React.FC<PriceDataReloadProps> = ({
               transition: "all 0.2s ease-in-out",
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = "#c45507";
+              e.currentTarget.style.backgroundColor = "#4f46e5";
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = "#dd6108";
+              e.currentTarget.style.backgroundColor = "#6366f1";
             }}
           >
             {buttonText}
@@ -275,7 +275,7 @@ const PriceDataReload: React.FC<PriceDataReloadProps> = ({
             onClick={() => setShowScheduleModal(true)}
             style={{
               borderColor: "#d9d9d9",
-              color: "#dd6108",
+              color: "#6366f1",
               fontWeight: "500",
               borderRadius: "0.375rem",
               padding: "0.375rem 0.75rem",
@@ -472,8 +472,8 @@ const PriceDataReload: React.FC<PriceDataReloadProps> = ({
         cancelText="Cancel"
         okButtonProps={{
           style: {
-            backgroundColor: "#dd6108",
-            borderColor: "#dd6108",
+            backgroundColor: "#6366f1",
+            borderColor: "#6366f1",
             color: "white",
           },
         }}

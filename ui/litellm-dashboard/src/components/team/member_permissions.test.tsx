@@ -95,7 +95,7 @@ describe("MemberPermissions", () => {
         );
       });
     }
-  }, 10000);
+  });
 
   it("should render team daily activity permission with correct method and description", async () => {
     vi.mocked(networking.getTeamPermissionsCall).mockResolvedValue({

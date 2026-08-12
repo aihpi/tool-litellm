@@ -7,9 +7,9 @@ interface ChartDataPoint {
 }
 
 const colorNameToHex: { [key: string]: string } = {
-  blue: "#dd6108",
+  blue: "#3b82f6",
   cyan: "#06b6d4",
-  indigo: "#dd6108",
+  indigo: "#6366f1",
   green: "#22c55e",
   red: "#ef4444",
   purple: "#8b5cf6",

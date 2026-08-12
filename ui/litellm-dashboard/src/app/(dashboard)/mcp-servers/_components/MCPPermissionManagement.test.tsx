@@ -49,7 +49,7 @@ describe("MCPPermissionManagement", () => {
     const switches = screen.getAllByRole("switch");
     const toggle = switches[0];
     expect(toggle).toHaveAttribute("aria-checked", "false");
-  }, 10000);
+  });
 
   const renderWithInitialValues = (initialValues: Record<string, unknown>, props = {}) => {
     const Wrapper: React.FC = ({ children }) => {

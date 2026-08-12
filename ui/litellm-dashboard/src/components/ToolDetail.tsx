@@ -367,10 +367,7 @@ export function ToolDetail({ toolName, onBack, accessToken }: ToolDetailProps) {
             <div>
               <span className="mb-2 block text-sm font-medium">{blockScope === "team" ? "Team" : "Key"}</span>
               {blockScope === "team" ? (
-                <TeamDropdown
-                  value={blockTeamId ?? undefined}
-                  onChange={(id) => setBlockTeamId(typeof id === "string" ? id : null)}
-                />
+                <TeamDropdown value={blockTeamId ?? undefined} onChange={(id) => setBlockTeamId(id || null)} />
               ) : (
                 <Combobox
                   items={keyItems}
