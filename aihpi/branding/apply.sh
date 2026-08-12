@@ -64,51 +64,8 @@ cp "$SCRIPT_DIR/layout.tsx" "$UI_DIR/src/app/(dashboard)/layout.tsx"
 echo "Replacing default nav logo with HPI logo..."
 cp "$UI_DIR/public/assets/aisc.png" litellm/proxy/logo.jpg
 
-echo "Showing both HPI logos in the sidebar..."
-LEFTNAV="$UI_DIR/src/components/leftnav.tsx"
-python3 - "$LEFTNAV" <<'PY'
-import re, sys
-
-path = sys.argv[1]
-src = open(path).read()
-
-if 'alt="BMFTR"' in src:
-    print("  already applied, skipping")
-    raise SystemExit
-
-pattern = re.compile(
-    r'<img\s+src=\{logoSrc\}\s+alt="LiteLLM"\s+className="[^"]*"\s*/>', re.S
-)
-new = (
-    '<span className="flex items-center gap-2 group-data-[collapsed=true]/sidebar:gap-1">\n'
-    '                <img\n'
-    '                  src={logoSrc}\n'
-    '                  alt="KI Service Zentrum"\n'
-    '                  className="h-7 w-auto max-w-[120px] object-contain'
-    ' group-data-[collapsed=true]/sidebar:w-7"\n'
-    '                />\n'
-    '                <img\n'
-    '                  src={getUiAssetPath("/assets/BMFTR.png")}\n'
-    '                  alt="BMFTR"\n'
-    '                  className="h-9 w-auto max-w-[110px] object-contain'
-    ' group-data-[collapsed=true]/sidebar:hidden"\n'
-    '                />\n'
-    '              </span>'
-)
-src, n = pattern.subn(new, src, count=1)
-if n != 1:
-    raise SystemExit(
-        f"ERROR: sidebar logo <img> not found in {path}; "
-        "upstream changed it, update aihpi/branding/apply.sh"
-    )
-
-if "uiAssetPath" not in src:
-    src = src.replace(
-        'import ', 'import { getUiAssetPath } from "@/utils/uiAssetPath";\nimport ', 1
-    )
-open(path, "w").write(src)
-print("  applied")
-PY
+# The sidebar keeps upstream's single-logo slot, fed by /get_image above. Both
+# logos live in the full-width top banner (LegalBanner) where they fit larger.
 
 # Next.js auto-emits an icon <link> from src/app/favicon.ico and puts it ahead
 # of the ones declared in metadata, so the browser tab keeps using it. Replace
