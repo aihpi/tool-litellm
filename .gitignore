@@ -131,3 +131,6 @@ crash.*.log
 
 # pytest coverage data
 .coverage
+
+# Next.js static build output (rebuilt at Docker build time from ui/ source)
+litellm/proxy/_experimental/out/

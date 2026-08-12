@@ -7886,12 +7886,6 @@ class ProviderConfigManager:
             )
 
             return SagemakerEmbeddingConfig.get_model_config(model)
-        elif litellm.LlmProviders.AIHPI_PROVIDER == provider:
-            from litellm.llms.aihpi_provider.embedding import (
-                get_aihpi_provider_embedding_config,
-            )
-
-            return get_aihpi_provider_embedding_config(model)
         elif litellm.LlmProviders.PERPLEXITY == provider:
             return litellm.PerplexityEmbeddingConfig()
         return None
@@ -8687,12 +8681,6 @@ class ProviderConfigManager:
             )
 
             return LiteLLMProxyImageEditConfig()
-        elif LlmProviders.AIHPI_PROVIDER == provider:
-            from litellm.llms.aihpi_provider.image_edit import (
-                get_aihpi_provider_image_edit_config,
-            )
-
-            return get_aihpi_provider_image_edit_config(model)
         elif LlmProviders.VERTEX_AI == provider:
             from litellm.llms.vertex_ai.image_edit import (
                 get_vertex_ai_image_edit_config,

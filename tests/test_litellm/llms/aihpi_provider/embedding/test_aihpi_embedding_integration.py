@@ -6,6 +6,9 @@ import pytest
 def test_should_send_aihpi_embedding_request():
     respx = pytest.importorskip("respx")
     import litellm
+    from aihpi import register
+
+    register()
 
     litellm.disable_aiohttp_transport = True
     api_base = "https://api.example.ai"
@@ -16,7 +19,7 @@ def test_should_send_aihpi_embedding_request():
 
         response = litellm.embedding(
             model="aihpi-provider/dinov3-vitl",
-            input="https://example.com/image.png",
+            input=["https://example.com/image.png"],
             api_key="test-key",
             api_base=api_base,
         )
