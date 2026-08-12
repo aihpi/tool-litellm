@@ -1,5 +1,5 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { Form } from "antd";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { Form, type FormInstance } from "antd";
 import { describe, expect, it, vi } from "vitest";
 import SSOModals from "./SSOModals";
 
@@ -65,32 +65,16 @@ describe("SSOModals", () => {
 
     // Find and interact with the SSO provider select
     const ssoProviderSelect = screen.getByLabelText("SSO Provider");
-    act(() => {
-      fireEvent.mouseDown(ssoProviderSelect);
-    });
+    fireEvent.mouseDown(ssoProviderSelect);
     // Wait for dropdown and select Google
     await waitFor(() => {
       const googleOption = screen.getByText("Google SSO");
-      act(() => {
-        fireEvent.click(googleOption);
-      });
+      fireEvent.click(googleOption);
     });
 
     // Fill in the email field
     const emailInput = screen.getByLabelText("Proxy Admin Email");
-    act(() => {
-      fireEvent.change(emailInput, { target: { value: "test@example.com" } });
-    });
-
-    // Fill required provider fields to avoid unrelated validation errors
-    const clientIdInput = screen.getByLabelText("Google Client ID");
-    act(() => {
-      fireEvent.change(clientIdInput, { target: { value: "test-client-id" } });
-    });
-    const clientSecretInput = screen.getByLabelText("Google Client Secret");
-    act(() => {
-      fireEvent.change(clientSecretInput, { target: { value: "test-client-secret" } });
-    });
+    fireEvent.change(emailInput, { target: { value: "test@example.com" } });
 
     // Fill in an invalid URL
     const urlInput = screen.getByLabelText("Proxy Base URL");
@@ -108,7 +92,7 @@ describe("SSOModals", () => {
       // The validation is based on a Promise, so we need to wait for it to resolve
       { timeout: 5000 },
     );
-  }, 10000);
+  });
 
   it("should show validation error if proxy base url ends with trailing slash", async () => {
     const TestWrapper = () => {
@@ -243,18 +227,14 @@ describe("SSOModals", () => {
 
     // Fill in an incomplete URL like "http:"
     const urlInput = screen.getByLabelText("Proxy Base URL");
-    act(() => {
-      fireEvent.change(urlInput, { target: { value: "http:" } });
-    });
+    fireEvent.change(urlInput, { target: { value: "http:" } });
 
     // Submit the form
     const saveButton = screen.getByText("Save");
-    act(() => {
-      fireEvent.click(saveButton);
-    });
+    fireEvent.click(saveButton);
 
     // Check that only the URL format error appears (use findByText for async rendering)
-    const errorMessage = await screen.findByText(/URL must start with http:\/\/ or https:\/\//i, {}, { timeout: 5000 });
+    const errorMessage = await screen.findByText("URL must start with http:// or https://", {}, { timeout: 3000 });
     expect(errorMessage).toBeInTheDocument();
 
     // Verify the trailing slash error does NOT appear
@@ -432,6 +412,76 @@ describe("SSOModals", () => {
     expect(mockHandleShowInstructions).toHaveBeenCalled();
   });
 
+  it("should submit SAML settings with the unsolicited toggle mapped to a 'true'/'false' string", async () => {
+    const mockHandleShowInstructions = vi.fn();
+    vi.mocked(updateSSOSettings).mockResolvedValue({});
+    vi.mocked(getSSOSettings).mockResolvedValue({ values: {} });
+
+    let formInstance: FormInstance | null = null;
+
+    const TestWrapper = () => {
+      const [form] = Form.useForm();
+      formInstance = form;
+
+      return (
+        <SSOModals
+          isAddSSOModalVisible={true}
+          isInstructionsModalVisible={false}
+          handleAddSSOOk={() => {}}
+          handleAddSSOCancel={() => {}}
+          handleShowInstructions={mockHandleShowInstructions}
+          handleInstructionsOk={() => {}}
+          handleInstructionsCancel={() => {}}
+          form={form}
+          accessToken="test-token"
+          ssoConfigured={false}
+        />
+      );
+    };
+
+    render(<TestWrapper />);
+
+    await waitFor(() => {
+      expect(getSSOSettings).toHaveBeenCalledWith("test-token");
+    });
+
+    formInstance?.setFieldsValue({ sso_provider: "saml" });
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("IdP Metadata URL")).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByLabelText("Proxy Admin Email"), {
+      target: { value: "admin@example.com" },
+    });
+    fireEvent.change(screen.getByLabelText("Proxy Base URL"), {
+      target: { value: "https://proxy.example.com" },
+    });
+    fireEvent.change(screen.getByLabelText("IdP Metadata URL"), {
+      target: { value: "https://idp.example.com/metadata" },
+    });
+    fireEvent.change(screen.getByLabelText("SP Entity ID"), {
+      target: { value: "https://proxy.example.com/sso/saml/metadata" },
+    });
+    fireEvent.click(screen.getByLabelText("Allow IdP-initiated (unsolicited) responses"));
+
+    fireEvent.click(screen.getByText("Save"));
+
+    await waitFor(() => {
+      expect(updateSSOSettings).toHaveBeenCalledWith(
+        "test-token",
+        expect.objectContaining({
+          sso_provider: "saml",
+          saml_idp_metadata_url: "https://idp.example.com/metadata",
+          saml_sp_entity_id: "https://proxy.example.com/sso/saml/metadata",
+          saml_allow_unsolicited: "true",
+        }),
+      );
+    });
+
+    expect(mockHandleShowInstructions).toHaveBeenCalled();
+  });
+
   it("should show Clear button and clear SSO settings when configured", async () => {
     const mockHandleAddSSOOk = vi.fn();
     (updateSSOSettings as any).mockResolvedValue({});
@@ -482,6 +532,11 @@ describe("SSOModals", () => {
         generic_authorization_endpoint: null,
         generic_token_endpoint: null,
         generic_userinfo_endpoint: null,
+        saml_idp_metadata_url: null,
+        saml_idp_metadata_xml: null,
+        saml_sp_entity_id: null,
+        saml_allow_unsolicited: null,
+        generic_scope: null,
         proxy_base_url: null,
         user_email: null,
         sso_provider: null,
@@ -491,5 +546,44 @@ describe("SSOModals", () => {
 
     expect(NotificationsManager.success).toHaveBeenCalledWith("SSO settings cleared successfully");
     expect(mockHandleAddSSOOk).toHaveBeenCalled();
+  });
+
+  it("renders provider logos in the SSO provider dropdown", async () => {
+    const TestWrapper = () => {
+      const [form] = Form.useForm();
+      return (
+        <SSOModals
+          isAddSSOModalVisible={true}
+          isInstructionsModalVisible={false}
+          handleAddSSOOk={() => {}}
+          handleAddSSOCancel={() => {}}
+          handleShowInstructions={() => {}}
+          handleInstructionsOk={() => {}}
+          handleInstructionsCancel={() => {}}
+          form={form}
+          accessToken={null}
+          ssoConfigured={false}
+        />
+      );
+    };
+
+    render(<TestWrapper />);
+
+    fireEvent.mouseDown(screen.getByLabelText("SSO Provider"));
+
+    await waitFor(() => {
+      expect(screen.getAllByAltText("Google SSO logo").length).toBeGreaterThan(0);
+    });
+
+    expect(screen.getAllByAltText("Google SSO logo")[0]).toHaveAttribute("src", expect.stringContaining("google.svg"));
+    expect(screen.getAllByAltText("Microsoft SSO logo")[0]).toHaveAttribute(
+      "src",
+      expect.stringContaining("microsoft_azure.svg"),
+    );
+    expect(screen.getAllByAltText("Okta / Auth0 SSO logo")[0]).toHaveAttribute(
+      "src",
+      expect.stringContaining("https://www.okta.com/"),
+    );
+    expect(screen.queryByAltText("Generic SSO logo")).not.toBeInTheDocument();
   });
 });

@@ -24,7 +24,6 @@ const ModelConnectionTest: React.FC<ModelConnectionTestProps> = ({
   onTestComplete,
 }) => {
   const [error, setError] = React.useState<Error | string | null>(null);
-  const [rawRequest, setRawRequest] = React.useState<any>(null);
   const [rawResponse, setRawResponse] = React.useState<any>(null);
   const [isLoading, setIsLoading] = React.useState<boolean>(true);
   const [isSuccess, setIsSuccess] = React.useState<boolean>(false);
@@ -34,7 +33,6 @@ const ModelConnectionTest: React.FC<ModelConnectionTestProps> = ({
     setIsLoading(true);
     setShowDetails(false);
     setError(null);
-    setRawRequest(null);
     setRawResponse(null);
     setIsSuccess(false);
 
@@ -42,38 +40,18 @@ const ModelConnectionTest: React.FC<ModelConnectionTestProps> = ({
     await new Promise((resolve) => setTimeout(resolve, 100));
 
     try {
-      console.log("Testing connection with form values:", formValues);
       const result = await prepareModelAddRequest(formValues, accessToken, null);
 
       if (!result) {
-        console.log("No result from prepareModelAddRequest");
         setError("Failed to prepare model data. Please check your form inputs.");
         setIsSuccess(false);
         setIsLoading(false);
         return;
       }
 
-      console.log("Result from prepareModelAddRequest:", result);
+      const { litellmParamsObj, modelInfoObj } = result[0];
 
-      const { litellmParamsObj, modelInfoObj, modelName: returnedModelName } = result[0];
-      const provider = litellmParamsObj?.custom_llm_provider;
-      const modelNameValue = litellmParamsObj?.model || returnedModelName || "";
-      const isAihpiEmbedding =
-        modelInfoObj?.mode === "embedding" &&
-        (provider === "aihpi-provider" || modelNameValue.startsWith("aihpi-provider/"));
-      const testInput = isAihpiEmbedding
-        ? [
-            "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=",
-          ]
-        : undefined;
-
-      const response = await testConnectionRequest(
-        accessToken,
-        litellmParamsObj,
-        modelInfoObj,
-        modelInfoObj?.mode,
-        testInput,
-      );
+      const response = await testConnectionRequest(accessToken, litellmParamsObj, modelInfoObj, modelInfoObj?.mode);
       if (response.status === "success") {
         NotificationsManager.success("Connection test successful!");
         setError(null);
@@ -81,7 +59,6 @@ const ModelConnectionTest: React.FC<ModelConnectionTestProps> = ({
       } else {
         const errorMessage = response.result?.error || response.message || "Unknown error";
         setError(errorMessage);
-        setRawRequest(litellmParamsObj);
         setRawResponse(response.result?.raw_request_typed_dict);
         setIsSuccess(false);
       }
@@ -161,7 +138,7 @@ ${formattedBody}
             <div
               style={{
                 border: "3px solid #f3f3f3",
-                borderTop: "3px solid #dd6108",
+                borderTop: "3px solid #1890ff",
                 borderRadius: "50%",
                 width: "30px",
                 height: "30px",

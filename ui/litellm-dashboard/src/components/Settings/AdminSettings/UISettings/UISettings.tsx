@@ -5,7 +5,7 @@ import { useUpdateUISettings } from "@/app/(dashboard)/hooks/uiSettings/useUpdat
 import useAuthorized from "@/app/(dashboard)/hooks/useAuthorized";
 import NotificationManager from "@/components/molecules/notifications_manager";
 import PageVisibilitySettings from "./PageVisibilitySettings";
-import { Alert, Button, Card, Divider, Form, Skeleton, Space, Switch, Typography } from "antd";
+import { Alert, Card, Divider, Skeleton, Space, Switch, Typography } from "antd";
 
 export default function UISettings() {
   const { accessToken } = useAuthorized();
@@ -13,35 +13,52 @@ export default function UISettings() {
   const { mutate: updateSettings, isPending: isUpdating, error: updateError } = useUpdateUISettings(accessToken);
 
   const schema = data?.field_schema;
-  const [form] = Form.useForm();
-  const properties = schema?.properties ?? {};
-  const property = properties?.disable_model_add_for_internal_users;
-  const disableTeamAdminDeleteProperty = properties?.disable_team_admin_delete_team_user;
-  const requireAuthForPublicAIHubProperty = properties?.require_auth_for_public_ai_hub;
-  const forwardClientHeadersProperty = properties?.forward_client_headers_to_llm_api;
-  const forwardLLMProviderAuthHeadersProperty = properties?.forward_llm_provider_auth_headers;
-  const enableProjectsUIProperty = properties?.enable_projects_ui;
-  const enabledPagesProperty = properties?.enabled_ui_pages_internal_users;
-  const disableAgentsProperty = properties?.disable_agents_for_internal_users;
-  const allowAgentsTeamAdminsProperty = properties?.allow_agents_for_team_admins;
-  const disableVectorStoresProperty = properties?.disable_vector_stores_for_internal_users;
-  const allowVectorStoresTeamAdminsProperty = properties?.allow_vector_stores_for_team_admins;
-  const scopeUserSearchProperty = properties?.scope_user_search_to_org;
-  const disableCustomApiKeysProperty = properties?.disable_custom_api_keys;
-  const enabledPagesDescription = properties?.enabled_ui_pages_internal_users?.description;
+  const property = schema?.properties?.disable_model_add_for_internal_users;
+  const disableTeamAdminDeleteProperty = schema?.properties?.disable_team_admin_delete_team_user;
+  const requireAuthForPublicAIHubProperty = schema?.properties?.require_auth_for_public_ai_hub;
+  const forwardClientHeadersProperty = schema?.properties?.forward_client_headers_to_llm_api;
+  const forwardLLMProviderAuthHeadersProperty = schema?.properties?.forward_llm_provider_auth_headers;
+  const enableProjectsUIProperty = schema?.properties?.enable_projects_ui;
+  const enableChatUIProperty = schema?.properties?.enable_chat_ui;
+  const enabledPagesProperty = schema?.properties?.enabled_ui_pages_internal_users;
+  const disableAgentsProperty = schema?.properties?.disable_agents_for_internal_users;
+  const allowAgentsTeamAdminsProperty = schema?.properties?.allow_agents_for_team_admins;
+  const disableVectorStoresProperty = schema?.properties?.disable_vector_stores_for_internal_users;
+  const allowVectorStoresTeamAdminsProperty = schema?.properties?.allow_vector_stores_for_team_admins;
+  const scopeUserSearchProperty = schema?.properties?.scope_user_search_to_org;
+  const disableCustomApiKeysProperty = schema?.properties?.disable_custom_api_keys;
   const values = data?.values ?? {};
+  const isDisabledForInternalUsers = Boolean(values.disable_model_add_for_internal_users);
+  const isDisabledTeamAdminDeleteTeamUser = Boolean(values.disable_team_admin_delete_team_user);
   const isAgentsDisabled = Boolean(values.disable_agents_for_internal_users);
   const isVectorStoresDisabled = Boolean(values.disable_vector_stores_for_internal_users);
 
-  const handleSubmit = (formValues: Record<string, unknown>) => {
-    updateSettings(formValues, {
-      onSuccess: () => {
-        NotificationManager.success("UI settings updated successfully");
+  const handleToggle = (checked: boolean) => {
+    updateSettings(
+      { disable_model_add_for_internal_users: checked },
+      {
+        onSuccess: () => {
+          NotificationManager.success("UI settings updated successfully");
+        },
+        onError: (error) => {
+          NotificationManager.fromBackend(error);
+        },
       },
-      onError: (error) => {
-        NotificationManager.fromBackend(error);
+    );
+  };
+
+  const handleToggleTeamAdminDelete = (checked: boolean) => {
+    updateSettings(
+      { disable_team_admin_delete_team_user: checked },
+      {
+        onSuccess: () => {
+          NotificationManager.success("UI settings updated successfully");
+        },
+        onError: (error) => {
+          NotificationManager.fromBackend(error);
+        },
       },
-    });
+    );
   };
 
   const handleUpdatePageVisibility = (settings: { enabled_ui_pages_internal_users: string[] | null }) => {
@@ -86,6 +103,21 @@ export default function UISettings() {
   const handleToggleEnableProjectsUI = (checked: boolean) => {
     updateSettings(
       { enable_projects_ui: checked },
+      {
+        onSuccess: () => {
+          NotificationManager.success("UI settings updated successfully. Refreshing page...");
+          setTimeout(() => window.location.reload(), 1000);
+        },
+        onError: (error) => {
+          NotificationManager.fromBackend(error);
+        },
+      },
+    );
+  };
+
+  const handleToggleEnableChatUI = (checked: boolean) => {
+    updateSettings(
+      { enable_chat_ui: checked },
       {
         onSuccess: () => {
           NotificationManager.success("UI settings updated successfully. Refreshing page...");
@@ -220,37 +252,35 @@ export default function UISettings() {
             />
           )}
 
-          <Form form={form} layout="vertical" initialValues={values} onFinish={handleSubmit}>
-            <Form.Item
-              label="Disable model add for internal users"
-              name="disable_model_add_for_internal_users"
-              valuePropName="checked"
-            >
-              <Switch
-                disabled={isUpdating}
-                loading={isUpdating}
-                aria-label={properties?.disable_model_add_for_internal_users?.description}
-              />
-            </Form.Item>
+          <Space align="start" size="middle">
+            <Switch
+              checked={isDisabledForInternalUsers}
+              disabled={isUpdating}
+              loading={isUpdating}
+              onChange={handleToggle}
+              aria-label={property?.description ?? "Disable model add for internal users"}
+            />
+            <Space direction="vertical" size={4}>
+              <Typography.Text strong>Disable model add for internal users</Typography.Text>
+              {property?.description && <Typography.Text type="secondary">{property.description}</Typography.Text>}
+            </Space>
+          </Space>
 
-            <Form.Item
-              label="Disable team admin delete team user"
-              name="disable_team_admin_delete_team_user"
-              valuePropName="checked"
-            >
-              <Switch
-                disabled={isUpdating}
-                loading={isUpdating}
-                aria-label={properties?.disable_team_admin_delete_team_user?.description}
-              />
-            </Form.Item>
-
-            <Form.Item>
-              <Button type="primary" htmlType="submit" loading={isUpdating} disabled={isUpdating}>
-                Save settings
-              </Button>
-            </Form.Item>
-          </Form>
+          <Space align="start" size="middle">
+            <Switch
+              checked={isDisabledTeamAdminDeleteTeamUser}
+              disabled={isUpdating}
+              loading={isUpdating}
+              onChange={handleToggleTeamAdminDelete}
+              aria-label={disableTeamAdminDeleteProperty?.description ?? "Disable team admin delete team user"}
+            />
+            <Space direction="vertical" size={4}>
+              <Typography.Text strong>Disable team admin delete team user</Typography.Text>
+              {disableTeamAdminDeleteProperty?.description && (
+                <Typography.Text type="secondary">{disableTeamAdminDeleteProperty.description}</Typography.Text>
+              )}
+            </Space>
+          </Space>
 
           <Space align="start" size="middle">
             <Switch
@@ -320,6 +350,23 @@ export default function UISettings() {
               </Space>
             </Space>
           )}
+
+          <Space align="start" size="middle">
+            <Switch
+              checked={Boolean(values.enable_chat_ui)}
+              disabled={isUpdating}
+              loading={isUpdating}
+              onChange={handleToggleEnableChatUI}
+              aria-label={enableChatUIProperty?.description ?? "Enable Chat page"}
+            />
+            <Space direction="vertical" size={4}>
+              <Typography.Text strong>[BETA] Enable Chat page (page will refresh)</Typography.Text>
+              <Typography.Text type="secondary">
+                {enableChatUIProperty?.description ??
+                  "If enabled, shows the Chat page in the UI sidebar, letting users chat with an LLM and connect their own MCP server credentials via OAuth."}
+              </Typography.Text>
+            </Space>
+          </Space>
 
           <Divider />
 
@@ -437,9 +484,10 @@ export default function UISettings() {
 
           <Divider />
 
+          {/* Page Visibility for Internal Users */}
           <PageVisibilitySettings
             enabledPagesInternalUsers={values.enabled_ui_pages_internal_users}
-            enabledPagesPropertyDescription={enabledPagesDescription}
+            enabledPagesPropertyDescription={enabledPagesProperty?.description}
             isUpdating={isUpdating}
             onUpdate={handleUpdatePageVisibility}
           />
