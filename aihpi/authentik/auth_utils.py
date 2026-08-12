@@ -4,7 +4,7 @@ import sys
 from collections.abc import Collection, Iterator, Mapping
 from functools import lru_cache
 from logging import Logger
-from typing import Any, Final, Protocol
+from typing import Any, Final, Literal, Protocol
 
 from fastapi import HTTPException, Request, status
 from pydantic import PositiveInt, TypeAdapter, ValidationError

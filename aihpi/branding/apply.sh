@@ -7,19 +7,26 @@ UI_DIR="ui/litellm-dashboard"
 LOGIN_PAGE="$UI_DIR/src/app/login/LoginPage.tsx"
 
 echo "Applying HPI theme colors..."
-cat "$SCRIPT_DIR/hpi-theme.css" >> "$UI_DIR/src/app/globals.css"
+if grep -q "ant-color-primary" "$UI_DIR/src/app/globals.css"; then
+  echo "  already applied, skipping"
+else
+  cat "$SCRIPT_DIR/hpi-theme.css" >> "$UI_DIR/src/app/globals.css"
+fi
 
 echo "Applying dashboard legal footer..."
 cp "$SCRIPT_DIR/layout.tsx" "$UI_DIR/src/app/(dashboard)/layout.tsx"
 
 echo "Rebranding SSO login to Authentik..."
-if ! grep -q "Login with SSO" "$LOGIN_PAGE"; then
-  echo "ERROR: 'Login with SSO' not found in $LOGIN_PAGE" >&2
+if grep -q "Login with Authentik" "$LOGIN_PAGE"; then
+  echo "  already applied, skipping"
+elif grep -q "Login with SSO" "$LOGIN_PAGE"; then
+  sed -i.bak 's/Login with SSO/Login with Authentik/g; s/configure SSO to log in with SSO/configure Authentik SSO to log in with Authentik/g' "$LOGIN_PAGE"
+  rm -f "$LOGIN_PAGE.bak"
+else
+  echo "ERROR: neither 'Login with SSO' nor 'Login with Authentik' found in $LOGIN_PAGE" >&2
   echo "Upstream changed the login page; update aihpi/branding/apply.sh" >&2
   exit 1
 fi
-sed -i.bak 's/Login with SSO/Login with Authentik/g; s/configure SSO to log in with SSO/configure Authentik SSO to log in with Authentik/g' "$LOGIN_PAGE"
-rm -f "$LOGIN_PAGE.bak"
 
 echo "Applying Authentik SSO backend patches..."
 cp "$AIHPI_DIR/authentik/auth_utils.py" litellm/proxy/auth/auth_utils.py

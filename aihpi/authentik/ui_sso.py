@@ -809,7 +809,7 @@ def normalize_email(email: str | None) -> str | None:
     return email.lower() if isinstance(email, str) else email
 
 
-def normalize_sso_groups(user_groups_raw: Any) -> List[str]:
+def normalize_sso_groups(user_groups_raw: Any) -> list[str]:
     if isinstance(user_groups_raw, list):
         return [str(g) for g in user_groups_raw]
     if isinstance(user_groups_raw, str):
@@ -1248,7 +1248,7 @@ def authentik_response_convertor(
     jwt_handler: JWTHandler,
     sso_jwt_handler: Optional[JWTHandler] = None,
 ) -> CustomOpenID:
-    all_teams: List[str] = []
+    all_teams: list[str] = []
     if sso_jwt_handler is not None:
         all_teams.extend(sso_jwt_handler.get_team_ids_from_jwt(cast(dict, response)))
     else:
@@ -1302,7 +1302,7 @@ async def get_authentik_sso_response(
     sso_jwt_handler: Optional[JWTHandler],
     authentik_client_id: str,
     redirect_url: str,
-) -> Tuple[Union[OpenID, dict], Optional[dict]]:
+) -> tuple[Union[OpenID, dict], Optional[dict]]:
     from fastapi_sso.sso.generic import create_provider
 
     authentik_client_secret = os.getenv("AUTHENTIK_CLIENT_SECRET", None)
