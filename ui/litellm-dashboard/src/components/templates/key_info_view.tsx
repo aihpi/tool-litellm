@@ -9,12 +9,7 @@ import { Badge, Button, Card, Grid, Tab, TabGroup, TabList, TabPanel, TabPanels,
 import { Form, Modal, Tag } from "antd";
 import { KeyInfoHeader } from "./KeyInfoHeader";
 import { useEffect, useState } from "react";
-import {
-  isProxyAdminRole,
-  isUserTeamAdminForSingleTeam,
-  isUserTeamMaintainerForSingleTeam,
-  rolesWithWriteAccess,
-} from "../../utils/roles";
+import { isProxyAdminRole, isUserTeamAdminForSingleTeam, rolesWithWriteAccess } from "../../utils/roles";
 import { mapDisplayToInternalNames, mapInternalToDisplayNames } from "../callback_info_helpers";
 import AutoRotationView from "../common_components/AutoRotationView";
 import DeleteResourceModal from "../common_components/DeleteResourceModal";
@@ -158,7 +153,6 @@ export default function KeyInfoView({
 
       const currentKey = formValues.token;
       formValues.key = currentKey;
-      const allowedVectorStores = formValues.vector_stores;
 
       // Guard premium features
       if (!canEditGuardrails) {
@@ -289,38 +283,6 @@ export default function KeyInfoView({
         };
       }
 
-      if (formValues.default_vector_store_id) {
-        formValues.metadata = {
-          ...formValues.metadata,
-          default_vector_store_id: formValues.default_vector_store_id,
-        };
-      } else if ("default_vector_store_id" in formValues && formValues.metadata) {
-        const { default_vector_store_id: _omitDefault, ...rest } = formValues.metadata;
-        formValues.metadata = rest;
-      }
-      delete formValues.default_vector_store_id;
-
-      if (Array.isArray(allowedVectorStores)) {
-        if (allowedVectorStores.length === 0) {
-          formValues.metadata = {
-            ...formValues.metadata,
-            allowed_vector_store_indexes: [
-              { index_name: "*", index_permissions: ["read", "write"] },
-            ],
-          };
-        } else {
-          formValues.metadata = {
-            ...formValues.metadata,
-            allowed_vector_store_indexes: allowedVectorStores.map(
-              (vectorStoreId: string) => ({
-                index_name: vectorStoreId,
-                index_permissions: ["read", "write"],
-              }),
-            ),
-          };
-        }
-      }
-
       // tags are merged into metadata; do not send as top-level field
       if ("tags" in formValues) {
         delete formValues.tags;
@@ -418,7 +380,7 @@ export default function KeyInfoView({
   const canModifyKey =
     isProxyAdminRole(userRole || "") ||
     (teamsData &&
-      isUserTeamMaintainerForSingleTeam(
+      isUserTeamAdminForSingleTeam(
         teamsData?.filter((team) => team.team_id === currentKeyData.team_id)[0]?.members_with_roles,
         userID || "",
       )) ||
