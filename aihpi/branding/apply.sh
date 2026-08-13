@@ -269,6 +269,41 @@ open(path, "w").write(src)
 print("  applied")
 PY
 
+# Every user hits this on their first key creation. Upstream's wording cites the
+# policy ("Allowed roles=[...]") rather than saying what to do about it. Patched
+# here rather than in the UI because the dashboard just renders the API's text,
+# so one edit fixes both surfaces.
+echo "Rewording the personal-key rejection..."
+python3 - litellm/proxy/management_endpoints/key_management_endpoints.py <<'PY'
+import sys
+
+path = sys.argv[1]
+src = open(path).read()
+
+if "Please select a team" in src:
+    print("  already applied, skipping")
+    raise SystemExit
+
+old = (
+    'detail=f"Personal key creation has been restricted by admin. '
+    "Allowed roles={personal_key_generation['allowed_user_roles']}. "
+    'Your role={user_api_key_dict.user_role}",'
+)
+new = (
+    'detail=f"Please select a team. Keys must belong to a team - '
+    'personal keys are disabled for your role ({user_api_key_dict.user_role}).",'
+)
+
+if old not in src:
+    raise SystemExit(
+        f"ERROR: personal-key rejection message not found in {path}; "
+        "upstream changed it, update aihpi/branding/apply.sh"
+    )
+
+open(path, "w").write(src.replace(old, new, 1))
+print("  applied")
+PY
+
 echo "Applying Authentik SSO backend patches..."
 python3 - "$AIHPI_DIR/authentik" <<'PY'
 import hashlib
