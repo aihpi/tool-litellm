@@ -86,7 +86,6 @@ aihpi/
     rebaseline.sh               re-record baselines after re-syncing a copy
   branding/
     apply.sh                    applies everything below, plus authentik/
-    hpi-theme.css               HPI palette, substituted into globals.css @theme vars
     layout.tsx                  dashboard layout with the HPI banner and legal footer
     provider_create_field.json  AIHPI entry for the UI's add-model provider list
 ```

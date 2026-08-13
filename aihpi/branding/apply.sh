@@ -31,28 +31,36 @@ fi
 # Tailwind v4 bakes utilities from those values, so they must be rewritten in
 # place rather than overridden by a later rule.
 echo "Applying HPI brand palette to Tremor theme..."
-python3 - "$UI_DIR/src/app/globals.css" "$SCRIPT_DIR/hpi-theme.css" <<'PY'
+python3 - "$UI_DIR/src/app/globals.css" <<'PY'
 import re, sys
 
-css_path, palette_path = sys.argv[1], sys.argv[2]
+# HPI orange. -emphasis is the darker hover shade.
+palette = {
+    "--color-tremor-brand-faint": "#fdf1e7",
+    "--color-tremor-brand-muted": "#f0b183",
+    "--color-tremor-brand-subtle": "#e8904f",
+    "--color-tremor-brand": "#dd6108",
+    "--color-tremor-brand-emphasis": "#a94a06",
+    "--color-tremor-brand-inverted": "#ffffff",
+    "--color-dark-tremor-brand-faint": "#2a1203",
+    "--color-dark-tremor-brand-muted": "#5c2a03",
+    "--color-dark-tremor-brand-subtle": "#a94a06",
+    "--color-dark-tremor-brand": "#dd6108",
+    "--color-dark-tremor-brand-emphasis": "#f0b183",
+    "--color-dark-tremor-brand-inverted": "#ffffff",
+}
 
-palette = dict(
-    re.findall(r"^\s*(--[\w-]+)\s*:\s*([^;]+);", open(palette_path).read(), re.M)
-)
-if not palette:
-    sys.exit("no declarations parsed from palette file")
-
-css = open(css_path).read()
+path = sys.argv[1]
+css = open(path).read()
 replaced = []
 for var, value in palette.items():
-    pattern = re.compile(rf"(^\s*{re.escape(var)}\s*:\s*)[^;]+;", re.M)
-    css, n = pattern.subn(rf"\g<1>{value};", css)
+    css, n = re.subn(rf"(^\s*{re.escape(var)}\s*:\s*)[^;]+;", rf"\g<1>{value};", css, flags=re.M)
     if n:
         replaced.append(var)
 
-missing = sorted(set(palette) - set(replaced))
-open(css_path, "w").write(css)
+open(path, "w").write(css)
 print(f"  rewrote {len(replaced)} vars")
+missing = sorted(set(palette) - set(replaced))
 if missing:
     print(f"  NOTE: not present upstream, skipped: {', '.join(missing)}")
 PY
@@ -172,8 +180,13 @@ echo "Rebranding SSO login to Authentik..."
 if grep -q "Login with Authentik" "$LOGIN_PAGE"; then
   echo "  already applied, skipping"
 elif grep -q "Login with SSO" "$LOGIN_PAGE"; then
-  sed -i.bak 's/Login with SSO/Login with Authentik/g; s/configure SSO to log in with SSO/configure Authentik SSO to log in with Authentik/g' "$LOGIN_PAGE"
-  rm -f "$LOGIN_PAGE.bak"
+  python3 - "$LOGIN_PAGE" <<'PY'
+import sys
+path = sys.argv[1]
+src = open(path).read()
+src = src.replace("configure SSO to log in with SSO", "configure Authentik SSO to log in with Authentik")
+open(path, "w").write(src.replace("Login with SSO", "Login with Authentik"))
+PY
 else
   echo "ERROR: neither 'Login with SSO' nor 'Login with Authentik' found in $LOGIN_PAGE" >&2
   echo "Upstream changed the login page; update aihpi/branding/apply.sh" >&2

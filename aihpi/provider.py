@@ -8,11 +8,14 @@ from litellm.llms.custom_llm import CustomLLM, CustomLLMError
 from litellm.types.utils import Embedding, EmbeddingResponse, ImageResponse, Usage
 
 
-def _build_embedding_headers(api_key: Optional[str]) -> dict:
-    headers: dict = {"Content-Type": "application/json"}
-    if api_key:
-        headers["Authorization"] = f"Bearer {api_key}"
-    return headers
+def _auth_headers(api_key: Optional[str]) -> Dict[str, str]:
+    return {"Authorization": f"Bearer {api_key}"} if api_key else {}
+
+
+def _require_api_base(api_base: Optional[str], what: str) -> str:
+    if not api_base:
+        raise CustomLLMError(status_code=400, message=f"api_base is required for aihpi-provider {what}")
+    return api_base.rstrip("/")
 
 
 def _parse_image_input(input: list) -> List[Dict[str, str]]:
@@ -59,31 +62,42 @@ def _parse_embedding_response(model: str, raw: dict) -> EmbeddingResponse:
     )
 
 
-def _build_image_edit_form(
+def _embedding_request(
+    model: str, input: list, api_key: Optional[str], api_base: Optional[str], optional_params: dict
+) -> tuple:
+    url = f"{_require_api_base(api_base, 'embeddings')}/v1/embeddings"
+    headers = {"Content-Type": "application/json", **_auth_headers(api_key)}
+    return url, headers, {"model": model, "images": _parse_image_input(input), **optional_params}
+
+
+def _file_part(field: str, obj: Any, default_name: str) -> tuple:
+    name = obj.name if hasattr(obj, "name") else default_name
+    return field, (name, obj, ImageEditRequestUtils.get_image_content_type(obj))
+
+
+def _image_edit_request(
     model: str,
     image: Any,
     prompt: Optional[str],
+    api_key: Optional[str],
+    api_base: Optional[str],
     optional_params: dict,
 ) -> tuple:
+    url = f"{_require_api_base(api_base, 'image edits')}/images/edits"
+
     data: Dict[str, Any] = {"model": model}
     if prompt:
         data["prompt"] = prompt
     data.update(optional_params)
 
-    files_list: list = []
     img = image[0] if isinstance(image, list) else image
-    if img is not None:
-        content_type = ImageEditRequestUtils.get_image_content_type(img)
-        name = img.name if hasattr(img, "name") else "image.png"
-        files_list.append(("image", (name, img, content_type)))
-
     mask = optional_params.get("mask")
-    if mask is not None:
-        content_type = ImageEditRequestUtils.get_image_content_type(mask)
-        name = mask.name if hasattr(mask, "name") else "mask.png"
-        files_list.append(("mask", (name, mask, content_type)))
-
-    return data, files_list
+    files = [
+        _file_part(field, obj, default)
+        for field, obj, default in (("image", img, "image.png"), ("mask", mask, "mask.png"))
+        if obj is not None
+    ]
+    return url, _auth_headers(api_key), data, files
 
 
 class AihpiProviderHandler(CustomLLM):
@@ -101,15 +115,8 @@ class AihpiProviderHandler(CustomLLM):
         timeout: Optional[Union[float, httpx.Timeout]] = None,
         litellm_params=None,
     ) -> EmbeddingResponse:
-        if not api_base:
-            raise CustomLLMError(status_code=400, message="api_base is required for aihpi-provider embeddings")
-
-        url = f"{api_base.rstrip('/')}/v1/embeddings"
-        headers = _build_embedding_headers(api_key)
-        body = {"model": model, "images": _parse_image_input(input), **optional_params}
-
-        client = HTTPHandler(timeout=timeout or 600.0)
-        resp = client.post(url, json=body, headers=headers)
+        url, headers, body = _embedding_request(model, input, api_key, api_base, optional_params)
+        resp = HTTPHandler(timeout=timeout or 600.0).post(url, json=body, headers=headers)
         resp.raise_for_status()
         return _parse_embedding_response(model, resp.json())
 
@@ -126,15 +133,8 @@ class AihpiProviderHandler(CustomLLM):
         timeout: Optional[Union[float, httpx.Timeout]] = None,
         litellm_params=None,
     ) -> EmbeddingResponse:
-        if not api_base:
-            raise CustomLLMError(status_code=400, message="api_base is required for aihpi-provider embeddings")
-
-        url = f"{api_base.rstrip('/')}/v1/embeddings"
-        headers = _build_embedding_headers(api_key)
-        body = {"model": model, "images": _parse_image_input(input), **optional_params}
-
-        client = AsyncHTTPHandler(timeout=timeout or 600.0)
-        resp = await client.post(url, json=body, headers=headers)
+        url, headers, body = _embedding_request(model, input, api_key, api_base, optional_params)
+        resp = await AsyncHTTPHandler(timeout=timeout or 600.0).post(url, json=body, headers=headers)
         resp.raise_for_status()
         return _parse_embedding_response(model, resp.json())
 
@@ -151,17 +151,8 @@ class AihpiProviderHandler(CustomLLM):
         timeout: Optional[Union[float, httpx.Timeout]] = None,
         client: Optional[HTTPHandler] = None,
     ) -> ImageResponse:
-        if not api_base:
-            raise CustomLLMError(status_code=400, message="api_base is required for aihpi-provider image edits")
-
-        url = f"{api_base.rstrip('/')}/images/edits"
-        headers: dict = {}
-        if api_key:
-            headers["Authorization"] = f"Bearer {api_key}"
-
-        data, files = _build_image_edit_form(model, image, prompt, optional_params)
-        http = client or HTTPHandler(timeout=timeout or 600.0)
-        resp = http.post(url, data=data, files=files, headers=headers)
+        url, headers, data, files = _image_edit_request(model, image, prompt, api_key, api_base, optional_params)
+        resp = (client or HTTPHandler(timeout=timeout or 600.0)).post(url, data=data, files=files, headers=headers)
         resp.raise_for_status()
         return ImageResponse(**resp.json())
 
@@ -178,15 +169,7 @@ class AihpiProviderHandler(CustomLLM):
         timeout: Optional[Union[float, httpx.Timeout]] = None,
         client: Optional[AsyncHTTPHandler] = None,
     ) -> ImageResponse:
-        if not api_base:
-            raise CustomLLMError(status_code=400, message="api_base is required for aihpi-provider image edits")
-
-        url = f"{api_base.rstrip('/')}/images/edits"
-        headers: dict = {}
-        if api_key:
-            headers["Authorization"] = f"Bearer {api_key}"
-
-        data, files = _build_image_edit_form(model, image, prompt, optional_params)
+        url, headers, data, files = _image_edit_request(model, image, prompt, api_key, api_base, optional_params)
         http = client or AsyncHTTPHandler(timeout=timeout or 600.0)
         resp = await http.post(url, data=data, files=files, headers=headers)
         resp.raise_for_status()
