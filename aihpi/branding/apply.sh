@@ -193,6 +193,82 @@ else
   exit 1
 fi
 
+# The SSO notice sits exactly where the legal links belong, so one edit does
+# both. The "Default Credentials" box is not touched here: upstream gates it on
+# LITELLM_HIDE_DEFAULT_CREDENTIALS_HINT=true, which the deployment sets.
+echo "Swapping login SSO notice for legal links, dropping the LiteLLM subtitle..."
+python3 - "$LOGIN_PAGE" <<'PY'
+import re, sys
+
+path = sys.argv[1]
+src = open(path).read()
+
+if "pages/imprint/" in src:
+    print("  already applied, skipping")
+    raise SystemExit
+
+links = '''        <div className="mt-4 flex items-center justify-center gap-4 text-xs text-gray-600">
+          <a href="https://aisc.hpi.de/portal/cfp/pages/imprint/" target="_blank" rel="noopener noreferrer">
+            Imprint
+          </a>
+          <a href="https://aisc.hpi.de/portal/cfp/pages/privacy/" target="_blank" rel="noopener noreferrer">
+            Privacy
+          </a>
+        </div>
+'''
+
+src, n = re.subn(r"\{uiConfig\?\.sso_configured && \(.*?\n\s*\)\}\n", links, src, count=1, flags=re.S)
+if n != 1:
+    raise SystemExit(
+        f"ERROR: sso_configured notice block not found in {path}; "
+        "upstream changed it, update aihpi/branding/apply.sh"
+    )
+
+subtitle = '<Text type="secondary">Access your LiteLLM Admin UI.</Text>\n'
+if subtitle not in src:
+    raise SystemExit(
+        f"ERROR: login subtitle not found in {path}; "
+        "upstream changed it, update aihpi/branding/apply.sh"
+    )
+src = src.replace(subtitle, "", 1)
+
+open(path, "w").write(src)
+print("  applied")
+PY
+
+echo "Adding HPI logos to the loading screen..."
+LOADING_SCREEN="$UI_DIR/src/components/common_components/LoadingScreen.tsx"
+python3 - "$LOADING_SCREEN" <<'PY'
+import sys
+
+path = sys.argv[1]
+src = open(path).read()
+
+if "aisc.png" in src:
+    print("  already applied, skipping")
+    raise SystemExit
+
+old = '<div className="text-lg font-medium py-2 pr-4 border-r border-r-gray-200">\U0001F685 LiteLLM</div>'
+if old not in src:
+    raise SystemExit(
+        f"ERROR: loading screen wordmark not found in {path}; "
+        "upstream changed it, update aihpi/branding/apply.sh"
+    )
+
+new = (
+    '<div className="flex items-center gap-4 py-2 pr-4 border-r border-r-gray-200">\n'
+    '        <img src={getUiAssetPath("/assets/aisc.png")} alt="KI Service Zentrum"'
+    ' className="h-10 w-auto object-contain" />\n'
+    '        <img src={getUiAssetPath("/assets/BMFTR.png")} alt="BMFTR"'
+    ' className="h-12 w-auto object-contain" />\n'
+    '      </div>'
+)
+src = src.replace(old, new, 1)
+src = 'import { getUiAssetPath } from "@/utils/uiAssetPath";\n' + src
+open(path, "w").write(src)
+print("  applied")
+PY
+
 echo "Applying Authentik SSO backend patches..."
 python3 - "$AIHPI_DIR/authentik" <<'PY'
 import hashlib
