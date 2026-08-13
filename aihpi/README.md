@@ -79,7 +79,8 @@ docker rm -f litellm-aihpi-test litellm-pg && docker network rm litellm-net
 aihpi/
   __init__.py                   register() -- the proxy startup hook
   provider.py                   CustomLLM subclass: embedding + image_edit
-  authentik/                    fork copies of 7 upstream files carrying Authentik SSO
+  routes.py                     fork's own FastAPI routes, added at startup
+  authentik/                    fork copies of 6 upstream files carrying Authentik SSO
     manifest.txt                which copy replaces which upstream path
     baseline.sha256             hash of upstream's version each copy was taken from
     rebaseline.sh               re-record baselines after re-syncing a copy
@@ -129,10 +130,15 @@ against upstream's current version and re-applying the HPI additions (the `Legal
 
 ### Stale Authentik copies
 
-The 7 files in `authentik/` are whole-file copies, so `apply.sh` overwriting upstream's version would
-silently discard any change upstream made to it. `proxy_server.py` alone is 17k lines and upstream
-touches it constantly, so this is the one place the fork could lose an upstream fix without anyone
-noticing.
+The 6 files in `authentik/` are whole-file copies, so `apply.sh` overwriting upstream's version would
+silently discard any change upstream made to it. This is the one place the fork could lose an
+upstream fix without anyone noticing.
+
+Prefer adding rather than copying whenever the change allows it. `proxy_server.py` used to be copied
+here, 17k lines that upstream touches in nearly every commit, and it existed for exactly one route.
+That route now lives in `routes.py` and is registered from the startup hook, so the file is untouched.
+If a future addition to a copied file is a route, a callback, or anything registerable at runtime,
+move it out the same way instead of growing this directory.
 
 `apply.sh` guards it. `baseline.sha256` records the hash of upstream's version each copy was taken
 from, and every file is checked before being copied:

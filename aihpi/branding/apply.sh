@@ -260,6 +260,6 @@ PY
 # live inside it to be importable as litellm.aihpi at runtime.
 echo "Installing aihpi provider into litellm package..."
 mkdir -p litellm/aihpi
-cp "$AIHPI_DIR/__init__.py" "$AIHPI_DIR/provider.py" litellm/aihpi/
+cp "$AIHPI_DIR/__init__.py" "$AIHPI_DIR/provider.py" "$AIHPI_DIR/routes.py" litellm/aihpi/
 
 echo "All patches applied"

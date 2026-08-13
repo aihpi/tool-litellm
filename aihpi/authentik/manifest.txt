@@ -10,4 +10,3 @@ ui_discovery_endpoints.py	litellm/proxy/discovery_endpoints/ui_discovery_endpoin
 _health_endpoints.py	litellm/proxy/health_endpoints/_health_endpoints.py
 ui_sso.py	litellm/proxy/management_endpoints/ui_sso.py
 sso__init__.py	litellm/proxy/management_endpoints/sso/__init__.py
-proxy_server.py	litellm/proxy/proxy_server.py
