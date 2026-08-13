@@ -19,6 +19,13 @@ on:
       - dev/*
   workflow_dispatch:
 
+# The upstream-merge workflow pushes with a PAT (which triggers this on push)
+# and also dispatches it explicitly, so the same commit can arrive twice. Keep
+# the newest run per ref and cancel the older one.
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
