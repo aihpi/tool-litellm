@@ -1,5 +1,7 @@
 #!/bin/bash
-# Re-record the baseline hashes of upstream's versions of the patched files.
+# Re-record the baseline hash and git blob id of upstream's versions of the
+# copied files. The blob id is what lets the merge workflow 3-way merge our
+# additions onto upstream's new version without a human.
 #
 # Run this ONLY from a pristine tree (no patches applied), after you have
 # re-synced the copies in this directory against upstream's current versions.
@@ -26,8 +28,10 @@ while IFS=$'\t' read -r ours upstream_path; do
     echo "ERROR: $upstream_path does not exist" >&2
     exit 1
   fi
-  printf '%s\t%s\n' "$(shasum -a 256 "$upstream_path" | awk '{print $1}')" "$ours" \
-    >> "$SCRIPT_DIR/baseline.sha256"
+  printf '%s\t%s\t%s\n' \
+    "$(shasum -a 256 "$upstream_path" | awk '{print $1}')" \
+    "$(git hash-object "$upstream_path")" \
+    "$ours" >> "$SCRIPT_DIR/baseline.sha256"
   echo "baselined $upstream_path"
 done < "$SCRIPT_DIR/manifest.txt"
 

@@ -102,8 +102,8 @@ from litellm.proxy.common_utils.html_forms.jwt_display_template import (
 from litellm.proxy.common_utils.html_forms.ui_login import build_ui_login_form
 from litellm.proxy.common_utils.user_api_key_cache import UserApiKeyCache
 from litellm.proxy.management_endpoints.internal_user_endpoints import new_user
-from litellm.proxy.management_endpoints.sso import (
-    CustomMicrosoftSSO,
+from litellm.proxy.management_endpoints.sso import CustomMicrosoftSSO
+from litellm.proxy.management_endpoints.sso.custom_authentik_sso import (
     get_authentik_discovery_document,
     get_authentik_scope,
 )
@@ -2754,7 +2754,9 @@ async def get_ui_settings(request: Request):
     _proxy_base_url: Final = os.getenv("PROXY_BASE_URL", None)
     _logout_url: Final = os.getenv("PROXY_LOGOUT_URL", None)
     _api_doc_base_url: Final = os.getenv("LITELLM_UI_API_DOC_BASE_URL", None)
-    from litellm.proxy.auth.auth_utils import _has_ui_sso_setup
+    from litellm.proxy.management_endpoints.sso.custom_authentik_sso import (
+        _has_ui_sso_setup,
+    )
 
     _is_sso_enabled: Final = _has_ui_sso_setup()
     disable_expensive_db_queries: Final = (

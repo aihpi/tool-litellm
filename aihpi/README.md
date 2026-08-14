@@ -80,9 +80,9 @@ aihpi/
   __init__.py                   register() -- the proxy startup hook
   provider.py                   CustomLLM subclass: embedding + image_edit
   routes.py                     fork's own FastAPI routes, added at startup
-  authentik/                    fork copies of 6 upstream files carrying Authentik SSO
+  authentik/                    ui_sso.py, the one upstream file too big to patch
     manifest.txt                which copy replaces which upstream path
-    baseline.sha256             hash of upstream's version each copy was taken from
+    baseline.sha256             hash + git blob id of upstream's version per copy
     rebaseline.sh               re-record baselines after re-syncing a copy
   branding/
     apply.sh                    applies everything below, plus authentik/
@@ -119,6 +119,8 @@ The anchors are:
 | `src/components/leftnav.tsx` | the `<Link ... aria-label="LiteLLM home">` logo block |
 | `src/app/layout.tsx` | the `export const metadata: Metadata = {...}` block |
 | `src/app/globals.css` | the `--color-tremor-brand*` declarations |
+| `discovery_endpoints/ui_discovery_endpoints.py` | `sso_configured: Final = _has_user_setup_sso()` |
+| `health_endpoints/_health_endpoints.py` | the `prompt="test from litellm"` pair in `ahealth_check` |
 
 Fix by opening the file, finding where the code moved, and updating the anchor in `apply.sh`.
 
@@ -129,24 +131,34 @@ against upstream's current version and re-applying the HPI additions (the `Legal
 
 ### Stale Authentik copies
 
-The 6 files in `authentik/` are whole-file copies, so `apply.sh` overwriting upstream's version would
-silently discard any change upstream made to it. This is the one place the fork could lose an
-upstream fix without anyone noticing.
+A whole-file copy goes stale on *any* upstream change to that file, while an anchored patch only
+trips when the lines it targets move. Upstream commits to the files this fork touches ran at roughly
+one a day, so the copies were failing the build far more often than our own additions warranted.
+Only `ui_sso.py` still needs to be a copy: 223 changed lines across 24 hunks, mostly one-line
+`authentik_client_id` threading scattered through the file, where twenty-two anchors would be more
+fragile than one copy. Everything else is now a patch in `branding/apply.sh`.
 
-Prefer adding rather than copying whenever the change allows it. `proxy_server.py` used to be copied
-here, 17k lines that upstream touches in nearly every commit, and it existed for exactly one route.
-That route now lives in `routes.py` and is registered from the startup hook, so the file is untouched.
-If a future addition to a copied file is a route, a callback, or anything registerable at runtime,
-move it out the same way instead of growing this directory.
+Prefer adding over patching, and patching over copying. `proxy_server.py` used to be copied here,
+17k lines that upstream touches in nearly every commit, and it existed for exactly one route. That
+route now lives in `routes.py` and is registered from the startup hook, so the file is untouched. If
+a future addition is a route, a callback, or anything registerable at runtime, move it out the same
+way instead of growing this directory.
 
-`apply.sh` guards it. `baseline.sha256` records the hash of upstream's version each copy was taken
-from, and every file is checked before being copied:
+`apply.sh` guards the copy. `baseline.sha256` records the sha256 and the git blob id of upstream's
+version the copy was taken from, and the file is checked before being overwritten:
 
 - hash matches our copy: already applied, skip
 - hash matches the baseline: safe, apply
 - neither: **build fails**, naming the file
 
-To resolve, for each file named:
+In practice you should rarely see that failure, because the merge workflow repairs it first. Its
+`Re-sync Authentik copies onto upstream` step runs after the merge and before the push: it fetches
+the baseline blob with `git cat-file`, 3-way merges our additions onto upstream's new version with
+`git merge-file`, re-runs `rebaseline.sh` and commits the result. Deterministic, not the LLM
+resolver used for real merge conflicts, because the base is exact and this is auth code. A genuine
+overlap fails the step, so nothing is pushed and the branch stays buildable.
+
+To resolve one by hand:
 
 1. `diff aihpi/authentik/<copy> <the upstream path from manifest.txt>` to see both our additions and
    upstream's new work

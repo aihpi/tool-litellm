@@ -1,12 +1,13 @@
 # Authentik patch manifest: <our copy> <upstream path>
 #
 # Each line pairs a fork copy in this directory with the upstream file it
-# replaces at build time. baseline.sha256 records the hash of upstream's
-# version at the time the copy was taken, so apply.sh can fail loudly when
-# upstream moves on instead of silently discarding their changes.
-auth_utils.py	litellm/proxy/auth/auth_utils.py
-login_utils.py	litellm/proxy/auth/login_utils.py
-ui_discovery_endpoints.py	litellm/proxy/discovery_endpoints/ui_discovery_endpoints.py
-_health_endpoints.py	litellm/proxy/health_endpoints/_health_endpoints.py
+# replaces at build time. baseline.sha256 records the hash and the git blob id
+# of upstream's version at the time the copy was taken, so apply.sh can fail
+# loudly when upstream moves on, and the merge workflow can 3-way merge our
+# additions onto their new version using that blob as the merge base.
+#
+# Only files too intertwined to express as anchored patches belong here.
+# Everything smaller lives in aihpi/branding/apply.sh instead, because a copy
+# goes stale on any change to the file while a patch only trips when the lines
+# it targets move.
 ui_sso.py	litellm/proxy/management_endpoints/ui_sso.py
-sso__init__.py	litellm/proxy/management_endpoints/sso/__init__.py
