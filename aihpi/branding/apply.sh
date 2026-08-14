@@ -311,30 +311,25 @@ import sys
 path = "litellm/proxy/discovery_endpoints/ui_discovery_endpoints.py"
 src = open(path).read()
 
-replacements = [
-    (
-        "from litellm.proxy.auth.auth_utils import _has_user_setup_sso",
-        "from litellm.proxy.management_endpoints.sso.custom_authentik_sso import _has_ui_sso_setup",
-    ),
-    (
-        "sso_configured: Final = _has_user_setup_sso()",
-        "sso_configured: Final = _has_ui_sso_setup()",
-    ),
-]
+# Aliasing on import leaves the call site untouched, so this file has one anchor
+# to keep in sync with upstream instead of two.
+old = "from litellm.proxy.auth.auth_utils import _has_user_setup_sso"
+new = (
+    "from litellm.proxy.management_endpoints.sso.custom_authentik_sso import "
+    "_has_ui_sso_setup as _has_user_setup_sso"
+)
 
-if all(new in src for _, new in replacements):
+if new in src:
     print("  already applied, skipping")
     sys.exit(0)
 
-for old, new in replacements:
-    if old not in src:
-        raise SystemExit(
-            f"ERROR: {old!r} not found in {path}; "
-            "upstream changed the UI config endpoint, update aihpi/branding/apply.sh"
-        )
-    src = src.replace(old, new, 1)
+if old not in src:
+    raise SystemExit(
+        f"ERROR: {old!r} not found in {path}; "
+        "upstream changed the UI config endpoint, update aihpi/branding/apply.sh"
+    )
 
-open(path, "w").write(src)
+open(path, "w").write(src.replace(old, new, 1))
 print("  applied")
 PY
 
@@ -363,11 +358,11 @@ if params in src and new_call in src:
     print("  already applied, skipping")
     sys.exit(0)
 
-for needle, why in ((params_anchor, "the test_connection signature"), (old_call, "the ahealth_check call")):
+for needle in (params_anchor, old_call):
     if src.count(needle) != 1:
         raise SystemExit(
             f"ERROR: expected exactly one occurrence of {needle!r} in {path}; "
-            f"upstream changed {why}, update aihpi/branding/apply.sh"
+            "upstream changed test_connection, update aihpi/branding/apply.sh"
         )
 
 src = src.replace(params_anchor, params + params_anchor, 1).replace(old_call, new_call, 1)

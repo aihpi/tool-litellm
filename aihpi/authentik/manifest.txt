@@ -5,9 +5,4 @@
 # of upstream's version at the time the copy was taken, so apply.sh can fail
 # loudly when upstream moves on, and the merge workflow can 3-way merge our
 # additions onto their new version using that blob as the merge base.
-#
-# Only files too intertwined to express as anchored patches belong here.
-# Everything smaller lives in aihpi/branding/apply.sh instead, because a copy
-# goes stale on any change to the file while a patch only trips when the lines
-# it targets move.
 ui_sso.py	litellm/proxy/management_endpoints/ui_sso.py

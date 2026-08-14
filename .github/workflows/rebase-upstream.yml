@@ -188,13 +188,10 @@ jobs:
       - name: Re-sync Authentik copies onto upstream
         if: steps.check.outputs.ahead != '0'
         run: |
-          changed=0
           while IFS=$'\t' read -r ours upstream_path; do
             case "$ours" in \#*|"") continue ;; esac
             copy="aihpi/authentik/$ours"
-            recorded=$(awk -F'\t' -v n="$ours" '$3 == n {print $1, $2}' aihpi/authentik/baseline.sha256)
-            recorded_sha=${recorded% *}
-            recorded_blob=${recorded#* }
+            read -r recorded_sha recorded_blob < <(awk -F'\t' -v n="$ours" '$3 == n {print $1, $2}' aihpi/authentik/baseline.sha256)
             if [ "$(shasum -a 256 "$upstream_path" | awk '{print $1}')" = "$recorded_sha" ]; then
               echo "$ours: upstream unchanged"
               continue
@@ -208,10 +205,9 @@ jobs:
               echo "Resolve the markers by hand, then run: bash aihpi/authentik/rebaseline.sh" >&2
               exit 1
             fi
-            changed=1
           done < aihpi/authentik/manifest.txt
 
-          if [ "$changed" = "0" ]; then
+          if git diff --quiet -- aihpi/authentik; then
             echo "All copies still match their baseline"
             exit 0
           fi

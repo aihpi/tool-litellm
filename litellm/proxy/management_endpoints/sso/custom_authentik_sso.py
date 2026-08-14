@@ -24,18 +24,6 @@ def _has_ui_sso_setup() -> bool:
     return _has_user_setup_sso() or os.getenv("AUTHENTIK_CLIENT_ID") is not None
 
 
-def _has_free_sso_user_limit() -> bool:
-    """
-    True when the deployment uses a built-in SSO provider that should surface the
-    legacy free-tier "5 users" meter. Authentik participates in UI SSO without
-    inheriting that premium-reporting fallback.
-    """
-    return any(
-        os.getenv(client_id) is not None
-        for client_id in ("MICROSOFT_CLIENT_ID", "GOOGLE_CLIENT_ID", "GENERIC_CLIENT_ID")
-    )
-
-
 def normalize_authentik_discovery_url(authentik_issuer: str) -> str:
     issuer = authentik_issuer.strip()
     if issuer.endswith("/.well-known/openid-configuration"):
