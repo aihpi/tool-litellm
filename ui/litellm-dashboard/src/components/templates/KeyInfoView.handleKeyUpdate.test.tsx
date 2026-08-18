@@ -17,9 +17,14 @@ vi.mock("@/app/(dashboard)/hooks/useAuthorized", () => ({
   default: mockUseAuthorized,
 }));
 
+vi.mock("@/app/(dashboard)/hooks/organizations/useOrganizations", () => ({
+  useOrganizations: () => ({ data: [] }),
+}));
+
 // Networking: wire the hoisted fns so we can assert calls later
 vi.mock("../networking", () => {
   return {
+    serverRootPath: "",
     keyUpdateCall: (...args: any[]) => keyUpdateCallMock(...args),
     keyDeleteCall: (...args: any[]) => keyDeleteCallMock(...args),
   };
@@ -180,19 +185,6 @@ vi.mock("@heroicons/react/outline", async () => {
   }
   (RefreshIcon as any).displayName = "RefreshIcon";
   return { ArrowLeftIcon, TrashIcon, RefreshIcon };
-});
-
-vi.mock("lucide-react", async () => {
-  const React = await import("react");
-  function CopyIcon() {
-    return React.createElement("span");
-  }
-  (CopyIcon as any).displayName = "CopyIcon";
-  function CheckIcon() {
-    return React.createElement("span");
-  }
-  (CheckIcon as any).displayName = "CheckIcon";
-  return { CopyIcon, CheckIcon };
 });
 
 // Heavy children -> async factories & local React

@@ -29,6 +29,7 @@ import anyio
 import httpx
 import openai
 from openai import AsyncOpenAI
+from pydantic import BaseModel
 from typing_extensions import overload
 
 import litellm
@@ -253,7 +254,7 @@ if TYPE_CHECKING:
         ResponsesAPIResponse,
     )
 
-    Span = _Span | Any
+    Span = _Span
 else:
     Span = Any
     AutoRouter = Any
@@ -7635,6 +7636,39 @@ class Router:
                 if backend_value is not None:
                     model_info[field] = backend_value
 
+    @staticmethod
+    def _inherit_builtin_tiered_output_rate(
+        model_info: dict, backend_model: str, custom_llm_provider: str | None
+    ) -> None:
+        """Fill a missing entry-level output rate on a deployment entry whose tier
+        table omits one, from the backend model's built-in cost map entry.
+
+        A deployment's custom pricing is registered as its own standalone
+        ``litellm.model_cost`` entry holding only the supplied fields, and the
+        tiered-cost output fallback reads that same entry, so a tier table that
+        spells out only input-side rates would bill every completion at 0.
+
+        A user-specified ``output_cost_per_token`` always wins. No-op without a
+        tier table, when every tier declares its own output rate, or when the
+        backend model has no canonical entry or no flat output rate:
+        ``get_model_info`` synthesizes a zero for tiered-only backends, and
+        storing that zero would mark the deployment as explicitly priced free.
+        """
+        tiers: Final = model_info.get("tiered_pricing")
+        if not isinstance(tiers, list) or not tiers:
+            return
+        if model_info.get("output_cost_per_token") is not None:
+            return
+        if all(isinstance(tier, dict) and "output_cost_per_token" in tier for tier in tiers):
+            return
+        try:
+            backend_info: Final = litellm.get_model_info(model=backend_model, custom_llm_provider=custom_llm_provider)
+        except Exception:  # noqa: BLE001  # get_model_info raises plain Exception for an unmapped backend model
+            return
+        backend_rate: Final = backend_info.get("output_cost_per_token")
+        if backend_rate:
+            model_info["output_cost_per_token"] = backend_rate
+
     def _create_deployment(
         self,
         deployment_info: dict,
@@ -7670,6 +7704,11 @@ class Router:
                     backend_model=deployment.litellm_params.model,
                     custom_llm_provider=deployment.litellm_params.custom_llm_provider,
                 )
+            Router._inherit_builtin_tiered_output_rate(
+                model_info=_model_info,
+                backend_model=deployment.litellm_params.model,
+                custom_llm_provider=deployment.litellm_params.custom_llm_provider,
+            )
 
             ## REGISTER MODEL INFO IN LITELLM MODEL COST MAP
             Router._register_deployment_in_model_cost(
@@ -7794,20 +7833,29 @@ class Router:
         from litellm.router_strategy.complexity_router.complexity_router import (
             ComplexityRouter,
         )
+        from litellm.router_strategy.complexity_router.config import (
+            ComplexityRouterConfig,
+        )
 
         complexity_router_config: Final[dict | None] = deployment.litellm_params.complexity_router_config
 
         default_model: str | None = deployment.litellm_params.complexity_router_default_model
 
-        # If no default model specified, try to get from config tiers
+        # If no default model specified, try to get from config tiers. Derived from the
+        # validated model, not the raw dict, so normalization (e.g. fallback_tier
+        # whitespace) is applied by its one owner before the tiers lookup.
         if default_model is None and complexity_router_config:
-            tiers: Final = complexity_router_config.get("tiers", {})
-            # Use MEDIUM tier as fallback default
-            medium: Final = tiers.get("MEDIUM") or tiers.get("SIMPLE")
-            if isinstance(medium, list):
-                default_model = medium[0] if medium else None
+            validated: Final = ComplexityRouterConfig.model_validate(complexity_router_config)
+            # Custom tier sets name their fallback tier; built-in sets default to MEDIUM or SIMPLE
+            derived: Final = (
+                (validated.tiers.get(validated.fallback_tier) if validated.fallback_tier is not None else None)
+                or validated.tiers.get("MEDIUM")
+                or validated.tiers.get("SIMPLE")
+            )
+            if isinstance(derived, list):
+                default_model = derived[0] if derived else None
             else:
-                default_model = medium
+                default_model = derived
 
         if default_model is None:
             raise ValueError(
@@ -8368,6 +8416,11 @@ class Router:
                 backend_model=deployment.litellm_params.model,
                 custom_llm_provider=deployment.litellm_params.custom_llm_provider,
             )
+        Router._inherit_builtin_tiered_output_rate(
+            model_info=_model_info_dict,
+            backend_model=deployment.litellm_params.model,
+            custom_llm_provider=deployment.litellm_params.custom_llm_provider,
+        )
 
         # Register custom pricing in litellm.model_cost.
         # Mirrors _create_deployment() logic to ensure dynamically-added deployments
@@ -8598,6 +8651,11 @@ class Router:
                 backend_model=deployment.litellm_params.model,
                 custom_llm_provider=deployment.litellm_params.custom_llm_provider,
             )
+        Router._inherit_builtin_tiered_output_rate(
+            model_info=model_info,
+            backend_model=deployment.litellm_params.model,
+            custom_llm_provider=deployment.litellm_params.custom_llm_provider,
+        )
         return model_info
 
     @staticmethod
@@ -9078,14 +9136,26 @@ class Router:
             model_info_name = model
 
         model_info: Final = litellm.get_model_info(model=model_info_name)
+        if model_info is None:
+            return model_info
 
         ## CHECK USER SET MODEL INFO
-        user_model_info: Final = deployment.get("model_info") or {}
+        raw_user_model_info: Final = deployment.get("model_info")
+        user_model_info: Final = (
+            raw_user_model_info.model_dump(exclude_none=True)
+            if isinstance(raw_user_model_info, BaseModel)
+            else raw_user_model_info
+        )
 
-        if model_info is not None:
-            model_info.update(cast(ModelInfo, user_model_info))
+        # get_model_info() hands back an lru_cache'd dict, so merge into a copy; unset
+        # values are skipped or Deployment's None pricing defaults would erase the map's
+        merged_model_info: Final = copy.copy(model_info)
+        if user_model_info:
+            for key, value in user_model_info.items():
+                if value is not None:
+                    merged_model_info[key] = value
 
-        return model_info
+        return merged_model_info
 
     def get_model_info(self, id: str) -> dict | None:
         """
