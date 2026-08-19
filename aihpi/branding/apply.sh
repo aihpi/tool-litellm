@@ -27,42 +27,35 @@ else
   exit 1
 fi
 
-# Tremor components read their brand colour from @theme vars in globals.css.
-# Tailwind v4 bakes utilities from those values, so they must be rewritten in
-# place rather than overridden by a later rule.
-echo "Applying HPI brand palette to Tremor theme..."
+# Upstream dropped @tremor/react in #37394, so the --color-tremor-brand* vars
+# are gone. shadcn's --primary is their successor: it drives every primary
+# button and accent. Its dark value is a light grey with dark text, so the
+# foreground has to flip to near-white along with it.
+echo "Applying HPI brand colour to the shadcn theme..."
 python3 - "$UI_DIR/src/app/globals.css" <<'PY'
-import re, sys
+import re
+import sys
 
-# HPI orange. -emphasis is the darker hover shade.
-palette = {
-    "--color-tremor-brand-faint": "#fdf1e7",
-    "--color-tremor-brand-muted": "#f0b183",
-    "--color-tremor-brand-subtle": "#e8904f",
-    "--color-tremor-brand": "#dd6108",
-    "--color-tremor-brand-emphasis": "#a94a06",
-    "--color-tremor-brand-inverted": "#ffffff",
-    "--color-dark-tremor-brand-faint": "#2a1203",
-    "--color-dark-tremor-brand-muted": "#5c2a03",
-    "--color-dark-tremor-brand-subtle": "#a94a06",
-    "--color-dark-tremor-brand": "#dd6108",
-    "--color-dark-tremor-brand-emphasis": "#f0b183",
-    "--color-dark-tremor-brand-inverted": "#ffffff",
-}
+HPI_ORANGE = "#dd6108"
+ON_ORANGE = "oklch(0.985 0.002 247.839)"
 
 path = sys.argv[1]
 css = open(path).read()
-replaced = []
-for var, value in palette.items():
+
+if HPI_ORANGE in css:
+    print("  already applied, skipping")
+    raise SystemExit
+
+for var, value in (("--primary", HPI_ORANGE), ("--primary-foreground", ON_ORANGE)):
     css, n = re.subn(rf"(^\s*{re.escape(var)}\s*:\s*)[^;]+;", rf"\g<1>{value};", css, flags=re.M)
-    if n:
-        replaced.append(var)
+    if n != 2:
+        raise SystemExit(
+            f"ERROR: expected {var} twice (:root and .dark) in {path}, found {n}; "
+            "upstream changed the theme tokens, update aihpi/branding/apply.sh"
+        )
 
 open(path, "w").write(css)
-print(f"  rewrote {len(replaced)} vars")
-missing = sorted(set(palette) - set(replaced))
-if missing:
-    print(f"  NOTE: not present upstream, skipped: {', '.join(missing)}")
+print("  applied")
 PY
 
 echo "Applying dashboard legal banner and footer..."
@@ -150,30 +143,33 @@ PY
 echo "Replacing login page wordmark with HPI title and logos..."
 if grep -q 'AI Model Hub' "$LOGIN_PAGE"; then
   echo "  already applied, skipping"
-elif grep -q '<Title level={2}>🚅 LiteLLM</Title>' "$LOGIN_PAGE"; then
+else
   python3 - "$LOGIN_PAGE" <<'PY'
 import sys
+
 path = sys.argv[1]
-old = "<Title level={2}>\U0001F685 LiteLLM</Title>"
+old = '<h2 className="text-3xl font-semibold text-foreground">\U0001F685 LiteLLM</h2>'
 new = (
-    '<Title level={2} className="mb-0">AI Model Hub</Title>\n'
-    '              <Text className="block text-sm mt-0">'
-    'by KI-Servicezentrum Berlin-Brandenburg</Text>\n'
-    '              <div className="mt-3 flex items-center justify-center gap-4">\n'
-    '                <img src="/ui/assets/aisc.png" alt="KI Service Zentrum"'
+    '<h2 className="text-3xl font-semibold text-foreground">AI Model Hub</h2>\n'
+    '                <p className="text-sm text-muted-foreground">'
+    'by KI-Servicezentrum Berlin-Brandenburg</p>\n'
+    '                <div className="mt-3 flex items-center justify-center gap-4">\n'
+    '                  <img src="/ui/assets/aisc.png" alt="KI Service Zentrum"'
     ' className="h-12 w-auto object-contain" />\n'
-    '                <img src="/ui/assets/BMFTR.png" alt="BMFTR"'
+    '                  <img src="/ui/assets/BMFTR.png" alt="BMFTR"'
     ' className="h-16 w-auto object-contain" />\n'
-    '              </div>'
+    '                </div>'
 )
 src = open(path).read()
-assert old in src, "login wordmark not found"
+n = src.count(old)
+if n == 0:
+    raise SystemExit(
+        f"ERROR: login wordmark not found in {path}; "
+        "upstream changed the login page, update aihpi/branding/apply.sh"
+    )
 open(path, "w").write(src.replace(old, new))
+print(f"  applied to {n} headings")
 PY
-else
-  echo "ERROR: login wordmark not found in $LOGIN_PAGE" >&2
-  echo "Upstream changed the login page; update aihpi/branding/apply.sh" >&2
-  exit 1
 fi
 
 echo "Rebranding SSO login to Authentik..."
@@ -224,7 +220,7 @@ if n != 1:
         "upstream changed it, update aihpi/branding/apply.sh"
     )
 
-subtitle = '<Text type="secondary">Access your LiteLLM Admin UI.</Text>\n'
+subtitle = '<p className="text-sm text-muted-foreground">Access your LiteLLM Admin UI.</p>\n'
 if subtitle not in src:
     raise SystemExit(
         f"ERROR: login subtitle not found in {path}; "

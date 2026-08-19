@@ -115,10 +115,10 @@ The anchors are:
 | File | Anchor |
 |---|---|
 | `src/contexts/AntdGlobalProvider.tsx` | `theme={{ cssVar: true }}` |
-| `src/app/login/LoginPage.tsx` | `<Title level={2}>🚅 LiteLLM</Title>` |
+| `src/app/login/LoginPage.tsx` | `<h2 className="text-3xl font-semibold text-foreground">🚅 LiteLLM</h2>` |
 | `src/components/leftnav.tsx` | the `<Link ... aria-label="LiteLLM home">` logo block |
 | `src/app/layout.tsx` | the `export const metadata: Metadata = {...}` block |
-| `src/app/globals.css` | the `--color-tremor-brand*` declarations |
+| `src/app/globals.css` | the `--primary` / `--primary-foreground` declarations |
 | `discovery_endpoints/ui_discovery_endpoints.py` | `sso_configured: Final = _has_user_setup_sso()` |
 | `health_endpoints/_health_endpoints.py` | the `prompt="test from litellm"` pair in `ahealth_check` |
 
