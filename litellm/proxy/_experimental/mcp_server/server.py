@@ -1704,7 +1704,7 @@ if MCP_AVAILABLE:
             )
 
         extra_headers: dict[str, str] | None = None
-        is_client_forwarded_mode: Final = server.is_true_passthrough or server.is_oauth_delegate
+        is_client_forwarded_mode: Final = server.is_client_forwarded_token
         # In a multi-server listing scope the request-wide Authorization can only carry one token,
         # so it is withheld from a client-forwarded server when another server in scope also consumes
         # it (RFC 9700 cross-resource replay); such scopes must bind per-server via
@@ -2012,6 +2012,9 @@ if MCP_AVAILABLE:
                         user_api_key_auth,
                         prefetched_creds=_prefetched_oauth_creds,
                     )
+
+                if server.is_byok and server.auth_type != MCPAuth.oauth2 and server_auth_header is None:
+                    server_auth_header = await _get_byok_credential(server, user_api_key_auth)
 
                 try:
                     tools: Final = await global_mcp_server_manager._get_tools_from_server(
@@ -3754,6 +3757,14 @@ if MCP_AVAILABLE:
                 # preemptive challenge and let downstream authorization
                 # return 403.
                 continue
+            if server is not None and server.auth_type == MCPAuth.oauth2 and server.oauth2_flow == "client_credentials":
+                # Stamped M2M: the challenge decision below never reads discovered
+                # metadata, so deferred-discovery failures must not 503 this loop.
+                # Unstamped rows stay on the discover-first path because filling
+                # authorization_url/token_url can change their inferred flow.
+                continue
+            if server is not None:
+                server = await global_mcp_server_manager.ensure_oauth_metadata_discovered(server)
             if server and server.auth_type == MCPAuth.oauth2:
                 # The challenge decision is per oauth2 sub-mode, not per header:
                 # gateway-managed modes (M2M and interactive authorization_code)
