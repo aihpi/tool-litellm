@@ -80,13 +80,13 @@ aihpi/
   __init__.py                   register() -- the proxy startup hook
   provider.py                   CustomLLM subclass: embedding + image_edit
   routes.py                     fork's own FastAPI routes, added at startup
-  authentik/                    ui_sso.py, the one upstream file too big to patch
-    manifest.txt                which copy replaces which upstream path
-    baseline.sha256             hash + git blob id of upstream's version per copy
-    rebaseline.sh               re-record baselines after re-syncing a copy
+  manifest.txt                  the whole-file copies and what they replace
+  baseline.sha256               hash + git blob id of upstream's version per copy
+  rebaseline.sh                 re-record baselines after re-syncing a copy
+  authentik/ui_sso.py           copy: the Authentik SSO handler
   branding/
-    apply.sh                    applies everything below, plus authentik/
-    layout.tsx                  dashboard layout with the HPI banner and legal footer
+    apply.sh                    applies every patch, then the copies above
+    layout.tsx                  copy: dashboard shell with the HPI banner and footer
     provider_create_field.json  AIHPI entry for the UI's add-model provider list
 ```
 
@@ -114,7 +114,6 @@ The anchors are:
 
 | File | Anchor |
 |---|---|
-| `src/contexts/AntdGlobalProvider.tsx` | `theme={{ cssVar: true }}` |
 | `src/app/login/LoginPage.tsx` | `<h2 className="text-3xl font-semibold text-foreground">🚅 LiteLLM</h2>` |
 | `src/components/leftnav.tsx` | the `<Link ... aria-label="LiteLLM home">` logo block |
 | `src/app/layout.tsx` | the `export const metadata: Metadata = {...}` block |
@@ -124,19 +123,18 @@ The anchors are:
 
 Fix by opening the file, finding where the code moved, and updating the anchor in `apply.sh`.
 
-Upstream may also change a component's props so that `branding/layout.tsx` (a whole-file copy) no
-longer type-checks. The build fails with a TypeScript error naming the prop. Fix by diffing our copy
-against upstream's current version and re-applying the HPI additions (the `LegalBanner` and
-`LegalFooter` lines) on top.
+`branding/layout.tsx` is the other whole-file copy, listed in `manifest.txt` alongside `ui_sso.py`
+and covered by the same guard and nightly re-sync.
 
-### Stale Authentik copies
+### Stale whole-file copies
 
 A whole-file copy goes stale on *any* upstream change to that file, while an anchored patch only
 trips when the lines it targets move. Upstream commits to the files this fork touches ran at roughly
 one a day, so the copies were failing the build far more often than our own additions warranted.
-Only `ui_sso.py` still needs to be a copy: 223 changed lines across 24 hunks, mostly one-line
-`authentik_client_id` threading scattered through the file, where twenty-two anchors would be more
-fragile than one copy. Everything else is now a patch in `branding/apply.sh`.
+Two files still need to be copies. `ui_sso.py` has 225 changed lines across 24 hunks, mostly one-line
+`authentik_client_id` threading, where twenty-two anchors would be more fragile than one copy.
+`layout.tsx` restructures the app shell into a column so the legal footer is a real row rather than an
+overlay. Everything else is a patch in `branding/apply.sh`.
 
 Prefer adding over patching, and patching over copying. `proxy_server.py` used to be copied here,
 17k lines that upstream touches in nearly every commit, and it existed for exactly one route. That
@@ -144,7 +142,7 @@ route now lives in `routes.py` and is registered from the startup hook, so the f
 a future addition is a route, a callback, or anything registerable at runtime, move it out the same
 way instead of growing this directory.
 
-`apply.sh` guards the copy. `baseline.sha256` records the sha256 and the git blob id of upstream's
+`apply.sh` guards the copies. `baseline.sha256` records the sha256 and the git blob id of upstream's
 version the copy was taken from, and the file is checked before being overwritten:
 
 - hash matches our copy: already applied, skip
@@ -152,7 +150,7 @@ version the copy was taken from, and the file is checked before being overwritte
 - neither: **build fails**, naming the file
 
 In practice you should rarely see that failure, because the merge workflow repairs it first. Its
-`Re-sync Authentik copies onto upstream` step runs after the merge and before the push: it fetches
+`Re-sync whole-file copies onto upstream` step runs after the merge and before the push: it fetches
 the baseline blob with `git cat-file`, 3-way merges our additions onto upstream's new version with
 `git merge-file`, re-runs `rebaseline.sh` and commits the result. Deterministic, not the LLM
 resolver used for real merge conflicts, because the base is exact and this is auth code. A genuine
@@ -160,10 +158,10 @@ overlap fails the step, so nothing is pushed and the branch stays buildable.
 
 To resolve one by hand:
 
-1. `diff aihpi/authentik/<copy> <the upstream path from manifest.txt>` to see both our additions and
+1. `diff aihpi/<copy> <the upstream path from manifest.txt>` to see both our additions and
    upstream's new work
-2. re-apply the Authentik additions on top of upstream's current version
-3. from a pristine tree (`git checkout -- litellm/ ui/`), run `bash aihpi/authentik/rebaseline.sh`
+2. re-apply the fork additions on top of upstream's current version
+3. from a pristine tree (`git checkout -- litellm/ ui/`), run `bash aihpi/rebaseline.sh`
 
 `rebaseline.sh` refuses to run on a dirty tree, because baselining a patched tree would record our
 own output as the baseline and disable the guard permanently.

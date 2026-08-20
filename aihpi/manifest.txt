@@ -1,0 +1,11 @@
+# Whole-file copy manifest: <our copy, relative to aihpi/> <upstream path>
+#
+# Each line pairs a fork copy with the upstream file it replaces at build time.
+# baseline.sha256 records the hash and the git blob id of upstream's version at
+# the time the copy was taken, so apply.sh fails loudly when upstream moves on,
+# and the merge workflow can 3-way merge our additions onto their new version
+# using that blob as the merge base.
+#
+# Only files too intertwined to express as anchored patches belong here.
+authentik/ui_sso.py	litellm/proxy/management_endpoints/ui_sso.py
+branding/layout.tsx	ui/litellm-dashboard/src/app/(dashboard)/layout.tsx

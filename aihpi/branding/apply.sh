@@ -6,27 +6,6 @@ AIHPI_DIR="$(dirname "$SCRIPT_DIR")"
 UI_DIR="ui/litellm-dashboard"
 LOGIN_PAGE="$UI_DIR/src/app/login/LoginPage.tsx"
 
-# antd emits its own scoped --ant-color-primary that beats any :root rule, and
-# it derives hover/active/bg/border from the token. So the colour has to go
-# through ConfigProvider, not CSS.
-echo "Applying HPI theme colors..."
-ANTD_PROVIDER="$UI_DIR/src/contexts/AntdGlobalProvider.tsx"
-HPI_TOKEN='theme={{ cssVar: true, token: { colorPrimary: "#dd6108", colorInfo: "#dd6108", colorLink: "#dd6108" } }}'
-if grep -q "colorPrimary" "$ANTD_PROVIDER"; then
-  echo "  already applied, skipping"
-elif grep -q 'theme={{ cssVar: true }}' "$ANTD_PROVIDER"; then
-  python3 - "$ANTD_PROVIDER" "$HPI_TOKEN" <<'PY'
-import sys
-path, token = sys.argv[1], sys.argv[2]
-src = open(path).read()
-open(path, "w").write(src.replace("theme={{ cssVar: true }}", token, 1))
-PY
-else
-  echo "ERROR: 'theme={{ cssVar: true }}' not found in $ANTD_PROVIDER" >&2
-  echo "Upstream changed the antd provider; update aihpi/branding/apply.sh" >&2
-  exit 1
-fi
-
 # Upstream dropped @tremor/react in #37394, so the --color-tremor-brand* vars
 # are gone. shadcn's --primary is their successor: it drives every primary
 # button and accent. Its dark value is a light grey with dark text, so the
@@ -57,9 +36,6 @@ for var, value in (("--primary", HPI_ORANGE), ("--primary-foreground", ON_ORANGE
 open(path, "w").write(css)
 print("  applied")
 PY
-
-echo "Applying dashboard legal banner and footer..."
-cp "$SCRIPT_DIR/layout.tsx" "$UI_DIR/src/app/(dashboard)/layout.tsx"
 
 # /get_image sniffs the file header, so a PNG under the .jpg name is fine.
 echo "Replacing default nav logo with HPI logo..."
@@ -190,11 +166,13 @@ else
 fi
 
 # The SSO notice sits exactly where the legal links belong, so one edit does
-# both. The "Default Credentials" box is not touched here: upstream gates it on
-# LITELLM_HIDE_DEFAULT_CREDENTIALS_HINT=true, which the deployment sets.
+# both: it drops upstream's AUTO_REDIRECT_UI_LOGIN_TO_SSO hint and puts Imprint
+# and Privacy there instead. The "Default Credentials" box is not touched here:
+# upstream gates it on LITELLM_HIDE_DEFAULT_CREDENTIALS_HINT=true, which the
+# deployment sets.
 echo "Swapping login SSO notice for legal links, dropping the LiteLLM subtitle..."
 python3 - "$LOGIN_PAGE" <<'PY'
-import re, sys
+import sys
 
 path = sys.argv[1]
 src = open(path).read()
@@ -203,22 +181,25 @@ if "pages/imprint/" in src:
     print("  already applied, skipping")
     raise SystemExit
 
-links = '''        <div className="mt-4 flex items-center justify-center gap-4 text-xs text-gray-600">
-          <a href="https://aisc.hpi.de/portal/cfp/pages/imprint/" target="_blank" rel="noopener noreferrer">
-            Imprint
-          </a>
-          <a href="https://aisc.hpi.de/portal/cfp/pages/privacy/" target="_blank" rel="noopener noreferrer">
-            Privacy
-          </a>
-        </div>
-'''
-
-src, n = re.subn(r"\{uiConfig\?\.sso_configured && \(.*?\n\s*\)\}\n", links, src, count=1, flags=re.S)
-if n != 1:
+notice = "{uiConfig?.sso_configured && <SsoEnabledNotice />}"
+links = (
+    '<div className="mt-4 flex items-center justify-center gap-4 text-xs text-muted-foreground">\n'
+    '              <a href="https://aisc.hpi.de/portal/cfp/pages/imprint/"'
+    ' target="_blank" rel="noopener noreferrer">\n'
+    "                Imprint\n"
+    "              </a>\n"
+    '              <a href="https://aisc.hpi.de/portal/cfp/pages/privacy/"'
+    ' target="_blank" rel="noopener noreferrer">\n'
+    "                Privacy\n"
+    "              </a>\n"
+    "            </div>"
+)
+if src.count(notice) != 1:
     raise SystemExit(
-        f"ERROR: sso_configured notice block not found in {path}; "
+        f"ERROR: sso_configured notice not found in {path}; "
         "upstream changed it, update aihpi/branding/apply.sh"
     )
+src = src.replace(notice, links, 1)
 
 subtitle = '<p className="text-sm text-muted-foreground">Access your LiteLLM Admin UI.</p>\n'
 if subtitle not in src:
@@ -366,8 +347,8 @@ open(path, "w").write(src)
 print("  applied")
 PY
 
-echo "Applying Authentik SSO backend patches..."
-python3 - "$AIHPI_DIR/authentik" <<'PY'
+echo "Applying whole-file copies..."
+python3 - "$AIHPI_DIR" <<'PY'
 import hashlib
 import pathlib
 import shutil
@@ -404,15 +385,15 @@ for ours, upstream in manifest:
         stale.append((ours, upstream, "upstream changed since this copy was taken"))
 
 if stale:
-    print("\nERROR: Authentik patch copies are out of date.\n", file=sys.stderr)
+    print("\nERROR: whole-file copies are out of date.\n", file=sys.stderr)
     for ours, upstream, why in stale:
         print(f"  {upstream}\n    {why}", file=sys.stderr)
     print(
         "\nCopying them anyway would silently discard upstream's changes to those\n"
         "files. To resolve, for each file above:\n"
-        "  1. diff aihpi/authentik/<copy> against the file in the tree\n"
-        "  2. re-apply the Authentik additions on top of upstream's new version\n"
-        "  3. from a pristine tree, run: bash aihpi/authentik/rebaseline.sh\n",
+        "  1. diff aihpi/<copy> against the file in the tree\n"
+        "  2. re-apply the fork additions on top of upstream's new version\n"
+        "  3. from a pristine tree, run: bash aihpi/rebaseline.sh\n",
         file=sys.stderr,
     )
     raise SystemExit(1)

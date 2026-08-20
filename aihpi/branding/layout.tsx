@@ -11,6 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import SidebarProvider from "@/app/(dashboard)/components/SidebarProvider";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { DebugWarningBanner } from "@/components/DebugWarningBanner";
+import { NoRedisWarningBanner } from "@/components/NoRedisWarningBanner";
 import { LicenseExpiryBanner } from "@/components/LicenseExpiryBanner";
 import { UserBanner } from "@/components/UserBanner";
 import { MIGRATED_PAGES, migratedHref, legacyPageHref, legacyKeyForPathname } from "@/utils/migratedPages";
@@ -20,6 +21,8 @@ import { getProxyBaseUrl } from "@/components/networking";
 
 const pluginApiClient = createApiClient({ getBaseUrl: () => getProxyBaseUrl() ?? "" });
 
+// Wrapper so PluginModeProvider receives the live accessToken from auth context,
+// which means plugin data refreshes on login/logout without stale cookie reads.
 function PluginModeProviderWithAuth({ children }: { children: React.ReactNode }) {
   const { accessToken } = useAuth();
   return <PluginModeProvider accessToken={accessToken}>{children}</PluginModeProvider>;
@@ -33,6 +36,9 @@ export function AgentControlPlaneView() {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [auth, setAuth] = useState<{ plugin: string; claim: string } | null>(null);
 
+  // Fetch a short-lived identity claim scoped to the *active* plugin. The claim
+  // is encrypted under that plugin's own per-plugin key, so it must be requested
+  // per plugin and re-fetched when the user switches plugins.
   useEffect(() => {
     if (!accessToken || !activePluginName) return;
     let cancelled = false;
@@ -47,12 +53,17 @@ export function AgentControlPlaneView() {
     };
   }, [accessToken, activePluginName]);
 
+  // Deliver the claim to the iframe via postMessage, but only while it was issued
+  // for the plugin currently mounted — never replay one plugin's claim to another.
+  // targetOrigin is the configured plugin URL — no other origin receives it.
   useEffect(() => {
     const iframe = iframeRef.current;
     if (!iframe || !auth || auth.plugin !== activePluginName || !agentPlatformUrl) return;
     const send = () => {
       iframe.contentWindow?.postMessage({ type: "litellm-auth", session_claim: auth.claim }, agentPlatformUrl);
     };
+    // Cover both orderings: the iframe may have already fired `load` before the
+    // claim arrived (send now), or it may load/reload later (send on the event).
     send();
     iframe.addEventListener("load", send);
     return () => iframe.removeEventListener("load", send);
@@ -69,6 +80,7 @@ export function AgentControlPlaneView() {
     );
   }
 
+  // Embed the plugin at its root; the plugin renders its own full UI (incl. nav) inside.
   return (
     <iframe
       ref={iframeRef}
@@ -102,12 +114,17 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
     router.push(migratedRoute ? migratedHref(migratedRoute) : legacyPageHref(newPage));
   };
 
+  // Non-gateway (agent control plane) mode keeps the original full-width Navbar,
+  // which carries the account menu; the redesigned sidebar + header shell is
+  // scoped to the ai-gateway dashboard. Chat and the public model hub are
+  // separate routes that likewise keep the old Navbar.
   if (!isGateway) {
     return (
       <div className="flex h-screen flex-col overflow-hidden bg-background">
         <LegalBanner />
         <Navbar accessToken={accessToken} isPublicPage={false} />
         <DebugWarningBanner accessToken={accessToken} />
+        <NoRedisWarningBanner accessToken={accessToken} />
         <LicenseExpiryBanner accessToken={accessToken} />
         <UserBanner accessToken={accessToken} />
         <main className="flex min-h-0 flex-1 overflow-hidden">
@@ -118,6 +135,9 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
     );
   }
 
+  // Standard app shell: the viewport is fixed height and never scrolls. The
+  // sidebar owns its own scroll and the content column scrolls independently,
+  // so the page can't be dragged past the end of the nav.
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-background">
       <div className="flex min-h-0 flex-1 overflow-hidden">
@@ -131,6 +151,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
           <LegalBanner />
           <DashboardHeader page={page} />
           <DebugWarningBanner accessToken={accessToken} />
+          <NoRedisWarningBanner accessToken={accessToken} />
           <LicenseExpiryBanner accessToken={accessToken} />
           <UserBanner accessToken={accessToken} />
           <main className="min-w-0 flex-1 overflow-y-auto">{children}</main>
@@ -147,6 +168,8 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   const { accessToken, authLoading } = useAuth();
   const isInvitationFlow = Boolean(searchParams.get("invitation_id"));
 
+  // Legacy invitation links point at /ui/?invitation_id=; the onboarding form now lives at its own
+  // /onboarding route. Redirect once ui-config has loaded so migratedHref resolves the SERVER_ROOT_PATH base.
   useEffect(() => {
     if (!authLoading && isInvitationFlow) {
       router.replace(`${migratedHref("onboarding")}?${searchParams.toString()}`);

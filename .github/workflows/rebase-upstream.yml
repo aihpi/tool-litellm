@@ -179,19 +179,19 @@ jobs:
         run: |
           git commit --no-edit -m "chore: merge upstream litellm_internal_staging (auto-resolved)"
 
-      # aihpi/authentik holds whole-file copies that apply.sh writes over upstream's
+      # aihpi/manifest.txt lists whole-file copies that apply.sh writes over upstream's
       # versions at build time. When upstream edits one of those files the copy goes
       # stale, and apply.sh refuses to run rather than discard their work. Doing the
       # 3-way merge here, before the push, keeps the branch buildable instead of
       # landing a merge that fails later in build-and-publish. Deterministic
       # git merge-file, not the LLM above: the base is exact and this is auth code.
-      - name: Re-sync Authentik copies onto upstream
+      - name: Re-sync whole-file copies onto upstream
         if: steps.check.outputs.ahead != '0'
         run: |
           while IFS=$'\t' read -r ours upstream_path; do
             case "$ours" in \#*|"") continue ;; esac
-            copy="aihpi/authentik/$ours"
-            read -r recorded_sha recorded_blob < <(awk -F'\t' -v n="$ours" '$3 == n {print $1, $2}' aihpi/authentik/baseline.sha256)
+            copy="aihpi/$ours"
+            read -r recorded_sha recorded_blob < <(awk -F'\t' -v n="$ours" '$3 == n {print $1, $2}' aihpi/baseline.sha256)
             if [ "$(shasum -a 256 "$upstream_path" | awk '{print $1}')" = "$recorded_sha" ]; then
               echo "$ours: upstream unchanged"
               continue
@@ -202,19 +202,19 @@ jobs:
             git cat-file blob "$recorded_blob" > "$base"
             if ! git merge-file -L ours -L baseline -L upstream "$copy" "$base" "$upstream_path"; then
               echo "ERROR: could not re-sync $copy onto $upstream_path without conflicts." >&2
-              echo "Resolve the markers by hand, then run: bash aihpi/authentik/rebaseline.sh" >&2
+              echo "Resolve the markers by hand, then run: bash aihpi/rebaseline.sh" >&2
               exit 1
             fi
-          done < aihpi/authentik/manifest.txt
+          done < aihpi/manifest.txt
 
-          if git diff --quiet -- aihpi/authentik; then
+          if git diff --quiet -- aihpi; then
             echo "All copies still match their baseline"
             exit 0
           fi
 
-          bash aihpi/authentik/rebaseline.sh
-          git add aihpi/authentik
-          git commit -m "chore(aihpi): re-sync Authentik copies onto upstream's new versions"
+          bash aihpi/rebaseline.sh
+          git add aihpi
+          git commit -m "chore(aihpi): re-sync whole-file copies onto upstream's new versions"
 
       - name: Push merged branch
         if: steps.check.outputs.ahead != '0'
