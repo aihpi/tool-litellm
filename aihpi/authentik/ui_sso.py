@@ -104,8 +104,10 @@ from litellm.proxy.common_utils.user_api_key_cache import UserApiKeyCache
 from litellm.proxy.management_endpoints.internal_user_endpoints import new_user
 from litellm.proxy.management_endpoints.sso import CustomMicrosoftSSO
 from litellm.proxy.management_endpoints.sso.custom_authentik_sso import (
+    determine_authentik_role_from_claims,
     get_authentik_discovery_document,
     get_authentik_scope,
+    normalize_sso_groups,
 )
 from litellm.proxy.management_endpoints.sso.saml_sso import SAMLAuthHandler
 from litellm.proxy.management_endpoints.sso_helper_utils import (
@@ -818,25 +820,6 @@ LITELLM_USER_ROLE_HIERARCHY: Final = (
     LitellmUserRoles.INTERNAL_USER,
     LitellmUserRoles.INTERNAL_USER_VIEW_ONLY,
 )
-
-
-def normalize_sso_groups(user_groups_raw: Any) -> list[str]:
-    if isinstance(user_groups_raw, list):
-        return [str(g) for g in user_groups_raw]
-    if isinstance(user_groups_raw, str):
-        return [g.strip() for g in user_groups_raw.split(",") if g.strip()]
-    if user_groups_raw is not None:
-        return [str(user_groups_raw)]
-    return []
-
-
-def determine_authentik_role_from_claims(claims: Any) -> LitellmUserRoles:
-    groups_attribute = os.getenv("AUTHENTIK_GROUPS_ATTRIBUTE", "groups")
-    admin_group = os.getenv("AUTHENTIK_ADMIN_GROUP", "SCI-ADMINS")
-    user_groups = normalize_sso_groups(get_nested_value(claims, groups_attribute, default=[]))
-    if admin_group in user_groups:
-        return LitellmUserRoles.PROXY_ADMIN
-    return LitellmUserRoles.INTERNAL_USER
 
 
 def determine_role_from_groups(

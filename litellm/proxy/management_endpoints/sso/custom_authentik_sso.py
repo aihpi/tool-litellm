@@ -13,9 +13,31 @@ from litellm.llms.custom_httpx.http_handler import (
     get_async_httpx_client,
     httpxSpecialProvider,
 )
-from litellm.proxy._types import ProxyErrorTypes, ProxyException
+from litellm.litellm_core_utils.dot_notation_indexing import get_nested_value
+from litellm.proxy._types import LitellmUserRoles, ProxyErrorTypes, ProxyException
 
 _AUTHENTIK_DISCOVERY_DOCUMENT_CACHE: Dict[str, DiscoveryDocument] = {}
+
+
+
+def normalize_sso_groups(user_groups_raw: Any) -> List[str]:
+    """Identity providers send the groups claim as a list, a comma-separated string or a bare value."""
+    if isinstance(user_groups_raw, list):
+        return [str(g) for g in user_groups_raw]
+    if isinstance(user_groups_raw, str):
+        return [g.strip() for g in user_groups_raw.split(",") if g.strip()]
+    if user_groups_raw is not None:
+        return [str(user_groups_raw)]
+    return []
+
+
+def determine_authentik_role_from_claims(claims: Any) -> LitellmUserRoles:
+    groups_attribute = os.getenv("AUTHENTIK_GROUPS_ATTRIBUTE", "groups")
+    admin_group = os.getenv("AUTHENTIK_ADMIN_GROUP", "SCI-ADMINS")
+    user_groups = normalize_sso_groups(get_nested_value(claims, groups_attribute))
+    if admin_group in user_groups:
+        return LitellmUserRoles.PROXY_ADMIN
+    return LitellmUserRoles.INTERNAL_USER
 
 
 def _has_ui_sso_setup() -> bool:
