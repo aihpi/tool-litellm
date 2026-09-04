@@ -118,7 +118,7 @@ The anchors are:
 | `src/components/leftnav.tsx` | the `<Link ... aria-label="LiteLLM home">` logo block |
 | `src/app/layout.tsx` | the `export const metadata: Metadata = {...}` block |
 | `src/app/globals.css` | the `--primary` / `--primary-foreground` declarations |
-| `discovery_endpoints/ui_discovery_endpoints.py` | `sso_configured: Final = _has_user_setup_sso()` |
+| `discovery_endpoints/ui_discovery_endpoints.py` | `sso_configured: Final = has_user_setup_sso()` |
 | `health_endpoints/_health_endpoints.py` | the `prompt="test from litellm"` pair in `ahealth_check` |
 
 Fix by opening the file, finding where the code moved, and updating the anchor in `apply.sh`.

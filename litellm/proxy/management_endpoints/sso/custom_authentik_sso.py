@@ -41,9 +41,9 @@ def determine_authentik_role_from_claims(claims: Any) -> LitellmUserRoles:
 
 
 def _has_ui_sso_setup() -> bool:
-    from litellm.proxy.auth.auth_utils import _has_user_setup_sso
+    from litellm.proxy.auth.auth_utils import has_user_setup_sso
 
-    return _has_user_setup_sso() or os.getenv("AUTHENTIK_CLIENT_ID") is not None
+    return has_user_setup_sso() or os.getenv("AUTHENTIK_CLIENT_ID") is not None
 
 
 def normalize_authentik_discovery_url(authentik_issuer: str) -> str:

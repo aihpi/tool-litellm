@@ -290,10 +290,10 @@ src = open(path).read()
 
 # Aliasing on import leaves the call site untouched, so this file has one anchor
 # to keep in sync with upstream instead of two.
-old = "from litellm.proxy.auth.auth_utils import _has_user_setup_sso"
+old = "from litellm.proxy.auth.auth_utils import has_user_setup_sso"
 new = (
     "from litellm.proxy.management_endpoints.sso.custom_authentik_sso import "
-    "_has_ui_sso_setup as _has_user_setup_sso"
+    "_has_ui_sso_setup as has_user_setup_sso"
 )
 
 if new in src:
