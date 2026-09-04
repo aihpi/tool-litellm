@@ -283,7 +283,7 @@ jobs:
   bump-deploy-manifest:
     runs-on: ubuntu-latest
     needs: [build-and-push, smoke-test]
-    if: github.event_name == 'push' && github.ref_name == 'aihpi-provider'
+    if: contains(fromJSON('["push", "workflow_dispatch"]'), github.event_name) && github.ref_name == 'aihpi-provider'
 
     steps:
       # Cross-repo push, so the per-repo GITHUB_TOKEN cannot do it. Needs a PAT
