@@ -349,13 +349,30 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          if git diff --exit-code overlays/prod/kustomization.yaml; then
+          # This job pushes to main unreviewed, so it may only ever touch the pin.
+          changed=$(git status --porcelain)
+          if [ -z "$changed" ]; then
             echo "Digest unchanged, nothing to commit."
             exit 0
           fi
+          if [ "$changed" != " M overlays/prod/kustomization.yaml" ]; then
+            echo "ERROR: refusing to push, the pin step changed more than the overlay:" >&2
+            echo "$changed" >&2
+            exit 1
+          fi
 
           git add overlays/prod/kustomization.yaml
-          git commit -m "chore: pin litellm proxy to ${DIGEST} from ${GITHUB_REPOSITORY}@${GITHUB_SHA}"
+          git commit -F - <<MSG
+          chore: pin litellm proxy to ${DIGEST}
+
+          Built from ${GITHUB_REPOSITORY}@${GITHUB_SHA} and smoke-tested by
+          ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}
+
+          This commit does not deploy. ArgoCD auto-sync is off for prod, so run
+          git pull and scripts/deploy.sh on the deploy host. The changed image
+          digest alters the pod template, so the apply rolls the pods itself.
+          Roll back by reverting this commit and deploying again.
+          MSG
 
           # Another run can land between our checkout and our push. Rebase onto
           # whatever arrived and retry, capped so a broken main cannot loop.
