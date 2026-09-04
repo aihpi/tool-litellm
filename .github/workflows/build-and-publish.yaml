@@ -377,9 +377,14 @@ jobs:
           # Another run can land between our checkout and our push. Rebase onto
           # whatever arrived and retry, capped so a broken main cannot loop.
           for attempt in 1 2 3 4 5; do
-            if git push origin main; then
+            if git push origin main 2>push.err; then
               echo "Pushed on attempt $attempt."
               exit 0
+            fi
+            if ! grep -q "fetch first\|non-fast-forward" push.err; then
+              cat push.err >&2
+              echo "ERROR: push failed for a reason a rebase cannot fix, giving up." >&2
+              exit 1
             fi
             echo "Push rejected (attempt $attempt), rebasing."
             git pull --rebase origin main
