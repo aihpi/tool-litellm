@@ -327,12 +327,18 @@ jobs:
               r"(- name: ghcr\.io/aihpi/tool-litellm\n\s*digest: )sha256:[0-9a-f]{64}"
           )
           src, n = pattern.subn(lambda m: m.group(1) + digest, src, count=1)
-          if n != 1:
+          if n == 1:
+              pinned = src
+          elif re.search(r"^images:", src, re.M):
               raise SystemExit(
-                  f"ERROR: could not find the tool-litellm digest pin in {path}; "
-                  "the images: block changed, update this workflow"
+                  f"ERROR: {path} has an images: block without a tool-litellm pin; "
+                  "update this workflow's anchor"
               )
-          open(path, "w").write(src)
+          else:
+              pinned = src.rstrip("\n") + (
+                  f"\n\nimages:\n  - name: ghcr.io/aihpi/tool-litellm\n    digest: {digest}\n"
+              )
+          open(path, "w").write(pinned)
           print(f"pinned {digest}")
           PY
 
