@@ -21,7 +21,8 @@ if [ -n "$dirty" ]; then
   exit 1
 fi
 
-: > "$SCRIPT_DIR/baseline.sha256"
+baseline_commit=$(git log -1 --format=%H -- "$SCRIPT_DIR/baseline.sha256")
+out=$(mktemp)
 while IFS=$'\t' read -r ours upstream_path; do
   case "$ours" in \#*|"") continue ;; esac
   if [ ! -f "$upstream_path" ]; then
@@ -29,9 +30,9 @@ while IFS=$'\t' read -r ours upstream_path; do
     exit 1
   fi
   new_sha=$(shasum -a 256 "$upstream_path" | awk '{print $1}')
-  old_sha=$(git show HEAD:aihpi/baseline.sha256 2>/dev/null | awk -F'\t' -v n="$ours" '$3 == n {print $1}')
-  if [ -n "$old_sha" ] && [ "$new_sha" != "$old_sha" ] && git diff --quiet HEAD -- "$SCRIPT_DIR/$ours"; then
-    echo "ERROR: upstream changed $upstream_path but $ours is untouched since HEAD." >&2
+  old_sha=$(git show "$baseline_commit:aihpi/baseline.sha256" 2>/dev/null | awk -F'\t' -v n="$ours" '$3 == n {print $1}')
+  if [ -n "$old_sha" ] && [ "$new_sha" != "$old_sha" ] && git diff --quiet "$baseline_commit" -- "$SCRIPT_DIR/$ours"; then
+    echo "ERROR: upstream changed $upstream_path but $ours is untouched since the baseline was last recorded ($baseline_commit)." >&2
     echo "Baselining now would hide a stale copy from the build guard. Merge upstream's" >&2
     echo "change into $ours first (git merge-file against the old baseline blob), then rerun." >&2
     exit 1
@@ -39,8 +40,9 @@ while IFS=$'\t' read -r ours upstream_path; do
   printf '%s\t%s\t%s\n' \
     "$new_sha" \
     "$(git hash-object "$upstream_path")" \
-    "$ours" >> "$SCRIPT_DIR/baseline.sha256"
+    "$ours" >> "$out"
   echo "baselined $upstream_path"
 done < "$SCRIPT_DIR/manifest.txt"
 
+mv "$out" "$SCRIPT_DIR/baseline.sha256"
 echo "Wrote $SCRIPT_DIR/baseline.sha256"
