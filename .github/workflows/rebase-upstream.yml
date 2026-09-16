@@ -1,4 +1,4 @@
-name: Merge upstream litellm_internal_staging into aihpi-provider
+name: Merge upstream main into aihpi-provider
 
 on:
   workflow_dispatch:
@@ -39,7 +39,7 @@ jobs:
       - name: Add upstream and fetch
         run: |
           git remote add upstream https://github.com/BerriAI/litellm.git
-          git fetch upstream litellm_internal_staging
+          git fetch upstream main
 
       - name: Configure git identity
         run: |
@@ -49,7 +49,7 @@ jobs:
       - name: Check if upstream has new commits
         id: check
         run: |
-          ahead=$(git rev-list --count aihpi-provider..upstream/litellm_internal_staging)
+          ahead=$(git rev-list --count aihpi-provider..upstream/main)
           echo "ahead=$ahead" >> "$GITHUB_OUTPUT"
           if [ "$ahead" -eq 0 ]; then
             echo "No new upstream commits, skipping merge"
@@ -61,7 +61,7 @@ jobs:
         if: steps.check.outputs.ahead != '0'
         id: merge
         run: |
-          if git merge upstream/litellm_internal_staging --no-edit; then
+          if git merge upstream/main --no-edit; then
             echo "status=clean" >> "$GITHUB_OUTPUT"
           else
             echo "status=conflicts" >> "$GITHUB_OUTPUT"
@@ -177,7 +177,7 @@ jobs:
       - name: Commit merge resolution
         if: steps.merge.outputs.status == 'conflicts'
         run: |
-          git commit --no-edit -m "chore: merge upstream litellm_internal_staging (auto-resolved)"
+          git commit --no-edit -m "chore: merge upstream main (auto-resolved)"
 
       # aihpi/manifest.txt lists whole-file copies that apply.sh writes over upstream's
       # versions at build time. When upstream edits one of those files the copy goes

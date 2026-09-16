@@ -12,8 +12,8 @@ time by `branding/apply.sh`.
 To check you have not broken this:
 
 ```bash
-git fetch upstream litellm_internal_staging
-git diff upstream/litellm_internal_staging --name-only -- litellm/ ui/ | grep -v "_experimental/out"
+git fetch upstream main
+git diff upstream/main --name-only -- litellm/ ui/ | grep -v "_experimental/out"
 ```
 
 Every path listed must be a file that does **not** exist upstream. Today that is the legal
