@@ -226,6 +226,23 @@ jobs:
         run: |
           git push origin aihpi-provider
 
+      # Upstream's workflows arrive enabled with every merge. Their scheduled
+      # bots create branches, close issues and open PRs, so only ours may run.
+      - name: Disable upstream workflows
+        if: steps.check.outputs.ahead != '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ours='.github/workflows/build-and-publish.yaml
+          .github/workflows/build-kisz-auth-wrapper.yaml
+          .github/workflows/rebase-upstream.yml'
+          gh workflow list --json path,state --jq '.[] | select(.state == "active") | .path' \
+            | grep -vxF -f <(echo "$ours") \
+            | while read -r path; do
+                echo "disabling $path"
+                gh workflow disable "$path"
+              done
+
       - name: Trigger build-and-publish workflow
         if: steps.check.outputs.ahead != '0'
         uses: actions/github-script@v7
