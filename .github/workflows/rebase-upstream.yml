@@ -228,6 +228,8 @@ jobs:
 
       # Upstream's workflows arrive enabled with every merge. Their scheduled
       # bots create branches, close issues and open PRs, so only ours may run.
+      # GitHub also reports dynamic workflows it generates itself, such as
+      # pages-build-deployment, which have no file and cannot be disabled.
       - name: Disable upstream workflows
         if: steps.check.outputs.ahead != '0'
         env:
@@ -236,11 +238,12 @@ jobs:
           ours='.github/workflows/build-and-publish.yaml
           .github/workflows/build-kisz-auth-wrapper.yaml
           .github/workflows/rebase-upstream.yml'
-          gh workflow list --json path,state --jq '.[] | select(.state == "active") | .path' \
+          gh workflow list --limit 200 --json path,state \
+            --jq '.[] | select(.state == "active" and (.path | startswith(".github/workflows/"))) | .path' \
             | grep -vxF -f <(echo "$ours") \
             | while read -r path; do
                 echo "disabling $path"
-                gh workflow disable "$path"
+                gh workflow disable "$path" || echo "::warning::could not disable $path"
               done
 
       - name: Trigger build-and-publish workflow
