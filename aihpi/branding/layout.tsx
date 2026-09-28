@@ -15,7 +15,9 @@ import { NoRedisWarningBanner } from "@/components/NoRedisWarningBanner";
 import { EnvCredentialLoginWarningBanner } from "@/components/EnvCredentialLoginWarningBanner";
 import { LicenseExpiryBanner } from "@/components/LicenseExpiryBanner";
 import { UserBanner } from "@/components/UserBanner";
-import { uiHref } from "@/utils/uiHref";
+import LiteAdmin from "@/components/liteadmin/LiteAdmin";
+import { UpgradeBanner } from "@/components/UpgradeBanner";
+import { routeSegmentForPathname, uiHref } from "@/utils/uiHref";
 import { PluginModeProvider, usePluginMode } from "@/contexts/PluginModeContext";
 import { createApiClient } from "@/lib/http/client";
 import { getProxyBaseUrl } from "@/components/networking";
@@ -103,6 +105,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
   const { accessToken } = useAuth();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { mode } = usePluginMode();
+  const isPlayground = routeSegmentForPathname(usePathname()) === "playground";
 
   const isGateway = mode === "ai-gateway";
 
@@ -120,6 +123,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
         <EnvCredentialLoginWarningBanner accessToken={accessToken} />
         <LicenseExpiryBanner accessToken={accessToken} />
         <UserBanner accessToken={accessToken} />
+        <UpgradeBanner accessToken={accessToken} />
         <main className="flex min-h-0 flex-1 overflow-hidden">
           <AgentControlPlaneView />
         </main>
@@ -143,7 +147,9 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
         <EnvCredentialLoginWarningBanner accessToken={accessToken} />
         <LicenseExpiryBanner accessToken={accessToken} />
         <UserBanner accessToken={accessToken} />
+        <UpgradeBanner accessToken={accessToken} />
         <main className="min-w-0 flex-1 overflow-y-auto">{children}</main>
+        {!isPlayground && <LiteAdmin />}
       </div>
       </div>
       <LegalFooter />
