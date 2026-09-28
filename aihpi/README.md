@@ -83,6 +83,7 @@ aihpi/
   manifest.txt                  the whole-file copies and what they replace
   baseline.sha256               hash + git blob id of upstream's version per copy
   rebaseline.sh                 re-record baselines after re-syncing a copy
+  resolve_upstream_hunks.py     nightly merge: takes upstream's side where ours is upstream's own code
   authentik/ui_sso.py           copy: the Authentik SSO handler
   branding/
     apply.sh                    applies every patch, then the copies above
@@ -168,6 +169,20 @@ To resolve one by hand:
 
 `rebaseline.sh` refuses to run on a dirty tree, because baselining a patched tree would record our
 own output as the baseline and disable the guard permanently.
+
+## When the nightly merge opens an issue
+
+Most conflicts in upstream files are upstream arguing with an older copy of itself: content we merged
+from their staging branch that later landed on main in a different form. `resolve_upstream_hunks.py`
+takes upstream's side of a hunk only when `git blame` shows every line on our side came from
+upstream's own history and no merge-base line has gone missing from our file, so fork work and
+deletions are never dropped. Everything else, including the staging commits that never reached main,
+goes on to the LLM resolver and then to an issue. Repeat failures comment on the open issue instead
+of opening a new one
+
+To finish a merge by hand, merge `upstream/main`, run the script over the conflicted files, resolve
+what it leaves, then do the copy re-sync described above. Its tests build a criss-cross merge like
+the real one: `python -m pytest aihpi/test_resolve_upstream_hunks.py`
 
 ## Why branding is applied where it is
 

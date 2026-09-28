@@ -67,7 +67,7 @@ jobs:
             echo "status=conflicts" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Auto-resolve build artifact conflicts
+      - name: Auto-resolve build artifact and upstream-only conflicts
         if: steps.merge.outputs.status == 'conflicts'
         run: |
           # Build artifacts: we deleted them (gitignored), upstream modified them.
@@ -81,6 +81,9 @@ jobs:
           # Also accept any new upstream files in _experimental/out/ that
           # were added (not conflicted) and delete them too
           git ls-files --others -- litellm/proxy/_experimental/out/ | xargs rm -f 2>/dev/null || true
+
+          git diff -z --name-only --diff-filter=U \
+            | xargs -0 --no-run-if-empty python3 aihpi/resolve_upstream_hunks.py upstream/main
 
           # Check if any real conflicts remain
           remaining=$(git diff --name-only --diff-filter=U || true)
@@ -279,7 +282,8 @@ jobs:
           script: |
             const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
             const files = `${{ steps.conflicts.outputs.files }}`;
-            const title = `Merge conflict: upstream into aihpi-provider (run ${context.runId})`;
+            const prefix = "Merge conflict: upstream into aihpi-provider";
+            const title = `${prefix} (run ${context.runId})`;
             const body = [
               "The scheduled upstream merge had conflicts that Claude could not resolve automatically.",
               "",
@@ -290,6 +294,22 @@ jobs:
               files,
               "```",
             ].join("\n");
+            const open = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: "open",
+              per_page: 100,
+            });
+            const existing = open.data.find((i) => !i.pull_request && i.title.startsWith(prefix));
+            if (existing) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing.number,
+                body,
+              });
+              return;
+            }
             await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
