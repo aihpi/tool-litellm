@@ -37,9 +37,14 @@ open(path, "w").write(css)
 print("  applied")
 PY
 
-# /get_image sniffs the file header, so a PNG under the .jpg name is fine.
 echo "Replacing default nav logo with HPI logo..."
-cp "$UI_DIR/public/assets/aisc.png" litellm/proxy/logo.jpg
+for logo in logo.png logo_dark.png; do
+    if [ ! -f "litellm/proxy/$logo" ]; then
+        echo "ERROR: litellm/proxy/$logo not found; upstream changed the bundled logo served by /get_image, update aihpi/branding/apply.sh" >&2
+        exit 1
+    fi
+    cp "$UI_DIR/public/assets/aisc.png" "litellm/proxy/$logo"
+done
 
 # Both logos live in the full-width top banner (LegalBanner), so hide the
 # sidebar's logo to avoid showing the branding twice. Done in CSS keyed on the

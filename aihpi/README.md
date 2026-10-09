@@ -193,7 +193,7 @@ Three independent theming systems, which is why one CSS override was not enough:
   `ConfigProvider`, not CSS.
 - **Tremor** reads `@theme` variables in `globals.css`, and Tailwind v4 bakes utilities from those
   values at build time. So the declarations are rewritten in place, not overridden later.
-- **Static assets.** The nav logo is served by `/get_image`, so `apply.sh` overwrites
-  `litellm/proxy/logo.jpg` (the endpoint sniffs the file header, so a PNG under that name is fine).
+- **Static assets.** The nav logo is served by `/get_image`, so `apply.sh` overwrites the bundled
+  `litellm/proxy/logo.png` and `logo_dark.png`, and fails if upstream renames them again.
   The tab icon needs `src/app/favicon.ico` replaced, because Next.js auto-emits a `<link>` from that
   file *ahead* of anything declared in `metadata`.
