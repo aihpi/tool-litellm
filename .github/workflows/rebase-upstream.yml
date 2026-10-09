@@ -48,8 +48,8 @@ jobs:
 
       # Upstream's workflows arrive enabled with every merge. Their scheduled
       # bots create branches, close issues and open PRs, so only ours may run.
-      # Runs every night before the merge: GitHub registers workflow files a
-      # while after a push, so a sweep right after our own push misses them.
+      # Runs every night, merge or not. --repo is required: with a remote named
+      # upstream, gh defaults to BerriAI/litellm instead of this repository.
       # GitHub also reports dynamic workflows it generates itself, such as
       # pages-build-deployment, which have no file and cannot be disabled.
       - name: Disable upstream workflows
@@ -59,12 +59,12 @@ jobs:
           ours='.github/workflows/build-and-publish.yaml
           .github/workflows/build-kisz-auth-wrapper.yaml
           .github/workflows/rebase-upstream.yml'
-          gh workflow list --limit 200 --json path,state \
+          gh workflow list --repo "$GITHUB_REPOSITORY" --limit 200 --json path,state \
             --jq '.[] | select(.state == "active" and (.path | startswith(".github/workflows/"))) | .path' \
             | grep -vxF -f <(echo "$ours") \
             | while read -r path; do
                 echo "disabling $path"
-                gh workflow disable "$path" || echo "::warning::could not disable $path"
+                gh workflow disable --repo "$GITHUB_REPOSITORY" "$path" || echo "::warning::could not disable $path"
               done
 
       - name: Check if upstream has new commits
