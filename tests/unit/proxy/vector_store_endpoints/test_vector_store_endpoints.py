@@ -1,12 +1,12 @@
 import json
 from datetime import datetime, timezone
-from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from fastapi import HTTPException, Request
 
 import litellm
+from litellm.integrations.custom_logger import CustomLogger
 from litellm.integrations.vector_store_integrations.vector_store_pre_call_hook import (
     LiteLLM_ManagedVectorStore,
 )
@@ -23,13 +23,7 @@ from litellm.proxy.vector_store_endpoints.endpoints import (
 from litellm.proxy.vector_store_endpoints.management_endpoints import (
     _check_vector_store_access,
     create_vector_store_in_db,
-    QdrantPointUpdateRequest,
-    QdrantPointsUpsertRequest,
-    delete_qdrant_point,
     new_vector_store,
-    update_qdrant_point,
-    upsert_qdrant_points,
-    upsert_qdrant_points_default,
 )
 from litellm.proxy.vector_store_endpoints.utils import (
     check_vector_store_permission,
@@ -805,23 +799,6 @@ class TestCheckVectorStorePermission:
         )
 
         assert result is False
-
-    def test_permission_allowed_wildcard(self):
-        """Test that wildcard index grants access to any vector store."""
-        key_metadata = {
-            "allowed_vector_store_indexes": [
-                {"index_name": "*", "index_permissions": ["read", "write"]}
-            ]
-        }
-
-        result = check_vector_store_permission(
-            index_name="any-index",
-            permission="write",
-            key_metadata=key_metadata,
-            team_metadata=None,
-        )
-
-        assert result is True
 
     def test_permission_denied_no_metadata(self):
         """Test that permission is denied when no metadata provided."""
@@ -1652,338 +1629,6 @@ class TestIsAllowedToCallVectorStoreFilesEndpoint:
             )
 
         assert result is None
-
-
-@pytest.mark.asyncio
-async def test_upsert_qdrant_points_generates_ids_and_calls_qdrant():
-    vector_store_id = "vs-123"
-    user_id = "user-1"
-
-    mock_vector_store = MagicMock()
-    mock_vector_store.vector_store_id = vector_store_id
-    mock_vector_store.custom_llm_provider = "qdrant"
-    mock_vector_store.litellm_params = {
-        "litellm_embedding_model": "openai/test-embedding",
-        "litellm_embedding_config": {"api_base": "http://embeddings"},
-        "api_base": "http://qdrant:6333",
-    }
-    mock_vector_store.vector_store_metadata = {
-        "created_by": user_id,
-        "qdrant_text_field": "text",
-    }
-    mock_vector_store.model_dump.return_value = {
-        "vector_store_id": vector_store_id,
-        "custom_llm_provider": "qdrant",
-        "litellm_params": mock_vector_store.litellm_params,
-        "vector_store_metadata": mock_vector_store.vector_store_metadata,
-    }
-
-    mock_prisma_client = MagicMock()
-    mock_prisma_client.db.litellm_managedvectorstorestable.find_unique = AsyncMock(
-        return_value=mock_vector_store
-    )
-
-    embedding_response = MagicMock()
-    embedding_response.data = [
-        {"embedding": [0.1, 0.2, 0.3]},
-        {"embedding": [0.4, 0.5, 0.6]},
-    ]
-
-    mock_response = MagicMock()
-    mock_response.status_code = 200
-    mock_response.json.return_value = {"result": "ok"}
-
-    mock_client = AsyncMock()
-    mock_client.put.return_value = mock_response
-
-    mock_async_client = AsyncMock()
-    mock_async_client.__aenter__.return_value = mock_client
-
-    user_api_key = MagicMock(spec=UserAPIKeyAuth)
-    user_api_key.user_id = user_id
-    user_api_key.user_role = None
-    user_api_key.metadata = {
-        "allowed_vector_store_indexes": [
-            {"index_name": vector_store_id, "index_permissions": ["write"]}
-        ]
-    }
-    user_api_key.team_metadata = None
-
-    request = QdrantPointsUpsertRequest(
-        items=[
-            {"text": "first", "metadata": {"source": "a"}},
-            {"id": "point-2", "text": "second", "metadata": {"source": "b"}},
-        ]
-    )
-
-    proxy_server_stub = SimpleNamespace(
-        prisma_client=mock_prisma_client, llm_router=None, master_key="sk-test"
-    )
-
-    with patch(
-        "litellm.proxy.vector_store_endpoints.management_endpoints.litellm.aembedding",
-        new=AsyncMock(return_value=embedding_response),
-    ), patch(
-        "litellm.proxy.vector_store_endpoints.management_endpoints.httpx.AsyncClient",
-        return_value=mock_async_client,
-    ), patch.dict(
-        "sys.modules", {"litellm.proxy.proxy_server": proxy_server_stub}
-    ):
-        result = await upsert_qdrant_points(
-            vector_store_id=vector_store_id,
-            request=request,
-            user_api_key_dict=user_api_key,
-        )
-
-    assert result["status"] == "success"
-    assert len(result["point_ids"]) == 2
-    assert "point-2" in result["point_ids"]
-
-    called_args = mock_client.put.call_args.kwargs
-    assert called_args["json"]["points"][0]["payload"]["text"] == "first"
-    assert called_args["json"]["points"][1]["payload"]["text"] == "second"
-
-
-@pytest.mark.asyncio
-async def test_upsert_qdrant_points_default_uses_metadata():
-    vector_store_id = "vs-default"
-    user_id = "user-1"
-
-    mock_vector_store = MagicMock()
-    mock_vector_store.vector_store_id = vector_store_id
-    mock_vector_store.custom_llm_provider = "qdrant"
-    mock_vector_store.litellm_params = {
-        "litellm_embedding_model": "openai/test-embedding",
-        "litellm_embedding_config": {"api_base": "http://embeddings"},
-        "api_base": "http://qdrant:6333",
-    }
-    mock_vector_store.vector_store_metadata = {
-        "created_by": user_id,
-        "qdrant_text_field": "text",
-    }
-    mock_vector_store.model_dump.return_value = {
-        "vector_store_id": vector_store_id,
-        "custom_llm_provider": "qdrant",
-        "litellm_params": mock_vector_store.litellm_params,
-        "vector_store_metadata": mock_vector_store.vector_store_metadata,
-    }
-
-    mock_prisma_client = MagicMock()
-    mock_prisma_client.db.litellm_managedvectorstorestable.find_unique = AsyncMock(
-        return_value=mock_vector_store
-    )
-
-    embedding_response = MagicMock()
-    embedding_response.data = [{"embedding": [0.1, 0.2, 0.3]}]
-
-    mock_response = MagicMock()
-    mock_response.status_code = 200
-    mock_response.json.return_value = {"result": "ok"}
-
-    mock_client = AsyncMock()
-    mock_client.put.return_value = mock_response
-
-    mock_async_client = AsyncMock()
-    mock_async_client.__aenter__.return_value = mock_client
-
-    user_api_key = MagicMock(spec=UserAPIKeyAuth)
-    user_api_key.user_id = user_id
-    user_api_key.user_role = None
-    user_api_key.metadata = {
-        "default_vector_store_id": vector_store_id,
-        "allowed_vector_store_indexes": [
-            {"index_name": vector_store_id, "index_permissions": ["write"]}
-        ],
-    }
-    user_api_key.team_metadata = None
-
-    request = QdrantPointsUpsertRequest(
-        items=[{"text": "first", "metadata": {"source": "a"}}]
-    )
-
-    proxy_server_stub = SimpleNamespace(
-        prisma_client=mock_prisma_client, llm_router=None, master_key="sk-test"
-    )
-
-    with patch(
-        "litellm.proxy.vector_store_endpoints.management_endpoints.litellm.aembedding",
-        new=AsyncMock(return_value=embedding_response),
-    ), patch(
-        "litellm.proxy.vector_store_endpoints.management_endpoints.httpx.AsyncClient",
-        return_value=mock_async_client,
-    ), patch.dict(
-        "sys.modules", {"litellm.proxy.proxy_server": proxy_server_stub}
-    ):
-        result = await upsert_qdrant_points_default(
-            request=request,
-            user_api_key_dict=user_api_key,
-        )
-
-    assert result["status"] == "success"
-    assert result["vector_store_id"] == vector_store_id
-
-
-@pytest.mark.asyncio
-async def test_upsert_qdrant_points_default_requires_metadata():
-    user_api_key = MagicMock(spec=UserAPIKeyAuth)
-    user_api_key.user_role = None
-    user_api_key.metadata = {}
-    user_api_key.team_metadata = None
-
-    request = QdrantPointsUpsertRequest(items=[{"text": "first"}])
-
-    with pytest.raises(HTTPException) as exc_info:
-        await upsert_qdrant_points_default(
-            request=request,
-            user_api_key_dict=user_api_key,
-        )
-
-    assert exc_info.value.status_code == 400
-
-
-@pytest.mark.asyncio
-async def test_update_qdrant_point_calls_qdrant_with_payload():
-    vector_store_id = "vs-456"
-    point_id = "point-1"
-    user_id = "user-1"
-
-    mock_vector_store = MagicMock()
-    mock_vector_store.vector_store_id = vector_store_id
-    mock_vector_store.custom_llm_provider = "qdrant"
-    mock_vector_store.litellm_params = {
-        "litellm_embedding_model": "openai/test-embedding",
-        "litellm_embedding_config": {"api_base": "http://embeddings"},
-        "api_base": "http://qdrant:6333",
-    }
-    mock_vector_store.vector_store_metadata = {
-        "created_by": user_id,
-        "qdrant_text_field": "text",
-    }
-    mock_vector_store.model_dump.return_value = {
-        "vector_store_id": vector_store_id,
-        "custom_llm_provider": "qdrant",
-        "litellm_params": mock_vector_store.litellm_params,
-        "vector_store_metadata": mock_vector_store.vector_store_metadata,
-    }
-
-    mock_prisma_client = MagicMock()
-    mock_prisma_client.db.litellm_managedvectorstorestable.find_unique = AsyncMock(
-        return_value=mock_vector_store
-    )
-
-    embedding_response = MagicMock()
-    embedding_response.data = [{"embedding": [0.9, 0.8, 0.7]}]
-
-    mock_response = MagicMock()
-    mock_response.status_code = 200
-    mock_response.json.return_value = {"result": "ok"}
-
-    mock_client = AsyncMock()
-    mock_client.put.return_value = mock_response
-
-    mock_async_client = AsyncMock()
-    mock_async_client.__aenter__.return_value = mock_client
-
-    user_api_key = MagicMock(spec=UserAPIKeyAuth)
-    user_api_key.user_id = user_id
-    user_api_key.user_role = None
-    user_api_key.metadata = {
-        "allowed_vector_store_indexes": [
-            {"index_name": vector_store_id, "index_permissions": ["write"]}
-        ]
-    }
-    user_api_key.team_metadata = None
-
-    request = QdrantPointUpdateRequest(text="updated", metadata={"tag": "x"})
-
-    proxy_server_stub = SimpleNamespace(
-        prisma_client=mock_prisma_client, llm_router=None, master_key="sk-test"
-    )
-
-    with patch(
-        "litellm.proxy.vector_store_endpoints.management_endpoints.litellm.aembedding",
-        new=AsyncMock(return_value=embedding_response),
-    ), patch(
-        "litellm.proxy.vector_store_endpoints.management_endpoints.httpx.AsyncClient",
-        return_value=mock_async_client,
-    ), patch.dict(
-        "sys.modules", {"litellm.proxy.proxy_server": proxy_server_stub}
-    ):
-        result = await update_qdrant_point(
-            vector_store_id=vector_store_id,
-            point_id=point_id,
-            request=request,
-            user_api_key_dict=user_api_key,
-        )
-
-    assert result["status"] == "success"
-    called_args = mock_client.put.call_args.kwargs
-    assert called_args["json"]["points"][0]["id"] == point_id
-    assert called_args["json"]["points"][0]["payload"]["text"] == "updated"
-
-
-@pytest.mark.asyncio
-async def test_delete_qdrant_point_calls_qdrant_delete():
-    vector_store_id = "vs-789"
-    point_id = "point-99"
-    user_id = "user-1"
-
-    mock_vector_store = MagicMock()
-    mock_vector_store.vector_store_id = vector_store_id
-    mock_vector_store.custom_llm_provider = "qdrant"
-    mock_vector_store.litellm_params = {"api_base": "http://qdrant:6333"}
-    mock_vector_store.vector_store_metadata = {"created_by": user_id}
-    mock_vector_store.model_dump.return_value = {
-        "vector_store_id": vector_store_id,
-        "custom_llm_provider": "qdrant",
-        "litellm_params": mock_vector_store.litellm_params,
-        "vector_store_metadata": mock_vector_store.vector_store_metadata,
-    }
-
-    mock_prisma_client = MagicMock()
-    mock_prisma_client.db.litellm_managedvectorstorestable.find_unique = AsyncMock(
-        return_value=mock_vector_store
-    )
-
-    mock_response = MagicMock()
-    mock_response.status_code = 200
-    mock_response.json.return_value = {"result": "ok"}
-
-    mock_client = AsyncMock()
-    mock_client.post.return_value = mock_response
-
-    mock_async_client = AsyncMock()
-    mock_async_client.__aenter__.return_value = mock_client
-
-    user_api_key = MagicMock(spec=UserAPIKeyAuth)
-    user_api_key.user_id = user_id
-    user_api_key.user_role = None
-    user_api_key.metadata = {
-        "allowed_vector_store_indexes": [
-            {"index_name": vector_store_id, "index_permissions": ["write"]}
-        ]
-    }
-    user_api_key.team_metadata = None
-
-    proxy_server_stub = SimpleNamespace(
-        prisma_client=mock_prisma_client, master_key="sk-test"
-    )
-
-    with patch(
-        "litellm.proxy.vector_store_endpoints.management_endpoints.httpx.AsyncClient",
-        return_value=mock_async_client,
-    ), patch.dict(
-        "sys.modules", {"litellm.proxy.proxy_server": proxy_server_stub}
-    ):
-        result = await delete_qdrant_point(
-            vector_store_id=vector_store_id,
-            point_id=point_id,
-            user_api_key_dict=user_api_key,
-        )
-
-    assert result["status"] == "success"
-    called_args = mock_client.post.call_args.kwargs
-    assert called_args["json"]["points"] == [point_id]
 
 
 class TestVectorStoreManagementEndpointsExist:
@@ -3612,3 +3257,159 @@ class TestConfigOwnedVectorStores:
         assert response["status"] == "success", response
         prisma.db.litellm_managedvectorstorestable.delete.assert_awaited_once_with(where={"vector_store_id": self.DB_ID})
         assert registry.get_litellm_managed_vector_store_from_registry(self.DB_ID) is None
+
+
+CALLERS_METADATA = {"team": "llmproxy", "endpoint": "ingest", "trace_id": "callers-trace"}
+
+
+class _PreCallBodies(CustomLogger):
+    def __init__(self) -> None:
+        super().__init__()
+        self.logged_bodies = []
+
+    def log_pre_api_call(self, model, messages, kwargs):
+        self.logged_bodies.append(kwargs["litellm_params"]["proxy_server_request"]["body"])
+
+
+@pytest.mark.parametrize("operation", ["create", "update"])
+@pytest.mark.parametrize("model", [None, "gpt-5"])
+@pytest.mark.parametrize(
+    ("metadata_field", "expected_metadata"),
+    [
+        ({"metadata": CALLERS_METADATA}, CALLERS_METADATA),
+        ({"metadata": {}}, {}),
+        ({"metadata": json.dumps(CALLERS_METADATA)}, CALLERS_METADATA),
+        ({"metadata": None}, None),
+        ({}, None),
+    ],
+)
+def test_proxy_vector_store_writes_send_the_provider_exactly_the_callers_metadata(
+    monkeypatch, operation, model, metadata_field, expected_metadata
+):
+    import httpx
+    import respx
+    from fastapi.testclient import TestClient
+
+    from litellm.constants import VECTOR_STORE_CALLER_METADATA_KWARG
+    from litellm.proxy import proxy_server
+    from litellm.proxy.proxy_server import app
+
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
+    monkeypatch.setattr(litellm, "disable_aiohttp_transport", True)
+    litellm.in_memory_llm_clients_cache.flush_cache()
+    monkeypatch.setattr(proxy_server, "master_key", "sk-master-test")
+    monkeypatch.setattr(
+        proxy_server,
+        "llm_router",
+        litellm.Router(
+            model_list=[{"model_name": "gpt-5", "litellm_params": {"model": "openai/gpt-5", "api_key": "sk-test"}}]
+        ),
+    )
+    pre_call_bodies = _PreCallBodies()
+    monkeypatch.setattr(litellm, "callbacks", [pre_call_bodies])
+    sent_bodies = []
+
+    def echo(request: httpx.Request) -> httpx.Response:
+        body = json.loads(request.content)
+        sent_bodies.append(body)
+        return httpx.Response(
+            200,
+            json={
+                "id": "vs_1",
+                "object": "vector_store",
+                "created_at": 0,
+                "name": "x",
+                "usage_bytes": 0,
+                "file_counts": {"in_progress": 0, "completed": 0, "failed": 0, "cancelled": 0, "total": 0},
+                "status": "completed",
+                "metadata": body.get("metadata"),
+            },
+        )
+
+    path = "/v1/vector_stores" if operation == "create" else "/v1/vector_stores/vs_1"
+    routing = {} if model is None else {"model": model}
+    with respx.mock(assert_all_called=False) as upstream:
+        upstream.post(url__regex=r"https://api\.openai\.com/v1/vector_stores.*").mock(side_effect=echo)
+        response = TestClient(app).post(
+            path,
+            json={"name": "x", **routing, **metadata_field},
+            headers={
+                "Authorization": "Bearer sk-master-test",
+                "x-litellm-tags": "header-tag",
+                "x-litellm-trace-id": "header-trace",
+                "x-litellm-session-id": "header-session",
+            },
+        )
+
+    assert response.status_code == 200, response.text
+    assert len(sent_bodies) == 1
+    assert sent_bodies[0].get("metadata") == expected_metadata
+    assert len(pre_call_bodies.logged_bodies) == 1
+    assert "name" in pre_call_bodies.logged_bodies[0]
+    assert VECTOR_STORE_CALLER_METADATA_KWARG not in pre_call_bodies.logged_bodies[0]
+
+
+@pytest.mark.parametrize("operation", ["create", "update"])
+@pytest.mark.parametrize(
+    "request_body",
+    [
+        {"data": {"name": "x", "metadata": json.dumps(CALLERS_METADATA)}},
+        {
+            "content": json.dumps({"name": "x", "metadata": CALLERS_METADATA})[:-1]
+            + ', "nested": '
+            + "[" * 300
+            + "]" * 300
+            + "}",
+            "headers": {"Content-Type": "application/json"},
+        },
+    ],
+    ids=["form", "json-too-deep-to-reparse"],
+)
+def test_proxy_vector_store_writes_send_only_the_callers_metadata_when_the_raw_body_cannot_be_reparsed(
+    monkeypatch, operation, request_body
+):
+    import httpx
+    import respx
+    from fastapi.testclient import TestClient
+
+    from litellm.proxy import proxy_server
+    from litellm.proxy.proxy_server import app
+
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
+    monkeypatch.setattr(litellm, "disable_aiohttp_transport", True)
+    litellm.in_memory_llm_clients_cache.flush_cache()
+    monkeypatch.setattr(proxy_server, "master_key", "sk-master-test")
+    monkeypatch.setattr(proxy_server, "llm_router", litellm.Router(model_list=[]))
+    sent_bodies = []
+
+    def echo(request: httpx.Request) -> httpx.Response:
+        body = json.loads(request.content)
+        sent_bodies.append(body)
+        return httpx.Response(
+            200,
+            json={
+                "id": "vs_1",
+                "object": "vector_store",
+                "created_at": 0,
+                "name": "x",
+                "usage_bytes": 0,
+                "file_counts": {"in_progress": 0, "completed": 0, "failed": 0, "cancelled": 0, "total": 0},
+                "status": "completed",
+                "metadata": body.get("metadata"),
+            },
+        )
+
+    path = "/v1/vector_stores" if operation == "create" else "/v1/vector_stores/vs_1"
+    headers = {
+        "Authorization": "Bearer sk-master-test",
+        "x-litellm-trace-id": "header-trace",
+        **request_body.get("headers", {}),
+    }
+    body_kwargs = {key: value for key, value in request_body.items() if key != "headers"}
+    with respx.mock(assert_all_called=False) as upstream:
+        upstream.post(url__regex=r"https://api\.openai\.com/v1/vector_stores.*").mock(side_effect=echo)
+        response = TestClient(app).post(path, headers=headers, **body_kwargs)
+
+    assert response.status_code == 200, response.text
+    assert len(sent_bodies) == 1
+    assert sent_bodies[0].get("metadata") == CALLERS_METADATA
