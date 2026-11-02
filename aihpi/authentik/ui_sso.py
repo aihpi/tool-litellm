@@ -3055,7 +3055,8 @@ async def insert_sso_user(
 
     from litellm.proxy.proxy_server import premium_user
 
-    with free_sso_user_creation(new_user_request.user_id, enabled=premium_user is not True):
+    authentik_login: Final = getattr(result_openid, "provider", None) == "authentik"
+    with free_sso_user_creation(new_user_request.user_id, enabled=premium_user is not True and not authentik_login):
         try:
             return await new_user(
                 data=new_user_request,

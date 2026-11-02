@@ -84,6 +84,7 @@ aihpi/
   baseline.sha256               hash + git blob id of upstream's version per copy
   rebaseline.sh                 re-record baselines after re-syncing a copy
   resolve_upstream_hunks.py     nightly merge: takes upstream's side where ours is upstream's own code
+  test_authentik_ui_sso.py      first Authentik login creates the user despite upstream's free seat limit
   authentik/ui_sso.py           copy: the Authentik SSO handler
   branding/
     apply.sh                    applies every patch, then the copies above
