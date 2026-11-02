@@ -25,13 +25,23 @@ if HPI_ORANGE in css:
     print("  already applied, skipping")
     raise SystemExit
 
-for var, value in (("--primary", HPI_ORANGE), ("--primary-foreground", ON_ORANGE)):
-    css, n = re.subn(rf"(^\s*{re.escape(var)}\s*:\s*)[^;]+;", rf"\g<1>{value};", css, flags=re.M)
-    if n != 2:
-        raise SystemExit(
-            f"ERROR: expected {var} twice (:root and .dark) in {path}, found {n}; "
-            "upstream changed the theme tokens, update aihpi/branding/apply.sh"
-        )
+def brand(block):
+    body = block.group(0)
+    for var, value in (("--primary", HPI_ORANGE), ("--primary-foreground", ON_ORANGE)):
+        body, n = re.subn(rf"(^\s*{re.escape(var)}\s*:\s*)[^;]+;", rf"\g<1>{value};", body, flags=re.M)
+        if n != 1:
+            raise SystemExit(
+                f"ERROR: expected {var} once in the {block.group(1)} block of {path}, found {n}; "
+                "upstream changed the theme tokens, update aihpi/branding/apply.sh"
+            )
+    return body
+
+css, blocks = re.subn(r"^(:root|\.dark) \{\n.*?^\}", brand, css, flags=re.M | re.S)
+if blocks != 2:
+    raise SystemExit(
+        f"ERROR: expected one :root and one .dark block in {path}, found {blocks}; "
+        "upstream changed the theme tokens, update aihpi/branding/apply.sh"
+    )
 
 open(path, "w").write(css)
 print("  applied")
