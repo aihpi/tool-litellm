@@ -59,9 +59,14 @@ done
 # Both logos live in the full-width top banner (LegalBanner), so hide the
 # sidebar's logo to avoid showing the branding twice. Done in CSS keyed on the
 # aria-label, which has outlived every rewrite of the surrounding markup.
+# Since upstream #50148 the label is the shell.nav.homeLink string, which
+# leftnav hands to the shared SidebarBrand. Chat passes its own label, so its
+# sidebar keeps the logo.
 echo "Hiding sidebar logo..."
-if ! grep -q 'aria-label="LiteLLM home"' "$UI_DIR/src/components/leftnav.tsx"; then
-  echo "ERROR: aria-label=\"LiteLLM home\" not found in $UI_DIR/src/components/leftnav.tsx; upstream changed it, update aihpi/branding/apply.sh" >&2
+if ! grep -qF 'homeLabel={t("shell.nav.homeLink")}' "$UI_DIR/src/components/leftnav.tsx" \
+  || ! grep -qF 'aria-label={homeLabel}' "$UI_DIR/src/components/shared/SidebarBrand.tsx" \
+  || ! grep -qF '"homeLink": "LiteLLM home"' "$UI_DIR/src/i18n/locales/en.json"; then
+  echo "ERROR: the sidebar home link is no longer labelled \"LiteLLM home\" (leftnav.tsx, shared/SidebarBrand.tsx, en.json); upstream changed it, update aihpi/branding/apply.sh" >&2
   exit 1
 fi
 HIDE_LOGO_RULE='a[aria-label="LiteLLM home"] { display: none; }'
@@ -122,7 +127,7 @@ else
 import sys
 
 path = sys.argv[1]
-old = '<h2 className="text-3xl font-semibold text-foreground">\U0001F685 LiteLLM</h2>'
+old = '<h2 className="text-3xl font-semibold text-foreground">{productNames.liteLLMWithLogo}</h2>'
 new = (
     '<h2 className="text-3xl font-semibold text-foreground">AI Model Hub</h2>\n'
     '                <p className="text-sm text-muted-foreground">'
@@ -146,11 +151,13 @@ print(f"  applied to {n} headings")
 PY
 fi
 
+# The button and tooltip read their text from en.json since upstream #50110.
 echo "Rebranding SSO login to Authentik..."
-if grep -q "Login with Authentik" "$LOGIN_PAGE"; then
+EN_JSON="$UI_DIR/src/i18n/locales/en.json"
+if grep -q "Login with Authentik" "$EN_JSON"; then
   echo "  already applied, skipping"
-elif grep -q "Login with SSO" "$LOGIN_PAGE"; then
-  python3 - "$LOGIN_PAGE" <<'PY'
+elif grep -qF '{t("login.form.sso")}' "$LOGIN_PAGE" && grep -qF '"sso": "Login with SSO"' "$EN_JSON"; then
+  python3 - "$EN_JSON" <<'PY'
 import sys
 path = sys.argv[1]
 src = open(path).read()
@@ -158,7 +165,7 @@ src = src.replace("configure SSO to log in with SSO", "configure Authentik SSO t
 open(path, "w").write(src.replace("Login with SSO", "Login with Authentik"))
 PY
 else
-  echo "ERROR: neither 'Login with SSO' nor 'Login with Authentik' found in $LOGIN_PAGE" >&2
+  echo "ERROR: login.form.sso is neither 'Login with SSO' nor 'Login with Authentik' in $EN_JSON, or $LOGIN_PAGE no longer uses it" >&2
   echo "Upstream changed the login page; update aihpi/branding/apply.sh" >&2
   exit 1
 fi
@@ -199,7 +206,7 @@ if src.count(notice) != 1:
     )
 src = src.replace(notice, links, 1)
 
-subtitle = '<p className="text-sm text-muted-foreground">Access your LiteLLM Admin UI.</p>\n'
+subtitle = '<p className="text-sm text-muted-foreground">{t("login.form.subtitle")}</p>\n'
 if subtitle not in src:
     raise SystemExit(
         f"ERROR: login subtitle not found in {path}; "
@@ -223,7 +230,7 @@ if "aisc.png" in src:
     print("  already applied, skipping")
     raise SystemExit
 
-old = '<div className="text-lg font-medium py-2 pr-4 border-r border-r-gray-200">\U0001F685 LiteLLM</div>'
+old = '<div className="text-lg font-medium py-2 pr-4 border-r border-r-gray-200">{productNames.liteLLMWithLogo}</div>'
 if old not in src:
     raise SystemExit(
         f"ERROR: loading screen wordmark not found in {path}; "
