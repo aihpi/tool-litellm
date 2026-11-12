@@ -1,3 +1,1 @@
-*.ipynb linguist-vendored
-ui/litellm-dashboard/src/lib/http/schema.d.ts linguist-generated
 litellm/proxy/_experimental/out/** merge=ours
