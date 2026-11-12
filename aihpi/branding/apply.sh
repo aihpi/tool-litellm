@@ -3,7 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 AIHPI_DIR="$(dirname "$SCRIPT_DIR")"
-UI_DIR="ui/litellm-dashboard"
+UI_DIR="litellm/ui/litellm-dashboard"
 LOGIN_PAGE="$UI_DIR/src/app/login/LoginPage.tsx"
 
 # Upstream dropped @tremor/react in #37394, so the --color-tremor-brand* vars

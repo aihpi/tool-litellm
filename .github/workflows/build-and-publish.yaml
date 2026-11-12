@@ -75,6 +75,9 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
+          # Upstream moved the Dockerfile off the repo root (#50981). Its ignore
+          # file, Dockerfile.dockerignore beside it, is picked up automatically.
+          file: litellm/deploy/docker/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

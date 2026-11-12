@@ -13,34 +13,36 @@ To check you have not broken this:
 
 ```bash
 git fetch upstream main
-git diff upstream/main --name-only -- litellm/ ui/ | grep -v "_experimental/out"
+git diff upstream/main --name-only -- litellm/ | grep -v "_experimental/out"
 ```
 
 Every path listed must be a file that does **not** exist upstream. Today that is the legal
-components, the HPI logos and favicons, `uiAssetPath.ts`, and `custom_authentik_sso.py`.
+components, the HPI logos and favicons, `uiAssetPath.ts`, and `custom_authentik_sso.py`, plus
+`deploy/docker/build_admin_ui.sh`, a known exception: the fork changed it to always rebuild the
+UI, so it conflicts whenever upstream edits it. The root `.gitignore` is the only other one.
 
 ## How the patches get applied
 
 `branding/apply.sh` runs as a step in `.github/workflows/build-and-publish.yaml`, **before**
-`docker build`. It is not in the `Dockerfile`, because the `Dockerfile` is an upstream file and
-editing it would reintroduce the merge conflict we are avoiding.
+`docker build`. It is not in the Dockerfile, because `litellm/deploy/docker/Dockerfile` is an
+upstream file and editing it would reintroduce the merge conflict we are avoiding.
 
-Consequence: **a bare `docker build .` produces an unbranded image with no Authentik.** There is no
-error, it just silently lacks the fork's changes. Always build with:
+Consequence: **a `docker build` without `apply.sh` produces an unbranded image with no Authentik.**
+There is no error, it just silently lacks the fork's changes. Always build with:
 
 ```bash
-bash aihpi/branding/apply.sh && docker build -t litellm-aihpi:local .
+bash aihpi/branding/apply.sh && docker build -f litellm/deploy/docker/Dockerfile -t litellm-aihpi:local .
 ```
 
 `apply.sh` is idempotent, so re-running it is safe.
 
 ## Local development
 
-`apply.sh` edits real files under `litellm/` and `ui/`. In CI that tree is throwaway; locally it
+`apply.sh` edits real files under `litellm/`. In CI that tree is throwaway; locally it
 leaves you with dirty files that look like your own edits. Revert them when you are done:
 
 ```bash
-git checkout -- litellm/ ui/
+git checkout -- litellm/
 ```
 
 `litellm/aihpi/` is gitignored, but the patched upstream files are **not**. Check `git status`
@@ -54,7 +56,7 @@ docker network create litellm-net
 docker run -d --name litellm-pg --network litellm-net \
   -e POSTGRES_USER=llm -e POSTGRES_PASSWORD=llm -e POSTGRES_DB=litellm postgres:16-alpine
 
-bash aihpi/branding/apply.sh && docker build -t litellm-aihpi:local .
+bash aihpi/branding/apply.sh && docker build -f litellm/deploy/docker/Dockerfile -t litellm-aihpi:local .
 
 docker run -d --name litellm-aihpi-test --network litellm-net -p 4000:4000 \
   -e LITELLM_WORKER_STARTUP_HOOKS=litellm.aihpi:register \
@@ -164,7 +166,7 @@ To resolve one by hand:
    old baseline blob from `baseline.sha256` and run
    `git merge-file -L ours -L baseline -L upstream aihpi/<copy> <(git cat-file blob <blob>) <upstream path>`
 2. resolve the markers, keeping upstream's work and re-adding only ours
-3. from a pristine tree (`git checkout -- litellm/ ui/`), run `bash aihpi/rebaseline.sh`. It refuses
+3. from a pristine tree (`git checkout -- litellm/`), run `bash aihpi/rebaseline.sh`. It refuses
    to baseline a copy that upstream changed but you did not touch, because that would hide the
    stale copy from the build guard
 
@@ -179,7 +181,13 @@ takes upstream's side of a hunk only when `git blame` shows every line on our si
 upstream's own history and no merge-base line has gone missing from our file, so fork work and
 deletions are never dropped. Everything else, including the staging commits that never reached main,
 goes on to the LLM resolver and then to an issue. Repeat failures comment on the open issue instead
-of opening a new one
+of opening a new one.
+
+When upstream moves a directory, git moves our files in it along and reports each as a "file
+location" conflict (`AU` in `git status`). The script leaves those alone, binary files included.
+Accept the new location with `git add`, then point `branding/apply.sh` and `manifest.txt` at the new
+paths. #244 was such a move: `ui/` went to `litellm/ui/` and the Dockerfile to
+`litellm/deploy/docker/`.
 
 To finish a merge by hand, merge `upstream/main`, run the script over the conflicted files, resolve
 what it leaves, then do the copy re-sync described above. Its tests build a criss-cross merge like
