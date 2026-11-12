@@ -3,7 +3,8 @@
 LiteLLM's per-team key duration is an Enterprise feature, so this does the same for free from outside: run it on a
 schedule (a Kubernetes CronJob, daily). A key of the team without an end date is set to end with its period. A key
 whose owner set an end date keeps it, up to a hard cut after KEY_EXPIRY_MAX_EXTENSIONS more periods (see
-`Periods`). Keys of every other team are not touched. Spend and usage stay when a key expires.
+`Periods`). Keys owned by members of the KEY_EXPIRY_EXEMPT_TEAMS (e.g. the internal team) and keys of every other
+team are not touched. Spend and usage stay when a key expires.
 
 Environment:
   LITELLM_BASE_URL          LiteLLM inside the cluster, e.g. http://litellm-service.litellm.svc:4000
@@ -13,6 +14,8 @@ Environment:
   KEY_EXPIRY_TIMEZONE       keys end at 00:00 on the day after the last day, in this time zone (default: Europe/Berlin)
   KEY_EXPIRY_MAX_EXTENSIONS own end dates are kept up to the end of this many periods after the key's own period,
                             i.e. this many extensions; later dates are cut there (default: 2; 0 = no own dates)
+  KEY_EXPIRY_EXEMPT_TEAMS   team ids, comma-separated; keys owned by their members are left alone (default: none).
+                            The admin key must also be allowed to call /team/info then.
   KEY_EXPIRY_APPLY          "true" to change keys; anything else only prints what would change (default)
 """
 
@@ -120,12 +123,20 @@ class Periods:
         return self.key_expiry(created_at, now)
 
 
-def plan_changes(keys: Sequence[dict[str, Any]], *, now: datetime, periods: Periods) -> list[Change]:
+def plan_changes(
+    keys: Sequence[dict[str, Any]],
+    *,
+    now: datetime,
+    periods: Periods,
+    exempt_users: frozenset[str] = frozenset(),
+) -> list[Change]:
     changes = []
     for key in keys:
         token = key.get("token")
         if not isinstance(token, str) or not token:
             continue
+        if key.get("user_id") in exempt_users:
+            continue  # owned by a member of an exempt team
         expires = _parse_expires(key.get("expires"))
         target = periods.target_for(_parse_expires(key.get("created_at")), expires, now)
         if expires is not None and (expires <= now or expires <= target + _TOLERANCE):
@@ -141,11 +152,19 @@ async def run(
     team_id: str,
     periods: Periods,
     apply: bool,
+    exempt_teams: Sequence[str] = (),
     now: datetime | None = None,
 ) -> list[Change]:
     now = now or datetime.now(timezone.utc)
     period_end = periods.expiry_for(now)
-    changes = plan_changes(await client.list_team_keys(team_id), now=now, periods=periods)
+    exempt_users: set[str] = set()
+    for exempt_team in exempt_teams:
+        exempt_users |= await client.team_member_ids(exempt_team)
+    if exempt_teams:
+        print(f"exempt: {len(exempt_users)} member(s) of {', '.join(exempt_teams)}")
+    changes = plan_changes(
+        await client.list_team_keys(team_id), now=now, periods=periods, exempt_users=frozenset(exempt_users)
+    )
     for change in changes:
         old = change.old_expires.isoformat() if change.old_expires else "never"
         print(f"{'set' if apply else 'would set'} {change.label}: {old} -> {change.new_expires.isoformat()}")
@@ -171,6 +190,7 @@ def main() -> int:
             team_id=os.environ.get("KEY_EXPIRY_TEAM_ID", "kisz-default"),
             periods=periods,
             apply=os.environ.get("KEY_EXPIRY_APPLY", "").lower() == "true",
+            exempt_teams=[t.strip() for t in os.environ.get("KEY_EXPIRY_EXEMPT_TEAMS", "").split(",") if t.strip()],
         )
     )
     return 0

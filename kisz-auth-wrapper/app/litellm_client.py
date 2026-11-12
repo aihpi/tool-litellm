@@ -184,6 +184,13 @@ class LiteLLMClient:
                 return keys
             page += 1
 
+    async def team_member_ids(self, team_id: str) -> set[str]:
+        """User ids of a team's members. Raises if the team can't be read, so a caller never mistakes an
+        unreadable team for an empty one."""
+        payload = await self._request("GET", "/team/info", params={"team_id": team_id})
+        members = (payload.get("team_info") or {}).get("members_with_roles") or []
+        return {m["user_id"] for m in members if isinstance(m, dict) and m.get("user_id")}
+
     async def set_key_duration(self, key: str, duration: str) -> dict[str, Any]:
         """`key` may be the hashed token from /key/list; LiteLLM counts `duration` from the moment of the call."""
         return await self._request("POST", "/key/update", json_body={"key": key, "duration": duration})
