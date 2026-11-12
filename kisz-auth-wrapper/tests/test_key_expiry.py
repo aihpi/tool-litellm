@@ -126,40 +126,46 @@ def test_key_already_ended_on_time_is_left_alone():
     assert plan_changes(keys, now=run_time, periods=PERIODS) == []
 
 
-TRANSITION = PERIODS.__class__(ends=PERIODS.ends, tz=BERLIN, transition_before=at(2026, 11, 13, 0))
+OWN_DATES = Periods(ends=PERIODS.ends, tz=BERLIN, max_extensions=2)
+FEB_8 = datetime(2027, 2, 8, 10, 29, tzinfo=timezone.utc)
+APR_12 = datetime(2027, 4, 12, 9, 45, tzinfo=timezone.utc)
 
 
-def test_keys_from_before_the_transition_keep_their_own_date_up_to_one_extension():
+def test_owner_set_end_dates_are_kept_up_to_two_extensions():
     created = at(2026, 10, 20)
-    feb_8 = datetime(2027, 2, 8, 10, 29, tzinfo=timezone.utc)
-    apr_12 = datetime(2027, 4, 12, 9, 45, tzinfo=timezone.utc)
     keys = [
-        {"token": "h-feb", "key_alias": "feb", "created_at": created.isoformat(), "expires": feb_8.isoformat()},
-        {"token": "h-apr", "key_alias": "apr", "created_at": created.isoformat(), "expires": apr_12.isoformat()},
+        {"token": "h-feb", "key_alias": "feb", "created_at": created.isoformat(), "expires": FEB_8.isoformat()},
+        {"token": "h-apr", "key_alias": "apr", "created_at": created.isoformat(), "expires": APR_12.isoformat()},
+        {"token": "h-aug", "key_alias": "aug", "created_at": created.isoformat(), "expires": "2027-08-01T00:00:00Z"},
         {"token": "h-none", "key_alias": "none", "created_at": created.isoformat(), "expires": None},
     ]
-    targets = {c.label: c.new_expires for c in plan_changes(keys, now=NOW, periods=TRANSITION)}
-    # 8 February is within one extension: untouched. 12 April would be a second extension: cut to 31 March.
-    assert targets == {"apr": end(2027, 4, 1), "none": end(2027, 1, 1)}
+    targets = {c.label: c.new_expires for c in plan_changes(keys, now=NOW, periods=OWN_DATES)}
+    # Winter 2026 + Spring + Summer: 8 February and 12 April stay, August is cut to 30 June, no date gets 31 Dec.
+    assert targets == {"aug": end(2027, 7, 1), "none": end(2027, 1, 1)}
 
 
-def test_the_week_after_a_period_end_does_not_stop_transition_keys():
-    created = at(2026, 10, 20)
-    feb_8 = datetime(2027, 2, 8, 10, 29, tzinfo=timezone.utc)
+def test_old_keys_count_from_the_running_period_not_their_own():
+    """A key made in spring 2026 with an end date in 2027 isn't cut off at rollout; it gets two periods from now."""
+    created = at(2026, 3, 1)
+    keys = [{"token": "h", "key_alias": "old", "created_at": created.isoformat(), "expires": "2027-12-01T00:00:00Z"}]
+    (change,) = plan_changes(keys, now=NOW, periods=OWN_DATES)
+    assert change.new_expires == end(2027, 7, 1)
+
+
+def test_the_cut_follows_the_keys_own_period():
+    created = at(2027, 1, 10)  # Spring 2027: two extensions end with Autumn, 30 Sep
+    keys = [{"token": "h", "key_alias": "k", "created_at": created.isoformat(), "expires": "2027-12-24T00:00:00Z"}]
+    (change,) = plan_changes(keys, now=at(2027, 1, 11), periods=OWN_DATES)
+    assert change.new_expires == end(2027, 10, 1)
+
+
+def test_the_week_after_a_period_end_does_not_stop_keys_with_an_own_date():
     jan_1_run = at(2027, 1, 1, 0).replace(minute=5)
-    keys = [{"token": "h", "created_at": created.isoformat(), "expires": feb_8.isoformat()}]
-    assert plan_changes(keys, now=jan_1_run, periods=TRANSITION) == []
+    keys = [{"token": "h", "created_at": at(2026, 10, 20).isoformat(), "expires": FEB_8.isoformat()}]
+    assert plan_changes(keys, now=jan_1_run, periods=OWN_DATES) == []
 
 
-def test_keys_created_after_the_transition_follow_the_rule():
-    feb_8 = datetime(2027, 2, 8, 10, 29, tzinfo=timezone.utc)
-    keys = [{"token": "h", "key_alias": "new", "created_at": at(2026, 11, 20).isoformat(), "expires": feb_8.isoformat()}]
-    (change,) = plan_changes(keys, now=at(2026, 11, 21), periods=TRANSITION)
-    assert change.new_expires == end(2027, 1, 1)
-
-
-def test_without_a_transition_every_key_follows_the_rule():
-    feb_8 = datetime(2027, 2, 8, 10, 29, tzinfo=timezone.utc)
-    keys = [{"token": "h", "key_alias": "old", "created_at": at(2026, 10, 20).isoformat(), "expires": feb_8.isoformat()}]
+def test_without_extensions_every_key_ends_with_its_period():
+    keys = [{"token": "h", "key_alias": "old", "created_at": at(2026, 10, 20).isoformat(), "expires": FEB_8.isoformat()}]
     (change,) = plan_changes(keys, now=NOW, periods=PERIODS)
     assert change.new_expires == end(2027, 1, 1)

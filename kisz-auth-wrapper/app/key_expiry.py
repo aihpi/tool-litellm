@@ -1,9 +1,9 @@
 """Ends every key of one team at the end of the current period: `python -m app.key_expiry`.
 
 LiteLLM's per-team key duration is an Enterprise feature, so this does the same for free from outside: run it on a
-schedule (a Kubernetes CronJob, daily) and every key of the team that has no end date, or one later than its
-period allows, is set to end with its period (see `Periods`). Keys that already end earlier are left alone, as are
-keys of every other team. Spend and usage stay when a key expires.
+schedule (a Kubernetes CronJob, daily). A key of the team without an end date is set to end with its period. A key
+whose owner set an end date keeps it, up to a hard cut after KEY_EXPIRY_MAX_EXTENSIONS more periods (see
+`Periods`). Keys of every other team are not touched. Spend and usage stay when a key expires.
 
 Environment:
   LITELLM_BASE_URL          LiteLLM inside the cluster, e.g. http://litellm-service.litellm.svc:4000
@@ -11,8 +11,8 @@ Environment:
   KEY_EXPIRY_TEAM_ID        team whose keys get the period end (default: kisz-default)
   KEY_EXPIRY_PERIOD_ENDS    last day of each period as month-day, comma-separated (default: 03-31,06-30,09-30,12-31)
   KEY_EXPIRY_TIMEZONE       keys end at 00:00 on the day after the last day, in this time zone (default: Europe/Berlin)
-  KEY_EXPIRY_TRANSITION_BEFORE  ISO date-time; keys created before it keep their own end date, up to one extension
-                            (the end of the period after the one running then). Unset: every key follows the rule.
+  KEY_EXPIRY_MAX_EXTENSIONS own end dates are kept up to the end of this many periods after the key's own period,
+                            i.e. this many extensions; later dates are cut there (default: 2; 0 = no own dates)
   KEY_EXPIRY_APPLY          "true" to change keys; anything else only prints what would change (default)
 """
 
@@ -74,10 +74,9 @@ class Periods:
 
     ends: tuple[tuple[int, int], ...]
     tz: ZoneInfo
-    # Keys created before this moment that already carry an end date of their own keep it, up to the end of the
-    # period after the one running at that moment (one extension). People chose those dates before the rule
-    # existed; every key created later follows the rule strictly.
-    transition_before: datetime | None = None
+    # An end date the key's owner set is kept up to the end of this many periods after the key's own period
+    # (that many extensions). 0 means every key ends with its period.
+    max_extensions: int = 0
 
     def expiry_for(self, moment: datetime) -> datetime:
         local = moment.astimezone(self.tz).date()
@@ -103,17 +102,21 @@ class Periods:
                 return now
         return self.expiry_for(now)
 
+    def own_date_cap(self, created_at: datetime | None, now: datetime) -> datetime:
+        """The hard cut for an owner-set end date: `max_extensions` periods after the key's own period. A key whose
+        own period is already over (made before this job ran) counts from the period running now, so nobody is cut
+        off abruptly at rollout."""
+        base = created_at if created_at is not None and self.expiry_for(created_at) > now else now
+        end = self.expiry_for(base)
+        for _ in range(self.max_extensions):
+            end = self.expiry_for(end)
+        return end
+
     def target_for(self, created_at: datetime | None, expires: datetime | None, now: datetime) -> datetime:
-        """Where a key should end: by `key_expiry`, except for keys from before the transition that already had
-        an end date, which keep it up to one extension."""
-        if (
-            self.transition_before is not None
-            and created_at is not None
-            and expires is not None
-            and created_at < self.transition_before
-        ):
-            one_extension = self.expiry_for(self.expiry_for(self.transition_before))
-            return min(expires, one_extension)
+        """Where a key should end. No end date: with its period (`key_expiry`). An end date of its own: kept, up to
+        the hard cut (`own_date_cap`)."""
+        if expires is not None and self.max_extensions > 0:
+            return min(expires, self.own_date_cap(created_at, now))
         return self.key_expiry(created_at, now)
 
 
@@ -157,15 +160,10 @@ def main() -> int:
     base_url = os.environ["LITELLM_BASE_URL"]
     admin_key = os.environ.get("LITELLM_KEY_POLICY_KEY") or os.environ["LITELLM_MASTER_KEY"]
     client = LiteLLMClient(base_url, admin_key, timeout=60.0)
-    tz = ZoneInfo(os.environ.get("KEY_EXPIRY_TIMEZONE", "Europe/Berlin"))
-    transition = os.environ.get("KEY_EXPIRY_TRANSITION_BEFORE", "").strip()
-    transition_before = datetime.fromisoformat(transition) if transition else None
-    if transition_before is not None and transition_before.tzinfo is None:
-        transition_before = transition_before.replace(tzinfo=tz)
     periods = Periods(
         ends=tuple(parse_period_ends(os.environ.get("KEY_EXPIRY_PERIOD_ENDS", "03-31,06-30,09-30,12-31"))),
-        tz=tz,
-        transition_before=transition_before,
+        tz=ZoneInfo(os.environ.get("KEY_EXPIRY_TIMEZONE", "Europe/Berlin")),
+        max_extensions=int(os.environ.get("KEY_EXPIRY_MAX_EXTENSIONS", "2")),
     )
     asyncio.run(
         run(
