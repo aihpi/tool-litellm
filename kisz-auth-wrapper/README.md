@@ -93,7 +93,9 @@ For multi-replica support in Phase 2, move session storage to Redis.
 
 LiteLLM's per-team key duration is an Enterprise feature, so `python -m app.key_expiry` does the same from outside. Run as a daily Kubernetes CronJob with this image (shortly after midnight Berlin time, e.g. `5 0 * * *`), it gives every key of `kisz-default` that has no end date, or ends too late, the end of its period. The periods end on 31 March, 30 June, 30 September and 31 December; a key works through that day and stops at 00:00 Berlin time on the 1st. Whoever continues creates a new key from the 1st on, which then runs through the new period. Keys of other teams and keys that already end earlier are not touched; usage data stays when a key expires.
 
-It only prints what it would change unless `KEY_EXPIRY_APPLY=true`. The other settings are `KEY_EXPIRY_TEAM_ID`, `KEY_EXPIRY_PERIOD_ENDS` (month-day list) and `KEY_EXPIRY_TIMEZONE`. It needs `LITELLM_BASE_URL` and an admin key in `LITELLM_KEY_POLICY_KEY` (or `LITELLM_MASTER_KEY`) that may call `/key/list` and `/key/update`.
+A key whose owner set an end date keeps it, up to a hard cut after two extensions (`KEY_EXPIRY_MAX_EXTENSIONS`, default 2): for a key made in Winter 2026 that is 30 June 2027. Later dates are cut there. Keys made before the job ran count from the period running now, so nobody is cut off abruptly at rollout. Only keys without an end date get the end of their period.
+
+It only prints what it would change unless `KEY_EXPIRY_APPLY=true`. The other settings are `KEY_EXPIRY_TEAM_ID`, `KEY_EXPIRY_PERIOD_ENDS` (month-day list), `KEY_EXPIRY_MAX_EXTENSIONS` and `KEY_EXPIRY_TIMEZONE`. It needs `LITELLM_BASE_URL` and an admin key in `LITELLM_KEY_POLICY_KEY` (or `LITELLM_MASTER_KEY`) that may call `/key/list` and `/key/update`.
 
 ```bash
 LITELLM_BASE_URL=http://litellm-service.litellm.svc:4000 LITELLM_KEY_POLICY_KEY=sk-... python -m app.key_expiry
