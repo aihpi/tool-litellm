@@ -77,10 +77,16 @@ def test_plan_uses_each_keys_creation_date():
     assert targets == {"new": end(2027, 4, 1), "old": end(2027, 4, 1)}
 
 
-def make_client(keys, calls):
+def make_client(keys, calls, teams=None):
     async def handler(request: httpx.Request) -> httpx.Response:
         body = json.loads(request.content) if request.content else None
         calls.append((request.method, request.url.path, dict(request.url.params), body))
+        if request.url.path == "/team/info":
+            team_id = request.url.params.get("team_id")
+            if teams is None or team_id not in teams:
+                return httpx.Response(404, json={"detail": "team not found"})
+            members = [{"user_id": u, "role": "user"} for u in teams[team_id]] + [{"user_email": "x@hpi.de", "role": "user"}]
+            return httpx.Response(200, json={"team_id": team_id, "team_info": {"members_with_roles": members}})
         if request.url.path == "/key/list":
             return httpx.Response(200, json={"keys": keys, "total_pages": 1})
         if request.url.path == "/key/update":
@@ -169,3 +175,36 @@ def test_without_extensions_every_key_ends_with_its_period():
     keys = [{"token": "h", "key_alias": "old", "created_at": at(2026, 10, 20).isoformat(), "expires": FEB_8.isoformat()}]
     (change,) = plan_changes(keys, now=NOW, periods=PERIODS)
     assert change.new_expires == end(2027, 1, 1)
+
+
+
+def test_keys_of_exempt_users_are_left_alone():
+    keys = [
+        {"token": "h-int", "key_alias": "internal", "user_id": "u-int", "expires": None},
+        {"token": "h-ext", "key_alias": "external", "user_id": "u-ext", "expires": None},
+    ]
+    changes = plan_changes(keys, now=NOW, periods=PERIODS, exempt_users=frozenset({"u-int"}))
+    assert [c.label for c in changes] == ["external"]
+
+
+@pytest.mark.asyncio
+async def test_run_reads_exempt_team_members():
+    calls = []
+    keys = [
+        {"token": "h-int", "user_id": "u-int", "expires": None},
+        {"token": "h-ext", "user_id": "u-ext", "expires": None},
+    ]
+    client = make_client(keys, calls, teams={"kisz-internal": ["u-int"]})
+    changes = await run(client, team_id="kisz-default", periods=PERIODS, apply=True, exempt_teams=["kisz-internal"], now=NOW)
+    assert [c.token for c in changes] == ["h-ext"]
+    assert [c[3]["key"] for c in calls if c[1] == "/key/update"] == ["h-ext"]
+
+
+@pytest.mark.asyncio
+async def test_unreadable_exempt_team_stops_the_run_before_any_change():
+    """An unreadable team must not count as empty, or its members' keys would be cut."""
+    calls = []
+    client = make_client([{"token": "h", "user_id": "u-int", "expires": None}], calls, teams={})
+    with pytest.raises(Exception):
+        await run(client, team_id="kisz-default", periods=PERIODS, apply=True, exempt_teams=["kisz-internal"], now=NOW)
+    assert not [c for c in calls if c[1] == "/key/update"]
