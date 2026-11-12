@@ -215,6 +215,12 @@ jobs:
           while IFS=$'\t' read -r ours upstream_path; do
             case "$ours" in \#*|"") continue ;; esac
             copy="aihpi/$ours"
+            if [ ! -f "$upstream_path" ]; then
+              echo "ERROR: $upstream_path no longer exists. Upstream moved or deleted it;" >&2
+              echo "point aihpi/manifest.txt and aihpi/branding/apply.sh at its new path." >&2
+              failed="${failed:-} $copy"
+              continue
+            fi
             read -r recorded_sha recorded_blob < <(awk -F'\t' -v n="$ours" '$3 == n {print $1, $2}' aihpi/baseline.sha256)
             if [ "$(shasum -a 256 "$upstream_path" | awk '{print $1}')" = "$recorded_sha" ]; then
               echo "$ours: upstream unchanged"
