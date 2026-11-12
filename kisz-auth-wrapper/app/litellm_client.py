@@ -166,3 +166,24 @@ class LiteLLMClient:
 
     async def delete_key(self, key: str) -> dict[str, Any]:
         return await self._request("POST", "/key/delete", json_body={"keys": [key]})
+
+    async def list_team_keys(self, team_id: str) -> list[dict[str, Any]]:
+        """Every live key of a team as full objects (hashed token, alias, expiry), across all pages."""
+        keys: list[dict[str, Any]] = []
+        page = 1
+        while True:
+            payload = await self._request(
+                "GET",
+                "/key/list",
+                params={"team_id": team_id, "return_full_object": "true", "page": page, "size": 100},
+            )
+            batch = [k for k in payload.get("keys") or [] if isinstance(k, dict)]
+            keys.extend(batch)
+            total_pages = payload.get("total_pages")
+            if not batch or not isinstance(total_pages, int) or page >= total_pages:
+                return keys
+            page += 1
+
+    async def set_key_duration(self, key: str, duration: str) -> dict[str, Any]:
+        """`key` may be the hashed token from /key/list; LiteLLM counts `duration` from the moment of the call."""
+        return await self._request("POST", "/key/update", json_body={"key": key, "duration": duration})
