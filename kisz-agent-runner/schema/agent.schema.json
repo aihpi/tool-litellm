@@ -1,0 +1,176 @@
+{
+  "$defs": {
+    "SlackSpec": {
+      "additionalProperties": false,
+      "description": "How the Slack bot routes to this agent. The runner only carries it; the bot reads it.",
+      "properties": {
+        "channels": {
+          "description": "Slack channel IDs this agent answers in.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Channels",
+          "type": "array"
+        },
+        "default": {
+          "default": false,
+          "description": "Answer DMs and @mentions that no channel rule claims.",
+          "title": "Default",
+          "type": "boolean"
+        },
+        "dm": {
+          "default": true,
+          "description": "Whether people may DM this agent.",
+          "title": "Dm",
+          "type": "boolean"
+        },
+        "listen": {
+          "default": "mentions",
+          "description": "In `channels`: answer only @mentions, or read every post.",
+          "enum": [
+            "mentions",
+            "all"
+          ],
+          "title": "Listen",
+          "type": "string"
+        }
+      },
+      "title": "SlackSpec",
+      "type": "object"
+    }
+  },
+  "$id": "https://kisz.ai/schemas/agent-v1.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "`agent.yaml`.",
+  "properties": {
+    "apiVersion": {
+      "const": "kisz.ai/v1",
+      "title": "Apiversion",
+      "type": "string"
+    },
+    "description": {
+      "maxLength": 500,
+      "minLength": 1,
+      "title": "Description",
+      "type": "string"
+    },
+    "max_turns": {
+      "default": 8,
+      "description": "Model calls per request before the agent must answer.",
+      "maximum": 50,
+      "minimum": 1,
+      "title": "Max Turns",
+      "type": "integer"
+    },
+    "mcp_access_groups": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "LiteLLM MCP access groups the agent may use. Defaults to [<name>]; admins add servers to that group.",
+      "title": "Mcp Access Groups"
+    },
+    "model": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "LiteLLM model name; defaults to the runner's DEFAULT_MODEL.",
+      "title": "Model"
+    },
+    "name": {
+      "description": "Lowercase letters, digits and dashes; becomes the LiteLLM agent name.",
+      "pattern": "^[a-z0-9][a-z0-9-]{0,62}$",
+      "title": "Name",
+      "type": "string"
+    },
+    "skills": {
+      "description": "Names of skills under skills/ in the agents repo.",
+      "items": {
+        "type": "string"
+      },
+      "title": "Skills",
+      "type": "array"
+    },
+    "skills_loading": {
+      "default": "all",
+      "description": "all: every skill and tool in the prompt up front. on_demand: list skills, load one with load_skill().",
+      "enum": [
+        "all",
+        "on_demand"
+      ],
+      "title": "Skills Loading",
+      "type": "string"
+    },
+    "slack": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/SlackSpec"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "teams": {
+      "description": "LiteLLM team IDs whose members may use this agent.",
+      "items": {
+        "type": "string"
+      },
+      "title": "Teams",
+      "type": "array"
+    },
+    "temperature": {
+      "anyOf": [
+        {
+          "maximum": 2,
+          "minimum": 0,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Temperature"
+    },
+    "tools": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Optional allowlist of MCP tool names as LiteLLM lists them; shell-style wildcards allowed.",
+      "title": "Tools"
+    }
+  },
+  "required": [
+    "apiVersion",
+    "name",
+    "description"
+  ],
+  "title": "AgentSpec",
+  "type": "object"
+}
