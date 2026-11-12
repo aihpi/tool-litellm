@@ -96,3 +96,40 @@ def test_leaves_a_modify_delete_conflict_alone(tmp_path: Path) -> None:
 
     assert result.returncode == 0
     assert still_conflicted(tmp_path) == ["f.txt"]
+
+
+def test_leaves_binary_files_in_a_renamed_directory_alone(tmp_path: Path) -> None:
+    """Upstream moved ui/ under litellm/ while the fork had added a logo and a component there.
+
+    git reports both as "file location" conflicts. The PNG used to crash the script with a
+    UnicodeDecodeError, which skipped every later file and failed the nightly merge.
+    """
+    git(tmp_path, "init", "-q", "-b", "main")
+    git(tmp_path, "config", "user.name", "t")
+    git(tmp_path, "config", "user.email", "t@example.com")
+    (tmp_path / "ui").mkdir()
+    commit(tmp_path, "ui/page.tsx", "page\n", "c0")
+    git(tmp_path, "checkout", "-qb", "upstream")
+    (tmp_path / "litellm").mkdir()
+    git(tmp_path, "mv", "ui", "litellm/ui")
+    git(tmp_path, "commit", "-qm", "upstream moves ui under litellm")
+    git(tmp_path, "checkout", "-qb", "ours", "main")
+    (tmp_path / "ui/logo.png").write_bytes(b"\x89PNG\r\n\x1a\n\x00\xff")
+    commit(tmp_path, "ui/Banner.tsx", "banner\n", "fork adds a banner")
+    git(tmp_path, "add", "ui/logo.png")
+    git(tmp_path, "commit", "-qm", "fork adds a logo")
+    subprocess.run(["git", "-C", str(tmp_path), "merge", "-q", "upstream"], capture_output=True)
+    conflicted = ["litellm/ui/Banner.tsx", "litellm/ui/logo.png"]
+    assert still_conflicted(tmp_path) == conflicted
+
+    result = subprocess.run(
+        [sys.executable, str(SCRIPT), "upstream", "litellm/ui/logo.png", "litellm/ui/Banner.tsx"],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert "litellm/ui/logo.png: not a plain text conflict" in result.stdout
+    assert "litellm/ui/Banner.tsx: not a plain text conflict" in result.stdout
+    assert still_conflicted(tmp_path) == conflicted

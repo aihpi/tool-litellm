@@ -140,7 +140,8 @@ def main() -> int:
     for path in paths:
         try:
             taken, left = resolve(path, upstream)
-        except (subprocess.CalledProcessError, StopIteration):
+        # UnicodeDecodeError: a binary file, such as a logo in a directory upstream renamed.
+        except (subprocess.CalledProcessError, StopIteration, UnicodeDecodeError):
             taken, left = 0, -1
         if left < 0:
             print(f"{path}: not a plain text conflict, leaving it alone")

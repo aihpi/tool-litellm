@@ -13,11 +13,11 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$REPO_ROOT"
 
-dirty=$(git status --porcelain -- litellm/ ui/ | grep -v '^??' || true)
+dirty=$(git status --porcelain -- litellm/ | grep -v '^??' || true)
 if [ -n "$dirty" ]; then
-  echo "ERROR: litellm/ or ui/ has uncommitted changes." >&2
+  echo "ERROR: litellm/ has uncommitted changes." >&2
   echo "Baselining a patched tree would disable the guard. Run:" >&2
-  echo "  git checkout -- litellm/ ui/" >&2
+  echo "  git checkout -- litellm/" >&2
   exit 1
 fi
 

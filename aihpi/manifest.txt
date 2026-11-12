@@ -8,4 +8,4 @@
 #
 # Only files too intertwined to express as anchored patches belong here.
 authentik/ui_sso.py	litellm/proxy/management_endpoints/ui_sso.py
-branding/layout.tsx	ui/litellm-dashboard/src/app/(dashboard)/layout.tsx
+branding/layout.tsx	litellm/ui/litellm-dashboard/src/app/(dashboard)/layout.tsx

@@ -68,13 +68,16 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=raw,value=dev,enable=${{ startsWith(github.ref_name, 'dev/') }}
             type=raw,value=latest,enable={{is_default_branch}}
-            type=sha,prefix={{branch}}-
+            type=sha,prefix={{branch}}-,enable=${{ github.event_name != 'pull_request' }}
 
       - name: Build and push Docker image
         id: build
         uses: docker/build-push-action@v5
         with:
           context: .
+          # Upstream moved the Dockerfile off the repo root (#50981). Its ignore
+          # file, Dockerfile.dockerignore beside it, is picked up automatically.
+          file: litellm/deploy/docker/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
