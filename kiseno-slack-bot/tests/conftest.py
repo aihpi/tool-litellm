@@ -22,6 +22,12 @@ BOT_USER = "UBOT"
 MINT_KEY = "sk-mint-secret"
 USER_KEY = "sk-user-key-1"
 INTERNAL_TEAM = "team-internal"
+FIXTURES = Path(__file__).resolve().parent / "fixtures"
+
+
+def a2a_v1_stream(name: str) -> list[dict[str, Any]]:
+    """A stream as LiteLLM sends it for an agent registered with A2A 1.0; see fixtures/make_a2a_v1_stream.py."""
+    return json.loads((FIXTURES / "a2a_v1_stream.json").read_text())[name]
 
 
 def member(user_id: str = "U1", **overrides: Any) -> dict[str, Any]:

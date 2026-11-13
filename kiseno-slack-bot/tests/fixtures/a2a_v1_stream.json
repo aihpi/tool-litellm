@@ -1,0 +1,190 @@
+{
+  "completed": [
+    {
+      "jsonrpc": "2.0",
+      "id": 1,
+      "result": {
+        "task": {
+          "id": "3f1c9a52-7d8e-4b61-9f0a-2c4e8b7d1a90",
+          "contextId": "b2e4d6f8-1a3c-4e5f-8a7b-9c0d1e2f3a4b",
+          "status": {
+            "state": "TASK_STATE_SUBMITTED",
+            "timestamp": "2026-11-13T09:15:02.481Z"
+          },
+          "history": [
+            {
+              "messageId": "9d8c7b6a-5f4e-4d3c-2b1a-0f9e8d7c6b5a",
+              "contextId": "b2e4d6f8-1a3c-4e5f-8a7b-9c0d1e2f3a4b",
+              "taskId": "3f1c9a52-7d8e-4b61-9f0a-2c4e8b7d1a90",
+              "role": "ROLE_USER",
+              "parts": [
+                {
+                  "text": "Felix: Which workshops are planned for December?"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "jsonrpc": "2.0",
+      "id": 1,
+      "result": {
+        "statusUpdate": {
+          "taskId": "3f1c9a52-7d8e-4b61-9f0a-2c4e8b7d1a90",
+          "contextId": "b2e4d6f8-1a3c-4e5f-8a7b-9c0d1e2f3a4b",
+          "status": {
+            "state": "TASK_STATE_WORKING",
+            "timestamp": "2026-11-13T09:15:02.481Z"
+          }
+        }
+      }
+    },
+    {
+      "jsonrpc": "2.0",
+      "id": 1,
+      "result": {
+        "statusUpdate": {
+          "taskId": "3f1c9a52-7d8e-4b61-9f0a-2c4e8b7d1a90",
+          "contextId": "b2e4d6f8-1a3c-4e5f-8a7b-9c0d1e2f3a4b",
+          "status": {
+            "state": "TASK_STATE_WORKING",
+            "message": {
+              "messageId": "4a5b6c7d-8e9f-4a0b-1c2d-3e4f5a6b7c8d",
+              "contextId": "b2e4d6f8-1a3c-4e5f-8a7b-9c0d1e2f3a4b",
+              "taskId": "3f1c9a52-7d8e-4b61-9f0a-2c4e8b7d1a90",
+              "role": "ROLE_AGENT",
+              "parts": [
+                {
+                  "text": "calling tool espocrm_find_events"
+                }
+              ]
+            },
+            "timestamp": "2026-11-13T09:15:02.481Z"
+          }
+        }
+      }
+    },
+    {
+      "jsonrpc": "2.0",
+      "id": 1,
+      "result": {
+        "artifactUpdate": {
+          "taskId": "3f1c9a52-7d8e-4b61-9f0a-2c4e8b7d1a90",
+          "contextId": "b2e4d6f8-1a3c-4e5f-8a7b-9c0d1e2f3a4b",
+          "artifact": {
+            "artifactId": "7e6d5c4b-3a29-4180-9f7e-6d5c4b3a2918",
+            "name": "answer",
+            "parts": [
+              {
+                "text": "Two workshops are planned for December:\n\n- **RAG Forum** on 4 December\n- **MCP** on 11 December"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "jsonrpc": "2.0",
+      "id": 1,
+      "result": {
+        "statusUpdate": {
+          "taskId": "3f1c9a52-7d8e-4b61-9f0a-2c4e8b7d1a90",
+          "contextId": "b2e4d6f8-1a3c-4e5f-8a7b-9c0d1e2f3a4b",
+          "status": {
+            "state": "TASK_STATE_COMPLETED",
+            "timestamp": "2026-11-13T09:15:02.481Z"
+          }
+        }
+      }
+    }
+  ],
+  "failed": [
+    {
+      "jsonrpc": "2.0",
+      "id": 1,
+      "result": {
+        "task": {
+          "id": "3f1c9a52-7d8e-4b61-9f0a-2c4e8b7d1a90",
+          "contextId": "b2e4d6f8-1a3c-4e5f-8a7b-9c0d1e2f3a4b",
+          "status": {
+            "state": "TASK_STATE_SUBMITTED",
+            "timestamp": "2026-11-13T09:15:02.481Z"
+          },
+          "history": [
+            {
+              "messageId": "9d8c7b6a-5f4e-4d3c-2b1a-0f9e8d7c6b5a",
+              "contextId": "b2e4d6f8-1a3c-4e5f-8a7b-9c0d1e2f3a4b",
+              "taskId": "3f1c9a52-7d8e-4b61-9f0a-2c4e8b7d1a90",
+              "role": "ROLE_USER",
+              "parts": [
+                {
+                  "text": "Felix: Which workshops are planned for December?"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "jsonrpc": "2.0",
+      "id": 1,
+      "result": {
+        "statusUpdate": {
+          "taskId": "3f1c9a52-7d8e-4b61-9f0a-2c4e8b7d1a90",
+          "contextId": "b2e4d6f8-1a3c-4e5f-8a7b-9c0d1e2f3a4b",
+          "status": {
+            "state": "TASK_STATE_WORKING",
+            "timestamp": "2026-11-13T09:15:02.481Z"
+          }
+        }
+      }
+    },
+    {
+      "jsonrpc": "2.0",
+      "id": 1,
+      "result": {
+        "statusUpdate": {
+          "taskId": "3f1c9a52-7d8e-4b61-9f0a-2c4e8b7d1a90",
+          "contextId": "b2e4d6f8-1a3c-4e5f-8a7b-9c0d1e2f3a4b",
+          "status": {
+            "state": "TASK_STATE_FAILED",
+            "message": {
+              "messageId": "0c1d2e3f-4a5b-4c6d-7e8f-9a0b1c2d3e4f",
+              "contextId": "b2e4d6f8-1a3c-4e5f-8a7b-9c0d1e2f3a4b",
+              "taskId": "3f1c9a52-7d8e-4b61-9f0a-2c4e8b7d1a90",
+              "role": "ROLE_AGENT",
+              "parts": [
+                {
+                  "text": "The agent took too long and was stopped."
+                }
+              ]
+            },
+            "timestamp": "2026-11-13T09:15:02.481Z"
+          }
+        }
+      }
+    }
+  ],
+  "message": [
+    {
+      "jsonrpc": "2.0",
+      "id": 1,
+      "result": {
+        "message": {
+          "messageId": "5f6e7d8c-9b0a-4f1e-2d3c-4b5a6f7e8d9c",
+          "contextId": "b2e4d6f8-1a3c-4e5f-8a7b-9c0d1e2f3a4b",
+          "taskId": "3f1c9a52-7d8e-4b61-9f0a-2c4e8b7d1a90",
+          "role": "ROLE_AGENT",
+          "parts": [
+            {
+              "text": "Hello from the agent."
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
