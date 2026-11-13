@@ -96,6 +96,9 @@ class FakeLiteLLM:
         if path == "/mcp-rest/tools/list":
             return httpx.Response(200, json={"tools": self.tools, "error": None})
         if path == "/mcp-rest/tools/call":
+            # Like LiteLLM: tools/call routes by server and refuses a call without one.
+            if not body.get("server_id"):
+                return httpx.Response(400, json={"detail": {"error": "server_id is required in request body"}})
             result = self.tool_results.get(body["name"], {"content": [{"type": "text", "text": f"ran {body['name']}"}], "isError": False})
             return httpx.Response(200, json=result)
         if path == "/v1/chat/completions":
@@ -132,5 +135,6 @@ def mcp_tool(name: str, description: str = "", server: str = "crm") -> dict[str,
         "name": name,
         "description": description or f"{name} tool",
         "inputSchema": {"type": "object", "properties": {"title": {"type": "string"}}},
-        "mcp_info": {"server_name": server},
+        # Like LiteLLM's /mcp-rest/tools/list: the tool's own name, its server in mcp_info.
+        "mcp_info": {"server_name": server, "server_id": f"id-{server}"},
     }

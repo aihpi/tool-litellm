@@ -28,12 +28,19 @@ class AgentRunError(Exception):
     pass
 
 
+def _tool_matches(tool: McpTool, patterns: Iterable[str]) -> bool:
+    """Patterns (agent.yaml `tools`, a skill's `tools`) match the server-qualified name ("espocrm-Find_CEvents") or
+    the tool's own name ("Find_CEvents")."""
+    patterns = list(patterns)
+    return _matches(tool.qualified_name, patterns) or _matches(tool.name, patterns)
+
+
 def _matches(name: str, patterns: Iterable[str]) -> bool:
     return any(fnmatch.fnmatchcase(name, p) for p in patterns)
 
 
 def allowed_tools(tools: Sequence[McpTool], allowlist: Sequence[str] | None) -> list[McpTool]:
-    return list(tools) if allowlist is None else [t for t in tools if _matches(t.name, allowlist)]
+    return list(tools) if allowlist is None else [t for t in tools if _tool_matches(t, allowlist)]
 
 
 @dataclass
@@ -46,7 +53,7 @@ class ToolTable:
     def build(cls, tools: Iterable[McpTool]) -> ToolTable:
         table = cls()
         for tool in tools:
-            base = _OPENAI_NAME.sub("_", tool.name)[:64] or "tool"
+            base = _OPENAI_NAME.sub("_", tool.qualified_name)[:64] or "tool"
             name, n = base, 1
             while name in table.by_function or name == LOAD_SKILL:
                 n += 1
@@ -146,7 +153,7 @@ async def run_agent(
 
     if on_demand:
         skill_patterns = [p for s in agent.skills for p in s.tools]
-        visible = [fn for fn, t in table.by_function.items() if not _matches(t.name, skill_patterns)]
+        visible = [fn for fn, t in table.by_function.items() if not _tool_matches(t, skill_patterns)]
     else:
         visible = list(table.by_function)
     loaded: set[str] = set()
@@ -195,7 +202,7 @@ async def run_agent(
                     await on_status(f"Loading skill {skill.name}")
                     loaded.add(skill.name)
                     for fn_name, tool in table.by_function.items():
-                        if fn_name not in visible and _matches(tool.name, skill.tools):
+                        if fn_name not in visible and _tool_matches(tool, skill.tools):
                             visible.append(fn_name)
                     content = skill.body
                 messages.append({"role": "tool", "tool_call_id": call_id, "content": content})
@@ -205,12 +212,12 @@ async def run_agent(
             if tool is None:
                 messages.append({"role": "tool", "tool_call_id": call_id, "content": f"Error: tool {fn!r} is not available"})
                 continue
-            await on_status(f"Calling {tool.name}")
+            await on_status(f"Calling {tool.qualified_name}")
             try:
-                result = await gateway.call_tool(agent_key, caller, tool.name, arguments)
+                result = await gateway.call_tool(agent_key, caller, tool, arguments)
                 content = _tool_result_text(result, config.tool_result_max_chars)
             except Exception as exc:  # the model sees the failure and can recover or explain it
-                content = f"Error calling {tool.name}: {exc}"
+                content = f"Error calling {tool.qualified_name}: {exc}"
             messages.append({"role": "tool", "tool_call_id": call_id, "content": content})
 
     # Out of turns: one last call without tools so the user still gets an answer.
