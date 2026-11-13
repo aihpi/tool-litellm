@@ -57,7 +57,7 @@
               "role": "ROLE_AGENT",
               "parts": [
                 {
-                  "text": "calling tool espocrm_find_events"
+                  "text": "calling tool crm_find_events"
                 }
               ]
             },

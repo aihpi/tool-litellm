@@ -23,7 +23,7 @@ teams: [team-internal]
 mcp_access_groups: [qwen-bot]
 skills: [workshop-pflegen]
 skills_loading: all
-tools: [espocrm_find]
+tools: [crm_find]
 future_field: {anything: goes}
 slack:
   default: true

@@ -19,14 +19,14 @@ EXAMPLE = Path(__file__).resolve().parents[1] / "examples" / "agents-repo"
 SCHEMA = Path(__file__).resolve().parents[1] / "schema" / "agent.schema.json"
 
 MINIMAL = "apiVersion: kiseno/v1\nname: helper\ndescription: Helps.\n"
-SKILL = "---\nname: notes\ndescription: Take notes.\ntools: [\"espocrm*\"]\nlicense: MIT\n---\n\nDo the thing.\n"
+SKILL = "---\nname: notes\ndescription: Take notes.\ntools: [\"crm*\"]\nlicense: MIT\n---\n\nDo the thing.\n"
 
 
 def test_example_repo_loads():
     catalog = load_directory(EXAMPLE)
     assert catalog.invalid == {}
     agent = catalog.agents["qwen-bot"]
-    assert [s.name for s in agent.skills] == ["meeting-summary", "workshop-entry"]
+    assert [s.name for s in agent.skills] == ["meeting-summary", "calendar-lookup"]
     assert agent.spec.access_groups == ["qwen-bot"]
     assert agent.spec.slack is not None and agent.spec.slack.default
     assert agent.instructions.startswith("You are Qwen-Bot")
@@ -58,7 +58,7 @@ def test_invalid_agent_yaml(text):
 
 def test_skill_front_matter_keeps_standard_fields():
     skill = parse_skill(SKILL, expected_name="notes")
-    assert skill.tools == ("espocrm*",)
+    assert skill.tools == ("crm*",)
     assert skill.body == "Do the thing."
 
 

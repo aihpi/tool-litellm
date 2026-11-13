@@ -4,4 +4,4 @@ namespace: kiseno-agents
 resources:
   - agents/qwen-bot
   - skills/meeting-summary
-  - skills/workshop-entry
+  - skills/calendar-lookup

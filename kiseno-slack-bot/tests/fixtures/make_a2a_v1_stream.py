@@ -75,7 +75,7 @@ STREAMS = {
     "completed": [
         SUBMITTED,
         status("working"),
-        status("working", text="calling tool espocrm_find_events", message_id="4a5b6c7d-8e9f-4a0b-1c2d-3e4f5a6b7c8d"),
+        status("working", text="calling tool crm_find_events", message_id="4a5b6c7d-8e9f-4a0b-1c2d-3e4f5a6b7c8d"),
         {
             "kind": "artifact-update",
             "taskId": TASK,
