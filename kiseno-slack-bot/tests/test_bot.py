@@ -123,7 +123,7 @@ async def test_dm_runs_the_agent_as_the_writer_and_edits_one_placeholder(bot, sl
                             "message": {
                                 "kind": "message",
                                 "role": "agent",
-                                "parts": [{"kind": "text", "text": "calling tool espocrm_find"}],
+                                "parts": [{"kind": "text", "text": "calling tool crm_find"}],
                             },
                         },
                     },

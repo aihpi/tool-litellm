@@ -71,4 +71,4 @@ The tests use an in-memory LiteLLM and the same `a2a-sdk` client LiteLLM uses to
 
 ## The agents repo
 
-`examples/agents-repo/` is the starting content of the GitLab agents repo: Qwen-Bot, two skills, templates, the kustomize wiring and the CI. `python -m app.validate <checkout>` is the merge request check; it uses the runner's own parser. `schema/agent.schema.json` is the JSON schema of `agent.yaml`; regenerate it with `python -m app.spec > schema/agent.schema.json` after changing `app/spec.py` (a test fails when it is out of date).
+`examples/agents-repo/` is an example of the agents repo format (an agent, two skills, templates, the kustomize wiring and the CI) and the fixture for the tests. KISENO's real agents live in the private repository `agent-skillbook` on gitlab.hpi.de. `python -m app.validate <checkout>` is the merge request check; it uses the runner's own parser. `schema/agent.schema.json` is the JSON schema of `agent.yaml`; regenerate it with `python -m app.spec > schema/agent.schema.json` after changing `app/spec.py` (a test fails when it is out of date).

@@ -1,14 +1,14 @@
-# KISENO agents
+# Example agents repo
 
-This repository holds the agents and skills of the KISENO Slack bot Qwen-Bot. A merge into `main` goes live within about five minutes: Argo CD copies the files into the cluster, and the agent runner loads them into LiteLLM. Everyone on the team can propose and review changes here.
+This folder shows the format of an agents repo and is the fixture for the agent runner's tests. KISENO's real agents and skills live in the private repository `agent-skillbook` on gitlab.hpi.de; change them there, not here. A merge into an agents repo goes live once Argo CD has synced it: Argo CD copies the files into the cluster, and the agent runner loads them into LiteLLM.
 
 ## Add a skill
 
-A skill is a set of instructions for one kind of task, such as entering a workshop in EspoCRM.
+A skill is a set of instructions for one kind of task, such as summarizing a meeting.
 
 1. Copy `skills/_template/` to `skills/<skill-name>/`, using lowercase letters, digits and dashes.
 2. In `SKILL.md`, set `name` to the folder name and write a `description` that says when to use the skill. The agent decides from this line.
-3. Under `tools`, list the MCP tools the skill needs, as LiteLLM lists them. Wildcards work, e.g. `"espocrm*"`.
+3. Under `tools`, list the MCP tools the skill needs, as LiteLLM lists them. Wildcards work, e.g. `"calendar*"`.
 4. In the folder's `kustomization.yaml`, replace `my-skill` with the folder name (twice).
 5. Add `skills/<skill-name>` under `resources` in the root `kustomization.yaml`.
 6. Add the skill name under `skills` in the agent that should use it, e.g. `agents/qwen-bot/agent.yaml`.

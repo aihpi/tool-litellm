@@ -1,7 +1,7 @@
 ---
 name: my-skill
 description: When to use this skill, in one sentence. The agent decides from this line, so name the task and its trigger words.
-# MCP tools this skill needs, as LiteLLM lists them; wildcards allowed, e.g. "espocrm*". Leave empty for none.
+# MCP tools this skill needs, as LiteLLM lists them; wildcards allowed, e.g. "calendar*". Leave empty for none.
 tools: []
 ---
 

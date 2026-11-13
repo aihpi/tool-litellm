@@ -11,7 +11,7 @@ mcp_access_groups:
   - qwen-bot
 skills:
   - meeting-summary
-  - workshop-entry
+  - calendar-lookup
 skills_loading: all
 slack:
   default: true

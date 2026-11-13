@@ -46,7 +46,7 @@ async def test_card_is_public_and_points_at_the_runner():
     card = response.json()
     assert card["name"] == "qwen-bot"
     assert card["supportedInterfaces"][0]["url"] == "http://runner.test/agents/qwen-bot/"
-    assert {s["id"] for s in card["skills"]} == {"meeting-summary", "workshop-entry"}
+    assert {s["id"] for s in card["skills"]} == {"meeting-summary", "calendar-lookup"}
 
 
 @pytest.mark.asyncio
@@ -68,15 +68,15 @@ async def test_only_litellm_with_a_caller_gets_in(path, headers, status):
 
 @pytest.mark.asyncio
 async def test_streaming_run_reports_progress_and_answers():
-    fake = FakeLiteLLM(tools=[mcp_tool("espocrm-create_event")])
-    fake.chat_script = [tool_reply(("espocrm-create_event", {"title": "RAG"})), text_reply("Created the RAG workshop.")]
+    fake = FakeLiteLLM(tools=[mcp_tool("crm-create_event")])
+    fake.chat_script = [tool_reply(("crm-create_event", {"title": "RAG"})), text_reply("Created the RAG workshop.")]
     app = await started(fake)
 
     events = await send(app, "Trag den RAG-Workshop ein", streaming=True)
 
     statuses = [e.status_update.status for e in events if e.HasField("status_update")]
     texts = [p.text for s in statuses if s.HasField("message") for p in s.message.parts]
-    assert "Calling espocrm-create_event" in texts
+    assert "Calling crm-create_event" in texts
     assert statuses[-1].state == TaskState.TASK_STATE_COMPLETED
     artifacts = [get_artifact_text(e.artifact_update.artifact) for e in events if e.HasField("artifact_update")]
     assert artifacts == ["Created the RAG workshop."]

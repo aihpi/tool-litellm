@@ -6,7 +6,7 @@ from app.loop import LOAD_SKILL, LoopConfig, ToolTable, run_agent
 from app.spec import build_catalog
 from fakes import FakeLiteLLM, mcp_tool, text_reply, tool_reply
 
-SKILL = "---\nname: crm\ndescription: CRM work.\ntools: [\"espocrm*\"]\n---\n\nUse the CRM tools.\n"
+SKILL = "---\nname: crm\ndescription: CRM work.\ntools: [\"crm*\"]\n---\n\nUse the CRM tools.\n"
 
 
 def agent(extra: str = "", skills: bool = True):
@@ -37,35 +37,35 @@ async def run(fake: FakeLiteLLM, definition, max_turns: int = 5):
 
 @pytest.mark.asyncio
 async def test_tool_call_then_answer_with_caller_headers():
-    fake = FakeLiteLLM(tools=[mcp_tool("espocrm-create_event"), mcp_tool("calendar-list", server="cal")])
-    fake.chat_script = [tool_reply(("espocrm-create_event", {"title": "RAG"})), text_reply("Done: created RAG.")]
+    fake = FakeLiteLLM(tools=[mcp_tool("crm-create_event"), mcp_tool("calendar-list", server="cal")])
+    fake.chat_script = [tool_reply(("crm-create_event", {"title": "RAG"})), text_reply("Done: created RAG.")]
     answer, statuses = await run(fake, agent())
 
     assert answer == "Done: created RAG."
-    assert statuses == ["Calling espocrm-create_event"]
+    assert statuses == ["Calling crm-create_event"]
     (call,) = fake.calls_to("POST", "/mcp-rest/tools/call")
-    assert call.body == {"name": "espocrm-create_event", "arguments": {"title": "RAG"}}
+    assert call.body == {"name": "crm-create_event", "arguments": {"title": "RAG"}}
     for c in fake.calls:  # model, tool list and tool call all run as the agent, capped at the caller
         assert c.headers["authorization"] == "Bearer sk-agent"
         assert c.headers["x-litellm-user-id"] == "u-1"
         assert c.headers["x-litellm-team-id"] == "t-1"
     second = fake.calls_to("POST", "/v1/chat/completions")[1].body["messages"]
-    assert second[-1] == {"role": "tool", "tool_call_id": "call_0", "content": "ran espocrm-create_event"}
+    assert second[-1] == {"role": "tool", "tool_call_id": "call_0", "content": "ran crm-create_event"}
 
 
 @pytest.mark.asyncio
 async def test_all_mode_puts_skills_in_prompt_and_offers_every_tool():
-    fake = FakeLiteLLM(tools=[mcp_tool("espocrm-create_event"), mcp_tool("calendar-list", server="cal")])
+    fake = FakeLiteLLM(tools=[mcp_tool("crm-create_event"), mcp_tool("calendar-list", server="cal")])
     fake.chat_script = [text_reply("hi")]
     await run(fake, agent())
     body = fake.calls_to("POST", "/v1/chat/completions")[0].body
     assert "Use the CRM tools." in body["messages"][0]["content"]
-    assert {t["function"]["name"] for t in body["tools"]} == {"espocrm-create_event", "calendar-list"}
+    assert {t["function"]["name"] for t in body["tools"]} == {"crm-create_event", "calendar-list"}
 
 
 @pytest.mark.asyncio
 async def test_on_demand_hides_skill_tools_until_loaded():
-    fake = FakeLiteLLM(tools=[mcp_tool("espocrm-create_event"), mcp_tool("calendar-list", server="cal")])
+    fake = FakeLiteLLM(tools=[mcp_tool("crm-create_event"), mcp_tool("calendar-list", server="cal")])
     seen_tools: list[set[str]] = []
 
     def capture(reply):
@@ -77,24 +77,24 @@ async def test_on_demand_hides_skill_tools_until_loaded():
 
     fake.chat_script = [
         capture(tool_reply((LOAD_SKILL, {"name": "crm"}))),
-        capture(tool_reply(("espocrm-create_event", {"title": "RAG"}))),
+        capture(tool_reply(("crm-create_event", {"title": "RAG"}))),
         capture(text_reply("ok")),
     ]
     answer, statuses = await run(fake, agent("skills_loading: on_demand\n"))
 
     assert answer == "ok"
     assert seen_tools[0] == {"calendar-list", LOAD_SKILL}
-    assert seen_tools[1] == {"calendar-list", "espocrm-create_event"}
-    assert statuses == ["Loading skill crm", "Calling espocrm-create_event"]
+    assert seen_tools[1] == {"calendar-list", "crm-create_event"}
+    assert statuses == ["Loading skill crm", "Calling crm-create_event"]
     first_prompt = fake.calls_to("POST", "/v1/chat/completions")[0].body["messages"][0]["content"]
     assert "Use the CRM tools." not in first_prompt and "- crm: CRM work." in first_prompt
 
 
 @pytest.mark.asyncio
 async def test_allowlist_and_unavailable_tool():
-    fake = FakeLiteLLM(tools=[mcp_tool("espocrm-create_event"), mcp_tool("calendar-list", server="cal")])
+    fake = FakeLiteLLM(tools=[mcp_tool("crm-create_event"), mcp_tool("calendar-list", server="cal")])
     fake.chat_script = [tool_reply(("calendar-list", {})), text_reply("sorry")]
-    answer, _ = await run(fake, agent('tools: ["espocrm-*"]\n', skills=False))
+    answer, _ = await run(fake, agent('tools: ["crm-*"]\n', skills=False))
     assert answer == "sorry"
     assert fake.calls_to("POST", "/mcp-rest/tools/call") == []
     tool_msg = fake.calls_to("POST", "/v1/chat/completions")[1].body["messages"][-1]
@@ -103,9 +103,9 @@ async def test_allowlist_and_unavailable_tool():
 
 @pytest.mark.asyncio
 async def test_out_of_turns_forces_a_final_answer_and_truncates_results():
-    fake = FakeLiteLLM(tools=[mcp_tool("espocrm-create_event")])
-    fake.tool_results["espocrm-create_event"] = {"content": [{"type": "text", "text": "x" * 500}]}
-    fake.chat_script = [tool_reply(("espocrm-create_event", {})), tool_reply(("espocrm-create_event", {})), text_reply("partial")]
+    fake = FakeLiteLLM(tools=[mcp_tool("crm-create_event")])
+    fake.tool_results["crm-create_event"] = {"content": [{"type": "text", "text": "x" * 500}]}
+    fake.chat_script = [tool_reply(("crm-create_event", {})), tool_reply(("crm-create_event", {})), text_reply("partial")]
     answer, statuses = await run(fake, agent(skills=False), max_turns=2)
     assert answer == "partial"
     assert statuses[-1] == "Writing the answer"

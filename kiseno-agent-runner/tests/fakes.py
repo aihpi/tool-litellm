@@ -127,7 +127,7 @@ def tool_reply(*calls: tuple[str, dict[str, Any]]) -> dict[str, Any]:
     }
 
 
-def mcp_tool(name: str, description: str = "", server: str = "espocrm") -> dict[str, Any]:
+def mcp_tool(name: str, description: str = "", server: str = "crm") -> dict[str, Any]:
     return {
         "name": name,
         "description": description or f"{name} tool",

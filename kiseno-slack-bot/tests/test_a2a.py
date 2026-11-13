@@ -91,8 +91,8 @@ def test_status_updates_then_streamed_artifact_then_final_status():
             "result": {"kind": "task", "id": "t", "contextId": "c", "status": {"state": "submitted"}},
         }
     )
-    state.apply(status("working", "calling tool espocrm_find"))
-    assert state.status == "calling tool espocrm_find"
+    state.apply(status("working", "calling tool crm_find"))
+    assert state.status == "calling tool crm_find"
     assert state.answer is None
     state.apply(artifact("Hello "))
     state.apply(artifact("world", append=True))
@@ -182,7 +182,7 @@ def test_a2a_1_0_stream_reports_progress_then_the_answer():
     for event in (submitted, working, tool_call):
         state.apply(event)
     assert state.state == "working"
-    assert state.status == "calling tool espocrm_find_events"
+    assert state.status == "calling tool crm_find_events"
     assert state.answer is None
     assert not state.done
 
