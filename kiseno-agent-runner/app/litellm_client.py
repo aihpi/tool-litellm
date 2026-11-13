@@ -111,10 +111,21 @@ class LiteLLMAdmin:
 
 @dataclass(frozen=True)
 class McpTool:
+    """A tool as LiteLLM's /mcp-rest/tools/list returns it: `name` is the server's own (unprefixed) tool name, and
+    the server it belongs to comes from `mcp_info`. /mcp-rest/tools/call needs that server back as `server_id`."""
+
     name: str
     description: str
     input_schema: dict[str, Any]
     server_name: str | None
+    server_id: str | None = None
+
+    @property
+    def qualified_name(self) -> str:
+        """`<server>-<tool>`, the name the model sees and skill patterns like "espocrm*" match against."""
+        if not self.server_name or self.name.startswith(f"{self.server_name}-"):
+            return self.name
+        return f"{self.server_name}-{self.name}"
 
 
 class LiteLLMGateway:
@@ -142,20 +153,28 @@ class LiteLLMGateway:
                 continue
             schema = raw.get("inputSchema") or raw.get("input_schema") or {}
             info = raw.get("mcp_info") or {}
+            info = info if isinstance(info, dict) else {}
+            server_id = info.get("server_id")
             tools.append(
                 McpTool(
                     name=str(raw["name"]),
                     description=str(raw.get("description") or ""),
                     input_schema=schema if isinstance(schema, dict) else {},
-                    server_name=info.get("server_name") if isinstance(info, dict) else None,
+                    server_name=info.get("server_name") or info.get("alias"),
+                    server_id=str(server_id) if server_id else None,
                 )
             )
         return tools
 
-    async def call_tool(self, agent_key: str, caller: Caller, name: str, arguments: Mapping[str, Any]) -> dict[str, Any]:
+    async def call_tool(self, agent_key: str, caller: Caller, tool: McpTool, arguments: Mapping[str, Any]) -> dict[str, Any]:
+        body: dict[str, Any] = {"name": tool.name, "arguments": dict(arguments)}
+        # LiteLLM routes the call by server (UUID, server_name or alias); without it the call is refused.
+        server = tool.server_id or tool.server_name
+        if server:
+            body["server_id"] = server
         response = await self._client.post(
             "/mcp-rest/tools/call",
-            json={"name": name, "arguments": dict(arguments)},
+            json=body,
             headers=self._headers(agent_key, caller),
             timeout=self._llm_timeout,
         )

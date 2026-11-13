@@ -68,7 +68,7 @@ async def test_only_litellm_with_a_caller_gets_in(path, headers, status):
 
 @pytest.mark.asyncio
 async def test_streaming_run_reports_progress_and_answers():
-    fake = FakeLiteLLM(tools=[mcp_tool("crm-create_event")])
+    fake = FakeLiteLLM(tools=[mcp_tool("create_event")])
     fake.chat_script = [tool_reply(("crm-create_event", {"title": "RAG"})), text_reply("Created the RAG workshop.")]
     app = await started(fake)
 

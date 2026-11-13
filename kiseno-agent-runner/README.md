@@ -26,6 +26,8 @@ An agent whose files don't parse, or that names an MCP access group it may not u
 
 An agent can only use the LiteLLM access group named after itself (`ALLOWED_MCP_ACCESS_GROUPS={name}`). Admins give an agent MCP servers by adding them to that group in the LiteLLM UI; a merged agent file cannot grant access. To share a group between agents, set for example `ALLOWED_MCP_ACCESS_GROUPS={name},shared-*` in the deployment.
 
+The model sees each tool as `<server>-<tool>`, for example `espocrm-Find_CEvents`, and patterns in `agent.yaml` `tools` or a skill's `tools` (such as `espocrm*`) match that name. Every tool call is sent to LiteLLM with the tool's server, which `/mcp-rest/tools/call` requires.
+
 ## Configuration
 
 | Variable | Default | Meaning |
