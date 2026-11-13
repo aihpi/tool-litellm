@@ -17,7 +17,7 @@ from app.litellm_client import LiteLLMAdmin, LiteLLMGateway
 from app.sources import CatalogSource, DirectorySource, KubernetesConfigMapSource
 from app.sync import Reconciler, Registry, SyncReport
 
-logger = logging.getLogger("kisz_agent_runner")
+logger = logging.getLogger("kiseno_agent_runner")
 
 
 @dataclass
@@ -90,7 +90,7 @@ def create_app(
                     await task
             await http.aclose()
 
-    app = FastAPI(title="KISZ agent runner", lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
+    app = FastAPI(title="KISENO agent runner", lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
     app.state.settings = settings
     app.state.registry = registry
     app.state.sync_state = state

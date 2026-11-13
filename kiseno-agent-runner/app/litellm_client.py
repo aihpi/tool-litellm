@@ -59,7 +59,7 @@ class LiteLLMAdmin:
 
     def __init__(self, client: httpx.AsyncClient, sync_key: str):
         self._client = client
-        self._headers = {"Authorization": f"Bearer {sync_key}", "litellm-changed-by": "kisz-agent-runner"}
+        self._headers = {"Authorization": f"Bearer {sync_key}", "litellm-changed-by": "kiseno-agent-runner"}
 
     async def list_agents(self) -> list[dict[str, Any]]:
         payload = await _json(await self._client.get("/v1/agents", headers=self._headers))

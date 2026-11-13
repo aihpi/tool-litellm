@@ -8,4 +8,4 @@ configMapGenerator:
       - SKILL.md
     options:
       labels:
-        kisz.ai/skill: my-skill
+        kiseno/skill: my-skill

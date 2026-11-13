@@ -9,4 +9,4 @@ configMapGenerator:
       - instructions.md
     options:
       labels:
-        kisz.ai/agent: my-agent
+        kiseno/agent: my-agent

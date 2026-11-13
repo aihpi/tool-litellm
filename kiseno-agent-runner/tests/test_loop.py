@@ -10,7 +10,7 @@ SKILL = "---\nname: crm\ndescription: CRM work.\ntools: [\"espocrm*\"]\n---\n\nU
 
 
 def agent(extra: str = "", skills: bool = True):
-    yaml = "apiVersion: kisz.ai/v1\nname: helper\ndescription: Helps.\n" + ("skills: [crm]\n" if skills else "") + extra
+    yaml = "apiVersion: kiseno/v1\nname: helper\ndescription: Helps.\n" + ("skills: [crm]\n" if skills else "") + extra
     catalog = build_catalog([("helper", {"agent.yaml": yaml, "instructions.md": "Be brief."})], [("crm", SKILL)] if skills else [])
     assert not catalog.invalid, catalog.invalid
     return catalog.agents["helper"]

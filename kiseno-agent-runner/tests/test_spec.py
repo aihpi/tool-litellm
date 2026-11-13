@@ -18,7 +18,7 @@ from app.spec import (
 EXAMPLE = Path(__file__).resolve().parents[1] / "examples" / "agents-repo"
 SCHEMA = Path(__file__).resolve().parents[1] / "schema" / "agent.schema.json"
 
-MINIMAL = "apiVersion: kisz.ai/v1\nname: helper\ndescription: Helps.\n"
+MINIMAL = "apiVersion: kiseno/v1\nname: helper\ndescription: Helps.\n"
 SKILL = "---\nname: notes\ndescription: Take notes.\ntools: [\"espocrm*\"]\nlicense: MIT\n---\n\nDo the thing.\n"
 
 
@@ -43,10 +43,10 @@ def test_defaults():
 @pytest.mark.parametrize(
     "text",
     [
-        "apiVersion: kisz.ai/v2\nname: helper\ndescription: x\n",  # wrong version
-        "apiVersion: kisz.ai/v1\nname: Helper\ndescription: x\n",  # uppercase name
-        "apiVersion: kisz.ai/v1\nname: helper\ndescription: x\nunknown: 1\n",  # typo'd field
-        "apiVersion: kisz.ai/v1\nname: helper\ndescription: x\nskills: [a, a]\n",  # duplicate skill
+        "apiVersion: kiseno/v2\nname: helper\ndescription: x\n",  # wrong version
+        "apiVersion: kiseno/v1\nname: Helper\ndescription: x\n",  # uppercase name
+        "apiVersion: kiseno/v1\nname: helper\ndescription: x\nunknown: 1\n",  # typo'd field
+        "apiVersion: kiseno/v1\nname: helper\ndescription: x\nskills: [a, a]\n",  # duplicate skill
         "- not a mapping\n",
         "name: [unclosed\n",
     ],

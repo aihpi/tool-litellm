@@ -9,7 +9,7 @@ workflow:
 # Same parser as the running service, so "valid here" means "loads in the cluster".
 agent-files:
   stage: validate
-  image: ghcr.io/aihpi/tool-kisz-agent-runner:aihpi-provider
+  image: ghcr.io/aihpi/tool-kiseno-agent-runner:aihpi-provider
   script:
     - cd /app && python -m app.validate "$CI_PROJECT_DIR"
 

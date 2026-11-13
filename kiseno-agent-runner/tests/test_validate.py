@@ -36,10 +36,10 @@ def test_unlisted_file_and_missing_resource_are_reported(tmp_path):
 def test_wrong_label_and_bad_skill(tmp_path):
     root = copy_example(tmp_path)
     k = root / "skills" / "meeting-summary" / "kustomization.yaml"
-    k.write_text(k.read_text().replace("kisz.ai/skill: meeting-summary", "kisz.ai/skill: other"))
+    k.write_text(k.read_text().replace("kiseno/skill: meeting-summary", "kiseno/skill: other"))
     (root / "skills" / "workshop-entry" / "SKILL.md").write_text("no front matter")
 
     errors = validate_repo(root)
-    assert any("options.labels must contain 'kisz.ai/skill: meeting-summary'" in e for e in errors)
+    assert any("options.labels must contain 'kiseno/skill: meeting-summary'" in e for e in errors)
     assert any(e.startswith("skills/workshop-entry: SKILL.md must start with YAML front matter") for e in errors)
     assert any(e.startswith("agents/qwen-bot: skills unavailable") for e in errors)

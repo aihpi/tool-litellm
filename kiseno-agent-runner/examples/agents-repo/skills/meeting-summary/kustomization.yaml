@@ -8,4 +8,4 @@ configMapGenerator:
       - SKILL.md
     options:
       labels:
-        kisz.ai/skill: meeting-summary
+        kiseno/skill: meeting-summary

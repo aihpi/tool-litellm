@@ -39,13 +39,13 @@
       "type": "object"
     }
   },
-  "$id": "https://kisz.ai/schemas/agent-v1.json",
+  "$id": "urn:kiseno:agent:v1",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "description": "`agent.yaml`.",
   "properties": {
     "apiVersion": {
-      "const": "kisz.ai/v1",
+      "const": "kiseno/v1",
       "title": "Apiversion",
       "type": "string"
     },

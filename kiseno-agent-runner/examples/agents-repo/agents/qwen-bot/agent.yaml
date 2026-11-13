@@ -1,6 +1,6 @@
-apiVersion: kisz.ai/v1
+apiVersion: kiseno/v1
 name: qwen-bot
-description: KISZ assistant in Slack. Picks the right skill and tool for workflow requests.
+description: KISENO assistant in Slack. Picks the right skill and tool for workflow requests.
 model: qwen3-8-27b
 max_turns: 8
 # LiteLLM team IDs whose members may use this agent: the team's ID from the LiteLLM Teams page, not its name.

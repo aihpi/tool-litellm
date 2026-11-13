@@ -17,10 +17,10 @@ from typing import Any, Literal
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 
-API_VERSION = "kisz.ai/v1"
+API_VERSION = "kiseno/v1"
 NAME_PATTERN = r"^[a-z0-9][a-z0-9-]{0,62}$"
-AGENT_LABEL = "kisz.ai/agent"
-SKILL_LABEL = "kisz.ai/skill"
+AGENT_LABEL = "kiseno/agent"
+SKILL_LABEL = "kiseno/skill"
 
 _FRONT_MATTER = re.compile(r"\A---\s*\n(.*?)\n---\s*(?:\n|\Z)(.*)\Z", re.DOTALL)
 
@@ -43,7 +43,7 @@ class AgentSpec(BaseModel):
 
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
 
-    api_version: Literal["kisz.ai/v1"] = Field(alias="apiVersion")
+    api_version: Literal["kiseno/v1"] = Field(alias="apiVersion")
     name: str = Field(pattern=NAME_PATTERN, description="Lowercase letters, digits and dashes; becomes the LiteLLM agent name.")
     description: str = Field(min_length=1, max_length=500)
     model: str | None = Field(default=None, description="LiteLLM model name; defaults to the runner's DEFAULT_MODEL.")
@@ -215,7 +215,7 @@ def load_directory(root: Path) -> Catalog:
 
 
 def load_configmaps(items: Iterable[Mapping[str, Any]]) -> Catalog:
-    """ConfigMaps labelled kisz.ai/agent=<name> (keys agent.yaml, instructions.md) or kisz.ai/skill=<name> (key SKILL.md)."""
+    """ConfigMaps labelled kiseno/agent=<name> (keys agent.yaml, instructions.md) or kiseno/skill=<name> (key SKILL.md)."""
     agent_files = []
     skill_files = []
     for item in items:
@@ -231,7 +231,7 @@ def load_configmaps(items: Iterable[Mapping[str, Any]]) -> Catalog:
 def agent_json_schema() -> dict[str, Any]:
     schema = AgentSpec.model_json_schema(by_alias=True)
     schema["$schema"] = "https://json-schema.org/draft/2020-12/schema"
-    schema["$id"] = "https://kisz.ai/schemas/agent-v1.json"
+    schema["$id"] = "urn:kiseno:agent:v1"
     return schema
 
 

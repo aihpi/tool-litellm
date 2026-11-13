@@ -19,7 +19,7 @@ from app.spec import AgentDefinition, Catalog
 
 logger = logging.getLogger(__name__)
 
-KEY_ALIAS_PREFIX = "kisz-agent-runner:"
+KEY_ALIAS_PREFIX = "kiseno-agent-runner:"
 
 
 @dataclass
@@ -80,7 +80,7 @@ def key_body(definition: AgentDefinition, settings: Settings, agent_id: str) -> 
         "duration": f"{settings.agent_key_duration_days}d",
         "models": [spec.model or settings.default_model],
         "object_permission": {"mcp_access_groups": spec.access_groups},
-        "metadata": {"managed_by": "kisz-agent-runner", "agent_name": spec.name},
+        "metadata": {"managed_by": "kiseno-agent-runner", "agent_name": spec.name},
     }
 
 

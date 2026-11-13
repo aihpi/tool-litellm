@@ -5,10 +5,10 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-COPY kisz-agent-runner/requirements.txt /app/requirements.txt
+COPY kiseno-agent-runner/requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r /app/requirements.txt
 
-COPY kisz-agent-runner/app /app/app
+COPY kiseno-agent-runner/app /app/app
 
 RUN useradd --uid 10001 --no-create-home runner
 USER 10001

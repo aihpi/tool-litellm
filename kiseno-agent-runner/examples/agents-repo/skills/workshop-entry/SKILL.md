@@ -1,6 +1,6 @@
 ---
 name: workshop-entry
-description: Create or update a KISZ workshop or event in EspoCRM from a Slack request.
+description: Create or update a KISENO workshop or event in EspoCRM from a Slack request.
 tools:
   - "espocrm*"
 ---

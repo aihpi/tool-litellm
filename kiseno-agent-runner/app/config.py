@@ -18,12 +18,12 @@ class Settings(BaseSettings):
 
     # Shared secret LiteLLM sends as `Authorization: Bearer` on every A2A call (the agents' litellm_params.api_key).
     runner_inbound_token: str = Field(alias="RUNNER_INBOUND_TOKEN")
-    # How LiteLLM reaches this service, e.g. http://kisz-agent-runner.litellm.svc:8080.
+    # How LiteLLM reaches this service, e.g. http://kiseno-agent-runner.litellm.svc:8080.
     # Agents whose card URL starts with "<this>/agents/" are the ones this runner manages.
     runner_public_url: str = Field(alias="RUNNER_PUBLIC_URL")
 
     agents_source: Literal["kubernetes", "directory"] = Field(default="kubernetes", alias="AGENTS_SOURCE")
-    agents_namespace: str = Field(default="kisz-agents", alias="AGENTS_NAMESPACE")
+    agents_namespace: str = Field(default="kiseno-agents", alias="AGENTS_NAMESPACE")
     agents_dir: str | None = Field(default=None, alias="AGENTS_DIR")
     sync_interval_seconds: float = Field(default=30.0, alias="SYNC_INTERVAL_SECONDS")
 

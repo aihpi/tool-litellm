@@ -1,6 +1,6 @@
-# KISZ agents
+# KISENO agents
 
-This repository holds the agents and skills of the KISZ Slack bot Qwen-Bot. A merge into `main` goes live within about five minutes: Argo CD copies the files into the cluster, and the agent runner loads them into LiteLLM. Everyone on the team can propose and review changes here.
+This repository holds the agents and skills of the KISENO Slack bot Qwen-Bot. A merge into `main` goes live within about five minutes: Argo CD copies the files into the cluster, and the agent runner loads them into LiteLLM. Everyone on the team can propose and review changes here.
 
 ## Add a skill
 

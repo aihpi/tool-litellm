@@ -56,7 +56,7 @@ async def test_second_run_is_quiet():
 async def test_change_updates_agent_and_rekeys_on_access_change():
     fake = FakeLiteLLM()
     reconciler, registry = make(fake, ALLOWED_MCP_ACCESS_GROUPS="{name},crm")
-    base = "apiVersion: kisz.ai/v1\nname: helper\ndescription: Helps.\n"
+    base = "apiVersion: kiseno/v1\nname: helper\ndescription: Helps.\n"
     await reconciler.reconcile(build_catalog([("helper", {"agent.yaml": base})], []))
     first_key = registry.get("helper").key
 
@@ -105,7 +105,7 @@ async def test_invalid_agent_is_left_alone():
     fake = FakeLiteLLM()
     agent_id = fake.add_agent("helper", MANAGED_URL + "helper/")
     reconciler, _ = make(fake)
-    broken = build_catalog([("helper", {"agent.yaml": "apiVersion: kisz.ai/v1\nname: helper\n"})], [])
+    broken = build_catalog([("helper", {"agent.yaml": "apiVersion: kiseno/v1\nname: helper\n"})], [])
 
     report = await reconciler.reconcile(broken)
     assert "helper" in report.invalid and report.deleted == []
@@ -128,7 +128,7 @@ async def test_agent_file_cannot_grant_other_access_groups():
     """A merged agent.yaml must not widen MCP access: by default only the group named after the agent is allowed."""
     fake = FakeLiteLLM()
     reconciler, registry = make(fake)
-    yaml = "apiVersion: kisz.ai/v1\nname: helper\ndescription: x\nmcp_access_groups: [helper, admin-tools]\n"
+    yaml = "apiVersion: kiseno/v1\nname: helper\ndescription: x\nmcp_access_groups: [helper, admin-tools]\n"
 
     report = await reconciler.reconcile(build_catalog([("helper", {"agent.yaml": yaml})], []))
     assert "admin-tools" in report.invalid["helper"]
@@ -141,7 +141,7 @@ async def test_admins_can_allow_shared_groups():
     s = settings(ALLOWED_MCP_ACCESS_GROUPS="{name},shared-*")
     client = httpx.AsyncClient(base_url=s.normalized_litellm_base_url, transport=fake.transport())
     reconciler = Reconciler(LiteLLMAdmin(client, s.litellm_sync_key), s, Registry())
-    yaml = "apiVersion: kisz.ai/v1\nname: helper\ndescription: x\nmcp_access_groups: [helper, shared-calendar]\n"
+    yaml = "apiVersion: kiseno/v1\nname: helper\ndescription: x\nmcp_access_groups: [helper, shared-calendar]\n"
 
     report = await reconciler.reconcile(build_catalog([("helper", {"agent.yaml": yaml})], []))
     assert report.created == ["helper"] and report.invalid == {}

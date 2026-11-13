@@ -9,4 +9,4 @@ configMapGenerator:
       - instructions.md
     options:
       labels:
-        kisz.ai/agent: qwen-bot
+        kiseno/agent: qwen-bot
