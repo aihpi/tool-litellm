@@ -1,0 +1,23 @@
+stages:
+  - validate
+
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+# Same parser as the running service, so "valid here" means "loads in the cluster".
+agent-files:
+  stage: validate
+  image: ghcr.io/aihpi/tool-kiseno-agent-runner:aihpi-provider
+  script:
+    - cd /app && python -m app.validate "$CI_PROJECT_DIR"
+
+# Builds the ConfigMaps exactly as Argo CD will.
+kustomize:
+  stage: validate
+  image:
+    name: registry.k8s.io/kustomize/kustomize:v5.4.3
+    entrypoint: [""]
+  script:
+    - /app/kustomize build "$CI_PROJECT_DIR" > /dev/null

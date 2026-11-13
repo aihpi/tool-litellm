@@ -1,0 +1,18 @@
+# Copy this folder to agents/<your-agent-name>/ and replace every "my-agent" (here and in kustomization.yaml).
+apiVersion: kiseno/v1
+name: my-agent
+description: One sentence on what this agent does.
+model: qwen3-8-27b
+max_turns: 8
+teams:
+  - qwen-bot-users
+# MCP servers come from LiteLLM: an admin adds them to this access group.
+mcp_access_groups:
+  - my-agent
+skills: []
+skills_loading: all
+slack:
+  default: false
+  channels: []
+  listen: mentions
+  dm: true
