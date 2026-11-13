@@ -58,6 +58,7 @@ jobs:
         run: |
           ours='.github/workflows/build-and-publish.yaml
           .github/workflows/build-kiseno-agent-runner.yaml
+          .github/workflows/build-kiseno-slack-bot.yaml
           .github/workflows/build-kisz-auth-wrapper.yaml
           .github/workflows/rebase-upstream.yml'
           gh workflow list --repo "$GITHUB_REPOSITORY" --limit 200 --json path,state \
