@@ -5,7 +5,7 @@ import pytest
 from app.agents import AgentSpec, AgentStore, SlackSettings
 from app.bot import PLACEHOLDER, SlackBot, is_ignored, route
 from app.identity import SlackWorkspace
-from conftest import BOT_USER, TEAM, member, qwen_bot, sse
+from conftest import BOT_USER, TEAM, a2a_v1_stream, member, qwen_bot, sse
 
 
 def channel_agent(name: str, channel: str, listen: str) -> AgentSpec:
@@ -190,6 +190,37 @@ async def test_mention_in_a_thread_sends_the_thread_and_replies_in_it(bot, slack
     text = fake_litellm.stream_requests[0]["params"]["message"]["parts"][0]["text"]
     assert text == "Name U3: Can someone summarize?\nName U1: @Qwen-Bot please do"
     assert slack.called("chat_update")[-1]["text"] == "Hi!"
+
+
+def a2a_v1_response(name: str) -> httpx.Response:
+    return httpx.Response(200, headers={"content-type": "text/event-stream"}, content=sse(*a2a_v1_stream(name)))
+
+
+@pytest.mark.asyncio
+async def test_an_a2a_1_0_stream_is_answered_in_the_thread(bot, slack, fake_litellm):
+    fake_litellm.stream_responses = [a2a_v1_response("completed")]
+
+    await bot.on_app_mention(mention(f"<@{BOT_USER}> which workshops are planned for December?"))
+
+    updates = slack.called("chat_update")
+    assert {u["ts"] for u in updates} == {"1001.000100"}
+    assert updates[-1]["text"] == (
+        "Two workshops are planned for December:\n\n• *RAG Forum* on 4 December\n• *MCP* on 11 December"
+    )
+    assert slack.called("chat_postMessage") == [
+        {"channel": "CWORKFLOWS", "thread_ts": "200.000100", "text": PLACEHOLDER}
+    ]
+
+
+@pytest.mark.asyncio
+async def test_a_failed_a2a_1_0_task_ends_in_its_error(bot, slack, fake_litellm):
+    fake_litellm.stream_responses = [a2a_v1_response("failed")]
+
+    await bot.on_app_mention(mention(f"<@{BOT_USER}> which workshops are planned for December?"))
+
+    assert slack.called("chat_update")[-1]["text"] == (
+        ":warning: The agent stopped with an error: The agent took too long and was stopped."
+    )
 
 
 @pytest.mark.asyncio

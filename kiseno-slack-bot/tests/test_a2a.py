@@ -3,8 +3,9 @@ from __future__ import annotations
 import httpx
 import pytest
 from app.a2a import StreamState, build_stream_request, iter_sse_data
+from app.bot import render_final
 from app.litellm_client import LiteLLMClient, LiteLLMError
-from conftest import MINT_KEY, sse
+from conftest import MINT_KEY, a2a_v1_stream, sse
 
 
 async def lines(*items: str):
@@ -169,6 +170,56 @@ def test_a2a_1_0_state_names_are_understood():
     assert state.state == "input-required"
     assert state.done
     assert state.answer == "Which workshop?"
+
+
+# LiteLLM answers in the protocol version configured on the agent, whatever the request used.
+# The runner registers its agents as 1.0, so their streams reach the bot in the 1.0 shape.
+
+
+def test_a2a_1_0_stream_reports_progress_then_the_answer():
+    submitted, working, tool_call, answer, completed = a2a_v1_stream("completed")
+    state = StreamState()
+    for event in (submitted, working, tool_call):
+        state.apply(event)
+    assert state.state == "working"
+    assert state.status == "calling tool espocrm_find_events"
+    assert state.answer is None
+    assert not state.done
+
+    state.apply(answer)
+    assert state.answer.startswith("Two workshops are planned for December:")
+    assert not state.done
+
+    state.apply(completed)
+    assert state.done
+    assert state.state == "completed"
+    assert state.error is None
+    assert render_final(state) == (
+        "Two workshops are planned for December:\n\n• *RAG Forum* on 4 December\n• *MCP* on 11 December"
+    )
+
+
+def test_a2a_1_0_failed_task_ends_in_its_error():
+    state = StreamState()
+    for event in a2a_v1_stream("failed"):
+        state.apply(event)
+    assert state.done
+    assert state.state == "failed"
+    assert render_final(state) == ":warning: The agent stopped with an error: The agent took too long and was stopped."
+
+
+def test_a2a_1_0_agent_message_is_the_answer_but_a_user_message_is_not():
+    question = a2a_v1_stream("completed")[0]["result"]["task"]["history"][0]
+    assert question["role"] == "ROLE_USER"
+    state = StreamState()
+    state.apply({"jsonrpc": "2.0", "id": 1, "result": {"message": question}})
+    assert state.answer is None
+    assert not state.done
+
+    for event in a2a_v1_stream("message"):
+        state.apply(event)
+    assert state.done
+    assert render_final(state) == "Hello from the agent."
 
 
 @pytest.mark.asyncio

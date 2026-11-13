@@ -1,7 +1,14 @@
-"""A2A v0.3 JSON-RPC: the ``message/stream`` request and the events that come back.
+"""A2A JSON-RPC: the v0.3 ``message/stream`` request and the events that come back.
 
 LiteLLM relays the agent's stream as SSE, one ``data: <jsonrpc>`` event per A2A
-event: ``message``, ``task``, ``status-update`` and ``artifact-update``.
+event, in the protocol version configured on the agent rather than the one the
+request used. So the events arrive in either shape:
+
+- v0.3: ``result`` carries ``kind``: ``message``, ``task``, ``status-update`` or
+  ``artifact-update``; a status update sets ``final`` on the last one.
+- v1.0: ``result`` has exactly one of ``message``, ``task``, ``statusUpdate`` or
+  ``artifactUpdate``. States read ``TASK_STATE_COMPLETED``, roles ``ROLE_AGENT``,
+  parts have no ``kind``, and there is no ``final`` flag: a terminal state ends it.
 """
 
 from __future__ import annotations
@@ -15,6 +22,14 @@ WORKING_STATES = frozenset({"submitted", "working"})
 FAILED_STATES = frozenset({"failed", "rejected", "canceled"})
 WAITING_STATES = frozenset({"input-required", "auth-required"})
 TERMINAL_STATES = frozenset({"completed"}) | FAILED_STATES | WAITING_STATES
+
+# The v1.0 envelope key of each event, by its v0.3 ``kind``.
+V1_EVENT_KINDS = {
+    "message": "message",
+    "task": "task",
+    "statusUpdate": "status-update",
+    "artifactUpdate": "artifact-update",
+}
 
 
 def build_stream_request(text: str, *, slack: Mapping[str, Any], request_id: str | None = None) -> dict[str, Any]:
@@ -62,6 +77,23 @@ def _state(value: Any) -> str | None:
     return state.replace("_", "-")
 
 
+def _role(value: Any) -> str | None:
+    """``agent`` or ``user``, from v0.3 (``agent``) and v1.0 (``ROLE_AGENT``) alike."""
+    return value.lower().removeprefix("role_") if isinstance(value, str) else None
+
+
+def _event(result: Mapping[str, Any]) -> tuple[str | None, Mapping[str, Any]]:
+    """The event's v0.3 kind and its body, whichever shape the result came in."""
+    kind = result.get("kind")
+    if isinstance(kind, str):
+        return kind, result
+    for key, name in V1_EVENT_KINDS.items():
+        body = result.get(key)
+        if isinstance(body, Mapping):
+            return name, body
+    return None, result
+
+
 def parts_text(parts: Any) -> str:
     if not isinstance(parts, list):
         return ""
@@ -105,19 +137,19 @@ class StreamState:
         result = envelope.get("result")
         if not isinstance(result, Mapping):
             return
-        kind = result.get("kind")
+        kind, event = _event(result)
         if kind == "message":
-            if result.get("role") != "user":
-                self.message = _message_text(result)
+            if _role(event.get("role")) != "user":
+                self.message = _message_text(event)
                 self.done = True
         elif kind == "task":
-            for artifact in result.get("artifacts") or []:
+            for artifact in event.get("artifacts") or []:
                 self._set_artifact(artifact, append=False)
-            self._apply_status(result.get("status"), final=False)
+            self._apply_status(event.get("status"), final=False)
         elif kind == "status-update":
-            self._apply_status(result.get("status"), final=bool(result.get("final")))
+            self._apply_status(event.get("status"), final=bool(event.get("final")))
         elif kind == "artifact-update":
-            self._set_artifact(result.get("artifact"), append=bool(result.get("append")))
+            self._set_artifact(event.get("artifact"), append=bool(event.get("append")))
 
     def _set_artifact(self, artifact: Any, *, append: bool) -> None:
         if not isinstance(artifact, Mapping):
