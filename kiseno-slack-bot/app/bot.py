@@ -47,6 +47,8 @@ def route(store: AgentStore, *, kind: EventKind, channel: str, channel_type: str
     - Mentions go to the agent that lists the channel, else to the default agent.
     - DMs go to the default agent if it has ``slack.dm: true``.
     - Other channel messages go to the channel's agent only if it has ``slack.listen: all``.
+
+    ``SlackBot`` also answers replies in threads it has answered in, as if they were mentions.
     """
     if kind == "mention":
         return store.agent_for_channel(channel) or store.default_agent()
@@ -176,6 +178,8 @@ class SlackBot:
             return
         channel_type = event.get("channel_type") or ("im" if str(channel).startswith("D") else None)
         agent = route(self.store, kind=kind, channel=channel, channel_type=channel_type)
+        if agent is None and await self._follows_up(event, kind=kind, channel_type=channel_type):
+            agent = route(self.store, kind="mention", channel=channel, channel_type=channel_type)
         if agent is None:
             if channel_type == "im":
                 await self._post(channel, None, "Sorry, I don't take direct messages at the moment.")
@@ -198,6 +202,24 @@ class SlackBot:
         if self.workspace.enterprise_id and body.get("enterprise_id"):
             return body["enterprise_id"] == self.workspace.enterprise_id
         return body.get("team_id") in (None, self.workspace.team_id)
+
+    async def _follows_up(self, event: Mapping[str, Any], *, kind: EventKind, channel_type: str | None) -> bool:
+        """A channel thread reply without a mention, in a thread the bot has answered in.
+
+        Such a reply is treated like a mention, so a conversation that started with a mention
+        goes on without one. A reply that mentions someone else is meant for that person.
+        """
+        thread_ts = event.get("thread_ts")
+        if kind != "message" or channel_type not in ("channel", "group") or self.bot_user_id is None:
+            return False
+        if not thread_ts or thread_ts == event.get("ts") or user_ids_in(event.get("text") or ""):
+            return False
+        try:
+            messages = await self._thread_messages(event["channel"], thread_ts)
+        except Exception:
+            logger.exception("Could not read thread %s in %s", thread_ts, event["channel"])
+            return False
+        return any(m.get("user") == self.bot_user_id for m in messages)
 
     def _already_seen(self, channel: str, ts: str) -> bool:
         key = (channel, ts)

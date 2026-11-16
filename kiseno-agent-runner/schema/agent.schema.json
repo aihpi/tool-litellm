@@ -26,7 +26,7 @@
         },
         "listen": {
           "default": "mentions",
-          "description": "In `channels`: answer only @mentions, or read every post.",
+          "description": "In `channels`: answer @mentions and replies in threads the bot answered in, or read every post.",
           "enum": [
             "mentions",
             "all"

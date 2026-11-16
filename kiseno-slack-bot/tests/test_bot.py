@@ -305,6 +305,67 @@ async def test_listen_all_channel_messages_are_answered_and_duplicates_dropped(
     assert slack.called("chat_postMessage")[0]["thread_ts"] == "400.000100"
 
 
+THREAD_WITH_BOT = [
+    {"user": "U1", "text": f"<@{BOT_USER}> list the RAG events", "ts": "500.000100", "thread_ts": "500.000100"},
+    {"user": BOT_USER, "bot_id": "B1", "text": "There are 6.", "ts": "500.000200", "thread_ts": "500.000100"},
+    {"user": "U1", "text": "which are in Berlin?", "ts": "500.000300", "thread_ts": "500.000100"},
+]
+
+
+def thread_reply(text: str, channel: str = "CWORKFLOWS", **extra) -> dict:
+    return {
+        "type": "message",
+        "channel": channel,
+        "channel_type": "channel",
+        "user": "U1",
+        "text": text,
+        "ts": "500.000300",
+        "thread_ts": "500.000100",
+        **extra,
+    }
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("channel", ["CWORKFLOWS", "CRANDOM"], ids=["listed-channel", "default-agent"])
+async def test_a_reply_in_a_thread_the_bot_answered_in_needs_no_mention(bot, slack, fake_litellm, channel):
+    slack.replies = THREAD_WITH_BOT
+
+    await bot.on_message(thread_reply("which are in Berlin?", channel=channel))
+
+    assert slack.called("chat_postMessage")[0]["thread_ts"] == "500.000100"
+    text = fake_litellm.stream_requests[0]["params"]["message"]["parts"][0]["text"]
+    assert text == "Name U1: @Qwen-Bot list the RAG events\nQwen-Bot: There are 6.\nName U1: which are in Berlin?"
+
+
+@pytest.mark.asyncio
+async def test_a_reply_in_a_thread_without_the_bot_gets_no_answer(bot, slack, fake_litellm):
+    slack.replies = [m for m in THREAD_WITH_BOT if m["user"] != BOT_USER]
+
+    await bot.on_message(thread_reply("which are in Berlin?"))
+
+    assert fake_litellm.stream_requests == []
+    assert slack.called("chat_postMessage") == []
+
+
+@pytest.mark.asyncio
+async def test_a_reply_that_mentions_someone_else_gets_no_answer(bot, slack, fake_litellm):
+    slack.replies = THREAD_WITH_BOT
+
+    await bot.on_message(thread_reply("<@U2> can you check this?"))
+
+    assert slack.calls == []
+
+
+@pytest.mark.asyncio
+async def test_top_level_channel_posts_still_need_a_mention(bot, slack, fake_litellm):
+    event = thread_reply("anyone?")
+    del event["thread_ts"]
+
+    await bot.on_message(event)
+
+    assert slack.calls == []
+
+
 @pytest.mark.asyncio
 async def test_events_from_another_workspace_are_dropped(bot, slack, fake_litellm):
     await bot.on_message(dm("hi"), {"team_id": "T0OTHER"})
