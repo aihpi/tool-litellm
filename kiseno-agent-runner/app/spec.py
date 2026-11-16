@@ -33,7 +33,8 @@ class SlackSpec(BaseModel):
     default: bool = Field(default=False, description="Answer DMs and @mentions that no channel rule claims.")
     channels: list[str] = Field(default_factory=list, description="Slack channel IDs this agent answers in.")
     listen: Literal["mentions", "all"] = Field(
-        default="mentions", description="In `channels`: answer only @mentions, or read every post."
+        default="mentions",
+        description="In `channels`: answer @mentions and replies in threads the bot answered in, or read every post.",
     )
     dm: bool = Field(default=True, description="Whether people may DM this agent.")
 

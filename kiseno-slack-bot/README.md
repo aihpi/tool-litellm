@@ -119,6 +119,8 @@ slack:
 
 A mention goes to the agent that lists the channel in `slack.channels`, otherwise to the agent with `slack.default: true`. A DM goes to the default agent if it has `slack.dm: true`. Any other channel message is answered only if the channel's agent has `slack.listen: all`; a channel message that mentions the bot is left to its `app_mention` event, so each post is answered once.
 
+A reply in a channel thread where the bot has already posted (among the last 50 messages) is answered like a mention, so a conversation that started with a mention goes on without one. A reply that mentions someone else is meant for that person and gets no answer. To tell such threads apart, the bot reads the thread with `conversations.replies` for every thread reply without a mention in its channels.
+
 The bot ignores messages from bots (including itself), edits, deletions, joins and other subtypes. It accepts plain messages, `file_share` and `thread_broadcast`. Answers go into the thread of the request; a top-level DM gets a top-level answer.
 
 ## Identity
