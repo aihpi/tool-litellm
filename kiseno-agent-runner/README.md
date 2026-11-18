@@ -12,6 +12,10 @@ GitLab agents repo ──Argo CD──► ConfigMaps in kiseno-agents ──► 
 
 Every model and tool call runs with the agent's own key and echoes the caller's `X-LiteLLM-User-Id` and `X-LiteLLM-Team-Id`. LiteLLM then caps the agent at what that person may use, so permissions, budgets and spend stay per person. The runner never talks to MCP servers directly; LiteLLM does.
 
+## Images
+
+A request can carry images as A2A file parts with inline bytes: PNG, JPEG, GIF or WebP, at most 4. The runner adds them to the user turn after the text, each as a text part `Image <name>:` followed by an OpenAI `image_url` part with a data URL, so the agent's model must be able to see; `qwen3-8-27b` can. Other file parts are left out. The Slack bot puts text files into the prompt text itself.
+
 ## What the sync does
 
 Every `SYNC_INTERVAL_SECONDS` the runner loads the catalog and reconciles LiteLLM:

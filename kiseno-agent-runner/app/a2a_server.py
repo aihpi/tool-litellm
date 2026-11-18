@@ -20,7 +20,7 @@ from a2a.server.events import EventQueue
 from a2a.server.request_handlers import DefaultRequestHandler
 from a2a.server.routes import create_agent_card_routes, create_jsonrpc_routes
 from a2a.server.tasks import InMemoryTaskStore, TaskUpdater
-from a2a.types.a2a_pb2 import AgentCapabilities, AgentCard, AgentInterface, AgentSkill, Part, TaskState
+from a2a.types.a2a_pb2 import AgentCapabilities, AgentCard, AgentInterface, AgentSkill, Message, Part, TaskState
 from starlette.applications import Starlette
 from starlette.responses import JSONResponse
 from starlette.routing import get_route_path
@@ -28,10 +28,26 @@ from starlette.types import ASGIApp, Receive, Scope, Send
 
 from app.config import Settings
 from app.litellm_client import Caller, LiteLLMGateway
-from app.loop import LoopConfig, run_agent
+from app.loop import InputImage, LoopConfig, run_agent
 from app.sync import AgentRuntime, Registry
 
 logger = logging.getLogger(__name__)
+
+# Images in a request reach the model as image parts; the model must be able to see (qwen3-8-27b can).
+IMAGE_TYPES = ("image/png", "image/jpeg", "image/gif", "image/webp")
+MAX_IMAGES = 4
+
+
+def input_images(message: Message | None) -> list[InputImage]:
+    """The inline images (file parts with bytes) of a request, at most MAX_IMAGES; other parts are left out."""
+    if message is None:
+        return []
+    images = [
+        InputImage(name=part.filename or "image", media_type=part.media_type, data=part.raw)
+        for part in message.parts
+        if part.raw and part.media_type in IMAGE_TYPES
+    ]
+    return images[:MAX_IMAGES]
 
 
 def agent_card(runtime: AgentRuntime, settings: Settings) -> AgentCard:
@@ -42,7 +58,7 @@ def agent_card(runtime: AgentRuntime, settings: Settings) -> AgentCard:
         version=runtime.fingerprint[:16],
         supported_interfaces=[AgentInterface(url=settings.agent_url(spec.name), protocol_binding="JSONRPC", protocol_version="1.0")],
         capabilities=AgentCapabilities(streaming=True),
-        default_input_modes=["text/plain"],
+        default_input_modes=["text/plain", *IMAGE_TYPES],
         default_output_modes=["text/plain"],
         skills=[AgentSkill(id=s.name, name=s.name, description=s.description) for s in runtime.definition.skills],
     )
@@ -97,6 +113,7 @@ class RunnerAgentExecutor(AgentExecutor):
                     gateway=self.gateway,
                     config=config,
                     on_status=on_status,
+                    images=input_images(context.message),
                 )
         except TimeoutError:
             await updater.failed(updater.new_agent_message([Part(text="The agent took too long and was stopped.")]))

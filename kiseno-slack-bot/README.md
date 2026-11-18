@@ -87,7 +87,7 @@ features:
   app_home: {messages_tab_enabled: true, messages_tab_read_only_enabled: false}
 oauth_config:
   scopes:
-    bot: [app_mentions:read, chat:write, im:history, im:read, im:write, channels:history, groups:history, users:read, users:read.email, reactions:write]
+    bot: [app_mentions:read, chat:write, files:read, im:history, im:read, im:write, channels:history, groups:history, users:read, users:read.email, reactions:write]
 settings:
   event_subscriptions: {bot_events: [app_mention, message.im, message.channels, message.groups]}
   interactivity: {is_enabled: false}
@@ -96,7 +96,7 @@ settings:
   token_rotation_enabled: false
 ```
 
-Generate the app-level token (scope `connections:write`) under Basic Information, install the app, and copy the bot token from OAuth & Permissions. Invite the bot into `#workflows` with `/invite @Qwen-Bot`.
+Generate the app-level token (scope `connections:write`) under Basic Information, install the app, and copy the bot token from OAuth & Permissions. Invite the bot into `#workflows` with `/invite @Qwen-Bot`. After adding a scope to an installed app, reinstall it under OAuth & Permissions; until then the new scope does not apply.
 
 ## Agent definitions
 
@@ -134,7 +134,17 @@ Refusals in channels are ephemeral, so only the writer sees them. Keys from befo
 
 ## What the agent receives
 
-The request is A2A v0.3 JSON-RPC (`message/stream`) with one user Message and one TextPart. The text is the conversation as `<display name>: <text>` lines with the current request as the last line. In a thread that is the thread from `conversations.replies` (last 50 messages); in a top-level DM it is the last 20 DM messages. Mentions become `@name` and Slack links become `label (url)`. The bot's own earlier answers appear under its display name.
+The request is A2A v0.3 JSON-RPC (`message/stream`) with one user Message: a TextPart, then one FilePart with inline bytes per image. The text is the conversation as `<display name>: <text>` lines with the current request as the last line. In a thread that is the thread from `conversations.replies` (last 50 messages); in a top-level DM it is the last 20 DM messages. Mentions become `@name` and Slack links become `label (url)`. The bot's own earlier answers appear under its display name.
+
+Files attached to messages in that conversation are downloaded with the bot token, which needs the scope `files:read`. Every file gets a note on its message's line, such as `[image chart.png: attached after the conversation]` or `[file slides.pdf: PDF files cannot be read here]`, so the model knows about files it cannot read and does not guess their content.
+
+| Kind | Types | What the agent gets | Limits |
+| --- | --- | --- | --- |
+| Images | PNG, JPEG, GIF, WebP; other image types and larger images as Slack's thumbnail (up to 1024 px) | A FilePart each; the runner passes them to the model as images | 4 newest images, 5 MB each, 10 MB together |
+| Text files | `text/*` (plain text, CSV, Markdown, code), JSON, YAML, XML | The text, before the conversation, between `[File name, attached by person]` and `[End of name]` | 30,000 characters each, 60,000 together; longer files are cut and marked |
+| Everything else | PDF, Office files, archives and so on | Only the note | |
+
+Newer files win when a limit is reached. Deleted files and files shared from another organization get a note too. If Slack answers a download with its sign-in page, the app is missing `files:read`; the bot logs a warning and the file gets the note "could not be downloaded". Images are only useful with a model that can see; `qwen3-8-27b` can.
 
 `params.metadata.slack` carries `{team, channel, thread_ts, user}` with Slack IDs. The bot reads `message`, `task`, `status-update` and `artifact-update` events from the SSE stream. LiteLLM sends them in the protocol version configured on the agent, not the version of the request, so agents registered with `protocolVersion: "1.0"` (all of kiseno-agent-runner's) stream A2A 1.0 events (`statusUpdate`, `TASK_STATE_COMPLETED`, no `final` flag); the bot reads both shapes. Status text from working states is shown in italics while the agent works; artifact text, an agent Message or the text of the final status becomes the answer. A failed task, a JSON-RPC error or an HTTP error ends in a one-line message without stack traces; budget and rate-limit messages from LiteLLM are passed on in one line.
 

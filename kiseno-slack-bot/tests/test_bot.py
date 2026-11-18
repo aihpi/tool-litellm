@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import base64
+
 import httpx
 import pytest
 from app.agents import AgentSpec, AgentStore, SlackSettings
 from app.bot import PLACEHOLDER, SlackBot, is_ignored, route
+from app.files import Download
 from app.identity import SlackWorkspace
-from conftest import BOT_USER, TEAM, a2a_v1_stream, member, qwen_bot, sse
+from conftest import BOT_USER, TEAM, FakeFetcher, a2a_v1_stream, member, qwen_bot, slack_file, sse
 
 
 def channel_agent(name: str, channel: str, listen: str) -> AgentSpec:
@@ -364,6 +367,55 @@ async def test_top_level_channel_posts_still_need_a_mention(bot, slack, fake_lit
     await bot.on_message(event)
 
     assert slack.calls == []
+
+
+PNG = b"\x89PNG\r\n\x1a\nfake"
+
+
+@pytest.mark.asyncio
+async def test_files_in_a_dm_reach_the_agent(bot, slack, fake_litellm):
+    chart = slack_file("F1", "chart.png", "image/png")
+    data = slack_file("F2", "data.csv", "text/csv")
+    bot.files = FakeFetcher(
+        {
+            chart["url_private_download"]: Download(PNG, "image/png", True),
+            data["url_private_download"]: Download(b"a,b\n1,2", "text/csv", True),
+        }
+    )
+    slack.history = [
+        {"user": "U1", "subtype": "file_share", "text": "", "ts": "90.000100", "files": [data]},
+        {"user": "U1", "text": "What does the chart show?", "ts": "100.000200", "files": [chart]},
+    ]
+
+    await bot.on_message(dm("What does the chart show?", files=[chart]))
+
+    parts = fake_litellm.stream_requests[0]["params"]["message"]["parts"]
+    assert parts[0]["text"] == (
+        "[File data.csv, attached by Name U1]\na,b\n1,2\n[End of data.csv]\n\n"
+        "Name U1: [file data.csv: its text is shown before the conversation]\n"
+        "Name U1: What does the chart show? [image chart.png: attached after the conversation]"
+    )
+    encoded = base64.b64encode(PNG).decode()
+    assert parts[1:] == [{"kind": "file", "file": {"name": "chart.png", "mimeType": "image/png", "bytes": encoded}}]
+
+
+@pytest.mark.asyncio
+async def test_files_of_a_mention_come_from_the_fetched_message(bot, slack, fake_litellm):
+    chart = slack_file("F1", "chart.png", "image/png")
+    bot.files = FakeFetcher({chart["url_private_download"]: Download(PNG, "image/png", True)})
+    slack.replies = [{"user": "U1", "text": f"<@{BOT_USER}> what is this?", "ts": "200.000100", "files": [chart]}]
+
+    await bot.on_app_mention(mention(f"<@{BOT_USER}> what is this?"))
+
+    parts = fake_litellm.stream_requests[0]["params"]["message"]["parts"]
+    assert parts[0]["text"] == "Name U1: @Qwen-Bot what is this? [image chart.png: attached after the conversation]"
+    assert parts[1]["file"]["name"] == "chart.png"
+
+
+@pytest.mark.asyncio
+async def test_without_files_the_request_has_one_text_part(bot, slack, fake_litellm):
+    await bot.on_message(dm("hi"))
+    assert len(fake_litellm.stream_requests[0]["params"]["message"]["parts"]) == 1
 
 
 @pytest.mark.asyncio

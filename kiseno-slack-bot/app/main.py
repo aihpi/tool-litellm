@@ -13,6 +13,7 @@ from slack_bolt.async_app import AsyncApp
 from app.agents import AgentStore, KubernetesConfigMapSource, poll_agents_forever, refresh_agents
 from app.bot import SlackBot
 from app.config import Settings, get_settings
+from app.files import SlackFileFetcher
 from app.identity import IdentityService, workspace_from_auth
 from app.litellm_client import LiteLLMClient
 
@@ -85,6 +86,7 @@ async def run(settings: Settings) -> None:
         workspace=workspace,
         bot_user_id=bot_user_id,
         bot_name=bot_name,
+        files=SlackFileFetcher(settings.slack_bot_token.get_secret_value()),
     )
 
     @app.event("app_mention")
