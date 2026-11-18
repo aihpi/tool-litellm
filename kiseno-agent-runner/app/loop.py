@@ -8,6 +8,7 @@ Skills reach the model in one of two ways (agent.yaml `skills_loading`):
 
 from __future__ import annotations
 
+import base64
 import fnmatch
 import json
 import re
@@ -29,8 +30,8 @@ class AgentRunError(Exception):
 
 
 def _tool_matches(tool: McpTool, patterns: Iterable[str]) -> bool:
-    """Patterns (agent.yaml `tools`, a skill's `tools`) match the server-qualified name ("espocrm-Find_CEvents") or
-    the tool's own name ("Find_CEvents")."""
+    """Patterns (agent.yaml `tools`, a skill's `tools`) match the server-qualified name ("crm-find_events") or
+    the tool's own name ("find_events")."""
     patterns = list(patterns)
     return _matches(tool.qualified_name, patterns) or _matches(tool.name, patterns)
 
@@ -128,6 +129,25 @@ def _parse_arguments(raw: Any) -> dict[str, Any]:
     return parsed
 
 
+@dataclass(frozen=True)
+class InputImage:
+    name: str
+    media_type: str
+    data: bytes
+
+
+def user_content(text: str, images: Sequence[InputImage]) -> str | list[dict[str, Any]]:
+    """The user turn: plain text, or text followed by each image under its name (OpenAI content parts)."""
+    if not images:
+        return text
+    content: list[dict[str, Any]] = [{"type": "text", "text": text}]
+    for image in images:
+        encoded = base64.b64encode(image.data).decode("ascii")
+        content.append({"type": "text", "text": f"Image {image.name}:"})
+        content.append({"type": "image_url", "image_url": {"url": f"data:{image.media_type};base64,{encoded}"}})
+    return content
+
+
 @dataclass
 class LoopConfig:
     model: str
@@ -145,6 +165,7 @@ async def run_agent(
     gateway: LiteLLMGateway,
     config: LoopConfig,
     on_status: StatusCallback,
+    images: Sequence[InputImage] = (),
 ) -> str:
     tools = allowed_tools(await gateway.list_tools(agent_key, caller), agent.spec.tools)
     table = ToolTable.build(tools)
@@ -162,7 +183,7 @@ async def run_agent(
     prompt = system_prompt(agent)
     if prompt:
         messages.append({"role": "system", "content": prompt})
-    messages.append({"role": "user", "content": user_text})
+    messages.append({"role": "user", "content": user_content(user_text, images)})
 
     for _turn in range(config.max_turns):
         specs = table.function_specs(visible)

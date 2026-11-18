@@ -12,6 +12,10 @@ GitLab agents repo ──Argo CD──► ConfigMaps in kiseno-agents ──► 
 
 Every model and tool call runs with the agent's own key and echoes the caller's `X-LiteLLM-User-Id` and `X-LiteLLM-Team-Id`. LiteLLM then caps the agent at what that person may use, so permissions, budgets and spend stay per person. The runner never talks to MCP servers directly; LiteLLM does.
 
+## Images
+
+A request can carry images as A2A file parts with inline bytes: PNG, JPEG, GIF or WebP, at most 4. The runner adds them to the user turn after the text, each as a text part `Image <name>:` followed by an OpenAI `image_url` part with a data URL, so the agent's model must be able to see; `qwen3-8-27b` can. Other file parts are left out. The Slack bot puts text files into the prompt text itself.
+
 ## What the sync does
 
 Every `SYNC_INTERVAL_SECONDS` the runner loads the catalog and reconciles LiteLLM:
@@ -26,7 +30,7 @@ An agent whose files don't parse, or that names an MCP access group it may not u
 
 An agent can only use the LiteLLM access group named after itself (`ALLOWED_MCP_ACCESS_GROUPS={name}`). Admins give an agent MCP servers by adding them to that group in the LiteLLM UI; a merged agent file cannot grant access. To share a group between agents, set for example `ALLOWED_MCP_ACCESS_GROUPS={name},shared-*` in the deployment.
 
-The model sees each tool as `<server>-<tool>`, for example `espocrm-Find_CEvents`, and patterns in `agent.yaml` `tools` or a skill's `tools` (such as `espocrm*`) match that name. Every tool call is sent to LiteLLM with the tool's server, which `/mcp-rest/tools/call` requires.
+The model sees each tool as `<server>-<tool>`, for example `crm-find_events`, and patterns in `agent.yaml` `tools` or a skill's `tools` (such as `crm*`) match that name. Every tool call is sent to LiteLLM with the tool's server, which `/mcp-rest/tools/call` requires.
 
 ## Configuration
 

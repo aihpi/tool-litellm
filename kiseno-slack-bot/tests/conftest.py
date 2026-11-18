@@ -14,6 +14,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from app.agents import AgentSpec, AgentStore, SlackSettings  # noqa: E402
+from app.files import Download  # noqa: E402
 from app.identity import IdentityService, KeyCache, SlackWorkspace  # noqa: E402
 from app.litellm_client import LiteLLMClient  # noqa: E402
 
@@ -23,6 +24,33 @@ MINT_KEY = "sk-mint-secret"
 USER_KEY = "sk-user-key-1"
 INTERNAL_TEAM = "team-internal"
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
+
+
+class FakeFetcher:
+    """Slack file downloads by URL; records the URLs it was asked for."""
+
+    def __init__(self, files: dict[str, Download | Exception] | None = None):
+        self.files = files or {}
+        self.urls: list[str] = []
+
+    async def fetch(self, url: str, *, max_bytes: int) -> Download:
+        self.urls.append(url)
+        result = self.files[url]
+        if isinstance(result, Exception):
+            raise result
+        if len(result.data) > max_bytes:
+            return Download(result.data[:max_bytes], result.content_type, complete=False)
+        return result
+
+
+def slack_file(file_id: str, name: str, mimetype: str, **extra: Any) -> dict[str, Any]:
+    return {
+        "id": file_id,
+        "name": name,
+        "mimetype": mimetype,
+        "url_private_download": f"https://files.slack.com/files-pri/T1-{file_id}/download/{name}",
+        **extra,
+    }
 
 
 def a2a_v1_stream(name: str) -> list[dict[str, Any]]:

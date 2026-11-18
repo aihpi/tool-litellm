@@ -13,10 +13,13 @@ request used. So the events arrive in either shape:
 
 from __future__ import annotations
 
+import base64
 import uuid
-from collections.abc import AsyncIterable, AsyncIterator, Mapping
+from collections.abc import AsyncIterable, AsyncIterator, Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any
+
+from app.files import Image
 
 WORKING_STATES = frozenset({"submitted", "working"})
 FAILED_STATES = frozenset({"failed", "rejected", "canceled"})
@@ -32,8 +35,21 @@ V1_EVENT_KINDS = {
 }
 
 
-def build_stream_request(text: str, *, slack: Mapping[str, Any], request_id: str | None = None) -> dict[str, Any]:
-    """One user Message with one TextPart; Slack context goes into ``params.metadata.slack``."""
+def build_stream_request(
+    text: str,
+    *,
+    slack: Mapping[str, Any],
+    images: Sequence[Image] = (),
+    request_id: str | None = None,
+) -> dict[str, Any]:
+    """One user Message: a TextPart, then a FilePart with inline bytes per image.
+
+    Slack context goes into ``params.metadata.slack``.
+    """
+    parts: list[dict[str, Any]] = [{"kind": "text", "text": text}]
+    for image in images:
+        encoded = base64.b64encode(image.data).decode("ascii")
+        parts.append({"kind": "file", "file": {"name": image.name, "mimeType": image.mime_type, "bytes": encoded}})
     return {
         "jsonrpc": "2.0",
         "id": request_id or uuid.uuid4().hex,
@@ -43,7 +59,7 @@ def build_stream_request(text: str, *, slack: Mapping[str, Any], request_id: str
                 "kind": "message",
                 "messageId": uuid.uuid4().hex,
                 "role": "user",
-                "parts": [{"kind": "text", "text": text}],
+                "parts": parts,
             },
             "metadata": {"slack": dict(slack)},
         },

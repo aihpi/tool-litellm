@@ -13,6 +13,7 @@ import httpx
 
 from app.a2a import StreamState, build_stream_request
 from app.agents import AgentSpec, AgentStore
+from app.files import Attachments, Fetcher, Image, collect, message_files
 from app.identity import Grant, IdentityService, Refusal, SlackWorkspace
 from app.litellm_client import LiteLLMClient, LiteLLMError
 from app.responder import ThrottledMessage
@@ -136,6 +137,12 @@ class Reply:
     """Where the answer goes: the thread, or None for a top-level DM."""
 
 
+@dataclass(frozen=True)
+class Prompt:
+    text: str
+    images: list[Image]
+
+
 class SlackBot:
     def __init__(
         self,
@@ -148,8 +155,10 @@ class SlackBot:
         bot_user_id: str | None,
         bot_name: str = "Qwen-Bot",
         update_interval: float = 1.5,
+        files: Fetcher | None = None,
     ):
         self.client = client
+        self.files = files
         self.store = store
         self.identity = identity
         self.litellm = litellm
@@ -271,12 +280,13 @@ class SlackBot:
         self,
         agent: AgentSpec,
         grant: Grant,
-        prompt: str,
+        prompt: Prompt,
         reply: Reply,
         message: ThrottledMessage,
     ) -> str:
         request = build_stream_request(
-            prompt,
+            prompt.text,
+            images=prompt.images,
             slack={
                 "team": self.workspace.team_id,
                 "channel": reply.channel,
@@ -304,8 +314,11 @@ class SlackBot:
             return render_final(state)
         raise AssertionError("unreachable")
 
-    async def build_prompt(self, event: Mapping[str, Any], reply: Reply, *, exclude: set[str]) -> str:
-        """The conversation as ``<display name>: <text>`` lines, the current request last."""
+    async def build_prompt(self, event: Mapping[str, Any], reply: Reply, *, exclude: set[str]) -> Prompt:
+        """The conversation as ``<display name>: <text>`` lines, the current request last.
+
+        Text files of the conversation come before it; images go along as separate parts.
+        """
         if reply.thread_ts is not None:
             messages = await self._thread_messages(reply.channel, reply.thread_ts)
         else:
@@ -318,14 +331,28 @@ class SlackBot:
             and m.get("ts") != reply.ts
             and float(m.get("ts") or 0) < current_ts
             and m.get("subtype") in ACCEPTED_SUBTYPES | {"bot_message"}
-            and (m.get("text") or "").strip()
+            and ((m.get("text") or "").strip() or message_files(m))
         ]
-        names = await self._names(earlier + [dict(event)])
-        lines = [history_line(self._speaker(m, names), slack_to_plain(m.get("text") or "", names)) for m in earlier]
-        current = history_line(names.get(reply.user, reply.user), slack_to_plain(event.get("text") or "", names))
-        while lines and sum(len(line) + 1 for line in lines) + len(current) > MAX_PROMPT_CHARS:
+        current = dict(event)
+        if not message_files(current):
+            # Slack does not put the files on every event type; the fetched copy of the message has them.
+            stored = next((m for m in messages if m.get("ts") == reply.ts), None)
+            if stored is not None and message_files(stored):
+                current["files"] = stored["files"]
+        names = await self._names(earlier + [current])
+        newest_first = [(m, self._speaker(m, names)) for m in reversed([*earlier, current])]
+        attachments = await collect(newest_first, self.files)
+        lines = [self._line(m, names, attachments) for m in earlier]
+        last = self._line(current, names, attachments)
+        while lines and sum(len(line) + 1 for line in lines) + len(last) > MAX_PROMPT_CHARS:
             lines.pop(0)
-        return "\n".join([*lines, current])
+        conversation = "\n".join([*lines, last])
+        files = attachments.text_block()
+        return Prompt(text=f"{files}\n\n{conversation}" if files else conversation, images=attachments.images)
+
+    def _line(self, message: Mapping[str, Any], names: dict[str, str], attachments: Attachments) -> str:
+        text = slack_to_plain(message.get("text") or "", names)
+        return history_line(self._speaker(message, names), " ".join([text, *attachments.notes_for(message)]).strip())
 
     async def _thread_messages(self, channel: str, thread_ts: str) -> list[dict[str, Any]]:
         messages: list[dict[str, Any]] = []

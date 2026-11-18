@@ -1,5 +1,6 @@
 """End to end through the A2A protocol, with the same a2a-sdk client LiteLLM uses to call agent backends."""
 
+import base64
 import uuid
 from pathlib import Path
 
@@ -28,12 +29,12 @@ def http(app, headers=None) -> httpx.AsyncClient:
     return httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://runner.test", headers=headers or {})
 
 
-async def send(app, text: str, *, streaming: bool):
+async def send(app, text: str, *, streaming: bool, extra_parts=()):
     async with http(app, AUTH) as client:
         card_json = (await client.get("/agents/qwen-bot/.well-known/agent-card.json")).json()
         card = ParseDict(card_json, AgentCard(), ignore_unknown_fields=True)
         a2a = await create_client(card, client_config=ClientConfig(httpx_client=client, streaming=streaming))
-        message = Message(message_id=str(uuid.uuid4()), role=Role.ROLE_USER, parts=[Part(text=text)])
+        message = Message(message_id=str(uuid.uuid4()), role=Role.ROLE_USER, parts=[Part(text=text), *extra_parts])
         return [event async for event in a2a.send_message(SendMessageRequest(message=message))]
 
 
@@ -98,6 +99,69 @@ async def test_blocking_send_ends_in_a_completed_task():
     task = events[-1].task
     assert task.status.state == TaskState.TASK_STATE_COMPLETED
     assert [get_artifact_text(a) for a in task.artifacts] == ["Hallo!"]
+
+
+PNG = b"\x89PNG\r\n\x1a\nfake"
+PNG_URL = "data:image/png;base64," + base64.b64encode(PNG).decode()
+
+
+@pytest.mark.asyncio
+async def test_images_reach_the_model_after_the_text():
+    fake = FakeLiteLLM()
+    fake.chat_script = [text_reply("A bar chart.")]
+    app = await started(fake)
+
+    image = Part(raw=PNG, media_type="image/png", filename="chart.png")
+    other = Part(raw=b"%PDF", media_type="application/pdf", filename="slides.pdf")
+    events = await send(app, "What does it show?", streaming=True, extra_parts=[image, other])
+
+    assert [get_artifact_text(e.artifact_update.artifact) for e in events if e.HasField("artifact_update")] == [
+        "A bar chart."
+    ]
+    user_turn = fake.calls_to("POST", "/v1/chat/completions")[0].body["messages"][-1]
+    assert user_turn == {
+        "role": "user",
+        "content": [
+            {"type": "text", "text": "What does it show?"},
+            {"type": "text", "text": "Image chart.png:"},
+            {"type": "image_url", "image_url": {"url": PNG_URL}},
+        ],
+    }
+
+
+@pytest.mark.asyncio
+async def test_a_v0_3_request_with_an_image_as_the_slack_bot_sends_it():
+    fake = FakeLiteLLM()
+    fake.chat_script = [text_reply("A bar chart.")]
+    app = await started(fake)
+    message = {
+        "kind": "message",
+        "messageId": "m-1",
+        "role": "user",
+        "parts": [
+            {"kind": "text", "text": "Felix: What does it show?"},
+            {"kind": "file", "file": {"name": "chart.png", "mimeType": "image/png", "bytes": base64.b64encode(PNG).decode()}},
+        ],
+    }
+
+    async with http(app, AUTH) as client:
+        response = await client.post(
+            "/agents/qwen-bot/", json={"jsonrpc": "2.0", "id": 1, "method": "message/send", "params": {"message": message}}
+        )
+
+    assert response.status_code == 200, response.text
+    assert "error" not in response.json(), response.json()
+    content = fake.calls_to("POST", "/v1/chat/completions")[0].body["messages"][-1]["content"]
+    assert content[0] == {"type": "text", "text": "Felix: What does it show?"}
+    assert content[2] == {"type": "image_url", "image_url": {"url": PNG_URL}}
+
+
+@pytest.mark.asyncio
+async def test_the_card_accepts_images():
+    app = await started(FakeLiteLLM())
+    async with http(app) as client:
+        card = (await client.get("/agents/qwen-bot/.well-known/agent-card.json")).json()
+    assert card["defaultInputModes"] == ["text/plain", "image/png", "image/jpeg", "image/gif", "image/webp"]
 
 
 @pytest.mark.asyncio
