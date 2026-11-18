@@ -122,7 +122,7 @@ class McpTool:
 
     @property
     def qualified_name(self) -> str:
-        """`<server>-<tool>`, the name the model sees and skill patterns like "espocrm*" match against."""
+        """`<server>-<tool>`, the name the model sees and skill patterns like "crm*" match against."""
         if not self.server_name or self.name.startswith(f"{self.server_name}-"):
             return self.name
         return f"{self.server_name}-{self.name}"

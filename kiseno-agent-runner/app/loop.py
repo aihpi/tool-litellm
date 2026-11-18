@@ -29,8 +29,8 @@ class AgentRunError(Exception):
 
 
 def _tool_matches(tool: McpTool, patterns: Iterable[str]) -> bool:
-    """Patterns (agent.yaml `tools`, a skill's `tools`) match the server-qualified name ("espocrm-Find_CEvents") or
-    the tool's own name ("Find_CEvents")."""
+    """Patterns (agent.yaml `tools`, a skill's `tools`) match the server-qualified name ("crm-find_events") or
+    the tool's own name ("find_events")."""
     patterns = list(patterns)
     return _matches(tool.qualified_name, patterns) or _matches(tool.name, patterns)
 

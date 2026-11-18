@@ -125,36 +125,36 @@ def test_tool_names_are_made_openai_safe_and_unique():
 
 
 def test_qualified_names_are_not_prefixed_twice():
-    assert McpTool("Find_CEvents", "", {}, "espocrm", "id-1").qualified_name == "espocrm-Find_CEvents"
-    assert McpTool("espocrm-Find_CEvents", "", {}, "espocrm", "id-1").qualified_name == "espocrm-Find_CEvents"
-    assert McpTool("Find_CEvents", "", {}, None).qualified_name == "Find_CEvents"
+    assert McpTool("find_events", "", {}, "crm", "id-1").qualified_name == "crm-find_events"
+    assert McpTool("crm-find_events", "", {}, "crm", "id-1").qualified_name == "crm-find_events"
+    assert McpTool("find_events", "", {}, None).qualified_name == "find_events"
 
 
 @pytest.mark.asyncio
 async def test_list_tools_reads_server_from_mcp_info_and_calls_route_by_it():
     fake = FakeLiteLLM(tools=[
-        {"name": "Find_CEvents", "description": "", "inputSchema": {"type": "object"}, "mcp_info": {"server_name": "espocrm", "server_id": "uuid-espo"}},
+        {"name": "find_events", "description": "", "inputSchema": {"type": "object"}, "mcp_info": {"server_name": "crm", "server_id": "uuid-crm"}},
         {"name": "lookup", "description": "", "inputSchema": {"type": "object"}, "mcp_info": {"alias": "cal", "server_id": "uuid-cal"}},
     ])
     gateway = LiteLLMGateway(httpx.AsyncClient(base_url="http://litellm.test", transport=fake.transport()), llm_timeout=10)
     caller = Caller(user_id="u-1")
     tools = await gateway.list_tools("sk-agent", caller)
-    assert [(t.qualified_name, t.server_id) for t in tools] == [("espocrm-Find_CEvents", "uuid-espo"), ("cal-lookup", "uuid-cal")]
+    assert [(t.qualified_name, t.server_id) for t in tools] == [("crm-find_events", "uuid-crm"), ("cal-lookup", "uuid-cal")]
     result = await gateway.call_tool("sk-agent", caller, tools[0], {"q": "RAG"})
-    assert result["content"][0]["text"] == "ran Find_CEvents"
-    assert fake.calls_to("POST", "/mcp-rest/tools/call")[0].body == {"name": "Find_CEvents", "arguments": {"q": "RAG"}, "server_id": "uuid-espo"}
+    assert result["content"][0]["text"] == "ran find_events"
+    assert fake.calls_to("POST", "/mcp-rest/tools/call")[0].body == {"name": "find_events", "arguments": {"q": "RAG"}, "server_id": "uuid-crm"}
 
 
 @pytest.mark.asyncio
 async def test_skill_patterns_match_server_qualified_names():
-    """A workshop skill lists "espocrm*"; LiteLLM lists the tool as "Find_CEvents" on server espocrm."""
+    """A workshop skill lists "crm*"; LiteLLM lists the tool as "find_events" on server crm."""
     fake = FakeLiteLLM(tools=[
-        {"name": "Find_CEvents", "description": "", "inputSchema": {"type": "object"}, "mcp_info": {"server_name": "espocrm", "server_id": "uuid-espo"}},
+        {"name": "find_events", "description": "", "inputSchema": {"type": "object"}, "mcp_info": {"server_name": "crm", "server_id": "uuid-crm"}},
         mcp_tool("list", server="calendar"),
     ])
     fake.chat_script = [text_reply("ok")]
-    skill = "---\nname: crm\ndescription: CRM work.\ntools: [\"espocrm*\"]\n---\n\nUse EspoCRM.\n"
+    skill = "---\nname: crm\ndescription: CRM work.\ntools: [\"crm*\"]\n---\n\nUse the CRM.\n"
     catalog = build_catalog([("helper", {"agent.yaml": "apiVersion: kiseno/v1\nname: helper\ndescription: x\nskills: [crm]\nskills_loading: on_demand\n"})], [("crm", skill)])
     await run(fake, catalog.agents["helper"])
     offered = {t["function"]["name"] for t in fake.calls_to("POST", "/v1/chat/completions")[0].body["tools"]}
-    assert offered == {"calendar-list", LOAD_SKILL}  # espocrm-Find_CEvents waits for load_skill
+    assert offered == {"calendar-list", LOAD_SKILL}  # crm-find_events waits for load_skill
